@@ -333,6 +333,11 @@ select.ctl option{background:#141828;color:var(--text)}
 .dw-stat span{font-size:9.3px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
 .dw-stat.hl b{color:var(--acc2)}
 .dw-sec{margin-bottom:15px}
+.hist-svg{width:100%;height:150px;display:block;background:rgba(150,163,214,.04);border:1px solid var(--border);border-radius:10px}
+.hist-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+.hist-meta b{color:var(--acc2)}
+.hist-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
+.hist-empty{font-size:12px;color:var(--dim);padding:8px 0;line-height:1.5}
 .dw-sec .k{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--acc2);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
 .dw-sec .v{font-size:13px;line-height:1.65;color:#cdd2e9;white-space:pre-wrap}
 .dw-open{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:9px 18px;border-radius:11px;background:linear-gradient(90deg,#8b7cf6,#7c6cf0);color:#fff;font-weight:600;font-size:13px;box-shadow:0 6px 22px -6px rgba(139,124,246,.6);transition:transform .13s}
@@ -489,13 +494,26 @@ function parseRoadmap(ws){
   }
   return out;
 }
+function parseHist(ws){
+  if(!ws)return {};
+  const hist={};const end=lastRow(ws);
+  for(let r=1;r<=end;r++){
+    const id=str(cv(ws,r,0));if(!id||id.length<8)continue;
+    const t=toMs(cv(ws,r,1));const v=num(cv(ws,r,2));
+    if(t==null||v==null)continue;
+    (hist[id]=hist[id]||[]).push([t,v]);
+  }
+  Object.values(hist).forEach(a=>a.sort((x,y)=>x[0]-y[0]));
+  return hist;
+}
 function parseWorkbook(wb){
   return {
     all:parseVideos(sheetByName(wb,'All Videos'),'all'),
     trends:parseVideos(sheetByName(wb,'Trends'),'trends'),
     news:parseVideos(sheetByName(wb,'News'),'news'),
     recos:parseRecos(sheetByName(wb,'Video Recommendations')),
-    roadmap:parseRoadmap(sheetByName(wb,'Roadmap'))
+    roadmap:parseRoadmap(sheetByName(wb,'Roadmap')),
+    hist:parseHist(sheetByName(wb,'View History'))
   };
 }
 /*PARSE_END*/
@@ -553,6 +571,27 @@ function gtag(g,extra){
 }
 function ghosttag(t){return t?'<span class="tag ghost">'+esc(t)+'</span>':'';}
 function median(arr){const a=arr.filter(x=>x!=null).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function histChart(pts){
+  if(!pts||pts.length===0)return '<div class="hist-empty">Daily view tracking just started — the curve appears from the 2nd scan. 📡</div>';
+  if(pts.length===1)return '<div class="hist-empty">1 scan recorded ('+fmtDateFull(pts[0][0])+' · '+fmtInt(pts[0][1])+' views) — the curve appears from the 2nd daily scan. 📡</div>';
+  const W=560,H=150,P=10;
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  const x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs);
+  const y0=Math.min.apply(null,ys),y1=Math.max.apply(null,ys);
+  const X=t=>P+(W-2*P)*(x1===x0?0.5:(t-x0)/(x1-x0));
+  const Y=v=>H-P-(H-2*P)*(y1===y0?0.5:(v-y0)/(y1-y0));
+  const line=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+  const area=line+' L'+X(x1).toFixed(1)+' '+(H-P)+' L'+X(x0).toFixed(1)+' '+(H-P)+' Z';
+  const days=Math.max((x1-x0)/86400000,0.5);
+  const perDay=(pts[pts.length-1][1]-pts[0][1])/days;
+  return '<div class="hist-meta"><b>+'+fmtN(perDay)+'</b> views/day measured · '+pts.length+' scans · '+fmtDateFull(x0)+' → '+fmtDateFull(x1)+'</div>'+
+    '<svg class="hist-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
+    '<path d="'+area+'" fill="rgba(139,124,246,.14)"/>'+
+    '<path d="'+line+'" fill="none" stroke="#a78bfa" stroke-width="2"/>'+
+    pts.map(p=>'<circle cx="'+X(p[0]).toFixed(1)+'" cy="'+Y(p[1]).toFixed(1)+'" r="2.6" fill="#a78bfa"><title>'+fmtDateFull(p[0])+' · '+fmtInt(p[1])+' views</title></circle>').join('')+
+    '</svg>'+
+    '<div class="hist-axis"><span>'+fmtN(y0)+'</span><span>'+fmtN(y1)+'</span></div>';
+}
 function timeAgo(ms){
   const s=(Date.now()-ms)/1000;
   if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';
@@ -881,7 +920,9 @@ function openDrawer(kind,v){
         '<div class="dw-stat"><b>'+fmtN(v.views)+'</b><span>views</span></div>'+
         '<div class="dw-stat"><b>'+fmtDur(v.durH)+'</b><span>duration</span></div>'+
         '<div class="dw-stat"><b>'+fmtAge(v.ageM)+'</b><span>age</span></div>'+
-      '</div>'+extra+
+      '</div>'+
+      '<div class="dw-sec"><div class="k">📈 View history</div>'+histChart(DATA.hist&&v.vid?DATA.hist[v.vid]:null)+'</div>'+
+      extra+
     '</div>';
   document.getElementById('drawer').classList.add('show');
   document.getElementById('backdrop').classList.add('show');
