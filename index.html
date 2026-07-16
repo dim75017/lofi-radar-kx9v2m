@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lofi Radar — YouTube Opportunity Map</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%238b7cf6'/><circle cx='50' cy='50' r='16' fill='%2307080d'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="Lofi_Radar_data.js"></script>
+<style>
+:root{
+  --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
+  --cardS:#12162399;
+  --border:rgba(150,163,214,.11); --border2:rgba(150,163,214,.24);
+  --text:#eceef8; --muted:#9aa1c0; --dim:#5d6485;
+  --acc:#8b7cf6; --acc2:#a78bfa; --accSoft:rgba(139,124,246,.13);
+  --green:#4ade80; --amber:#fbbf24; --red:#fb7185; --cyan:#67e8f9; --blue:#7dd3fc;
+  --r:16px;
+  --sidebar:238px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scrollbar-color:#2a2f4a var(--bg)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#242942;border-radius:8px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+body{
+  font-family:'Inter',system-ui,sans-serif;font-size:14px;color:var(--text);
+  background:
+    radial-gradient(1100px 700px at 88% -12%, rgba(139,124,246,.09), transparent 62%),
+    radial-gradient(900px 650px at -8% 108%, rgba(56,189,248,.06), transparent 60%),
+    var(--bg);
+  background-attachment:fixed;
+  min-height:100vh;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;color:var(--text)}
+
+/* ---------- Sidebar ---------- */
+#sidebar{
+  position:fixed;inset:0 auto 0 0;width:var(--sidebar);z-index:40;
+  background:linear-gradient(180deg, rgba(18,21,36,.92), rgba(11,13,21,.92));
+  border-right:1px solid var(--border);backdrop-filter:blur(14px);
+  display:flex;flex-direction:column;padding:22px 14px 16px;
+}
+.logo{display:flex;align-items:center;gap:11px;padding:2px 8px 20px}
+.logo .mark{
+  width:38px;height:38px;border-radius:12px;flex:none;
+  background:conic-gradient(from 220deg, #8b7cf6, #67e8f9, #f9a8d4, #8b7cf6);
+  display:grid;place-items:center;box-shadow:0 4px 22px rgba(139,124,246,.45);
+}
+.logo .mark::after{content:'';width:14px;height:14px;border-radius:50%;background:#0a0b12;box-shadow:0 0 0 3px rgba(10,11,18,.35)}
+.logo h1{font-family:'Sora';font-size:16.5px;font-weight:800;letter-spacing:.4px}
+.logo h1 span{background:linear-gradient(90deg,#a78bfa,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.logo small{display:block;font-family:'Inter';font-size:10px;font-weight:500;color:var(--dim);letter-spacing:1.6px;text-transform:uppercase;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:3px;flex:1}
+.nav-label{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--dim);padding:14px 10px 7px;font-weight:600}
+.nav button{
+  display:flex;align-items:center;gap:11px;padding:9.5px 11px;border-radius:11px;
+  color:var(--muted);font-size:13.5px;font-weight:500;text-align:left;width:100%;
+  transition:all .16s ease;position:relative;
+}
+.nav button:hover{color:var(--text);background:rgba(150,163,214,.06)}
+.nav button.active{
+  color:#fff;background:linear-gradient(90deg, rgba(139,124,246,.20), rgba(139,124,246,.07));
+  box-shadow:inset 0 0 0 1px rgba(139,124,246,.28);
+}
+.nav button.active svg{color:var(--acc2)}
+.nav button .emo{width:20px;flex:none;font-size:15px;text-align:center;filter:saturate(.85)}
+.nav button svg{width:17px;height:17px;flex:none;color:var(--dim);transition:color .16s}
+.nav button:hover svg{color:var(--muted)}
+.nav .count{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--dim);background:rgba(150,163,214,.09);padding:2px 7px;border-radius:20px;min-width:26px;text-align:center}
+.nav button.active .count{color:var(--acc2);background:rgba(139,124,246,.16)}
+.side-foot{border-top:1px solid var(--border);padding-top:13px;display:flex;flex-direction:column;gap:9px}
+.sync-row{display:flex;align-items:center;gap:8px;padding:0 8px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex:none}
+.sync-dot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+.sync-dot.load{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.sync-txt{font-size:11px;color:var(--dim);line-height:1.35}
+.side-foot .btn-refresh{
+  display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:10px;
+  background:rgba(150,163,214,.07);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);
+  transition:all .15s;
+}
+.side-foot .btn-refresh:hover{color:var(--text);border-color:var(--border2)}
+.side-foot .btn-refresh svg{width:13px;height:13px}
+.side-foot .btn-refresh.spinning svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sheet-link{font-size:11px;color:var(--dim);text-align:center;transition:color .15s}
+.sheet-link:hover{color:var(--acc2)}
+
+/* ---------- Main ---------- */
+#main{margin-left:var(--sidebar);min-height:100vh;padding:0 30px 60px}
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+  padding:26px 0 16px;margin-bottom:8px;
+  background:linear-gradient(180deg, var(--bg) 62%, transparent);
+}
+.topbar h2{font-family:'Sora';font-size:24px;font-weight:700;letter-spacing:-.2px;display:flex;align-items:center;gap:11px}
+.topbar h2 .pill{font-family:'Inter';font-size:11.5px;font-weight:600;color:var(--acc2);background:var(--accSoft);border:1px solid rgba(139,124,246,.25);padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+.topbar .sub{color:var(--muted);font-size:12.5px;margin-top:5px}
+
+/* ---------- Toolbar ---------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:6px 0 18px}
+.search{
+  display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);
+  border-radius:11px;padding:8px 12px;min-width:250px;flex:1;max-width:360px;transition:border .15s;
+}
+.search:focus-within{border-color:rgba(139,124,246,.45);box-shadow:0 0 0 3px rgba(139,124,246,.08)}
+.search svg{width:14px;height:14px;color:var(--dim);flex:none}
+.search input{background:none;border:none;outline:none;font-size:13px;width:100%}
+.search input::placeholder{color:var(--dim)}
+.search kbd{font-family:'Inter';font-size:10px;color:var(--dim);border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+select.ctl, .ctl-btn{
+  background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:8px 12px;
+  font-size:12.5px;color:var(--muted);outline:none;transition:all .15s;font-weight:500;
+}
+select.ctl:hover,.ctl-btn:hover{border-color:var(--border2);color:var(--text)}
+select.ctl option{background:#141828;color:var(--text)}
+.ctl-btn.on{color:var(--acc2);border-color:rgba(139,124,246,.4);background:var(--accSoft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5.5px 11px;border-radius:20px;font-size:11.5px;font-weight:600;
+  background:var(--panel);border:1px solid var(--border);color:var(--muted);transition:all .13s;user-select:none;
+}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.chip:hover{border-color:var(--border2);color:var(--text)}
+.chip.on{color:var(--text);background:var(--chipbg,var(--accSoft));border-color:var(--chipbd,rgba(139,124,246,.45))}
+.result-count{font-size:12px;color:var(--dim);margin-left:auto;white-space:nowrap}
+.result-count b{color:var(--muted)}
+.viewtoggle{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.viewtoggle button{padding:8px 11px;color:var(--dim);display:grid;place-items:center}
+.viewtoggle button.on{color:var(--acc2);background:var(--accSoft)}
+.viewtoggle svg{width:15px;height:15px}
+
+/* ---------- Badges / tags ---------- */
+.tag{display:inline-flex;align-items:center;gap:5.5px;font-size:10.8px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;letter-spacing:.2px}
+.tag .dot{width:6px;height:6px;border-radius:50%}
+.tag.ghost{background:rgba(150,163,214,.08);color:var(--muted)}
+
+/* ---------- Video grid ---------- */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:16px}
+.vcard{
+  background:linear-gradient(180deg, rgba(21,25,42,.75), rgba(15,18,30,.75));
+  border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;
+  transition:transform .18s ease, border-color .18s, box-shadow .18s;display:flex;flex-direction:column;
+}
+.vcard:hover{transform:translateY(-3px);border-color:rgba(139,124,246,.4);box-shadow:0 14px 34px -14px rgba(0,0,0,.65), 0 0 0 1px rgba(139,124,246,.12)}
+.thumbwrap{position:relative;aspect-ratio:16/9;background:#0a0c14;overflow:hidden}
+.thumbwrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.vcard:hover .thumbwrap img{transform:scale(1.045)}
+.thumbwrap .dur{position:absolute;right:8px;bottom:8px;background:rgba(5,6,10,.82);backdrop-filter:blur(4px);color:#fff;font-size:10.5px;font-weight:600;padding:3px 7px;border-radius:6px}
+.thumbwrap .vpm-flag{position:absolute;left:8px;top:8px;background:rgba(5,6,10,.8);backdrop-filter:blur(4px);color:var(--acc2);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;display:flex;gap:4px;align-items:center}
+.vbody{padding:13px 14px 14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.vtitle{font-size:13px;font-weight:600;line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:37px}
+.vtitle a:hover{color:var(--acc2)}
+.vmeta{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);min-width:0}
+.vmeta a{color:var(--muted);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vmeta a:hover{color:var(--cyan)}
+.vmeta .subs{color:var(--dim);flex:none}
+.vtags{display:flex;flex-wrap:wrap;gap:5px}
+.vstats{display:flex;gap:14px;margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
+.vstat{display:flex;flex-direction:column;gap:1px}
+.vstat b{font-size:12.5px;font-weight:700;letter-spacing:.2px}
+.vstat span{font-size:9.8px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+.vstat.hl b{color:var(--acc2)}
+
+/* ---------- Table mode ---------- */
+.vtable{width:100%;border-collapse:collapse}
+.vtable th{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+.vtable td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12.5px;vertical-align:middle}
+.vtable tr.row{cursor:pointer;transition:background .12s}
+.vtable tr.row:hover{background:rgba(139,124,246,.05)}
+.vtable .tthumb{width:86px;aspect-ratio:16/9;border-radius:7px;object-fit:cover;display:block;background:#0a0c14}
+.vtable .ttitle{font-weight:600;max-width:420px;line-height:1.4}
+.vtable .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.vtable .vpmcell{color:var(--acc2);font-weight:700}
+
+.load-more{display:block;margin:26px auto 0;padding:10px 26px;border-radius:12px;background:var(--accSoft);border:1px solid rgba(139,124,246,.3);color:var(--acc2);font-weight:600;font-size:13px;transition:all .15s}
+.load-more:hover{background:rgba(139,124,246,.22)}
+.load-more{opacity:.6}
+
+/* ---------- Dashboard ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:13px;margin-bottom:22px}
+.kpi{background:linear-gradient(180deg, rgba(21,25,42,.8), rgba(15,18,30,.8));border:1px solid var(--border);border-radius:var(--r);padding:16px 17px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,var(--kc,#8b7cf6),transparent 75%);opacity:.85}
+.kpi .k-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--dim);font-weight:600;margin-bottom:8px}
+.kpi .k-val{font-family:'Sora';font-size:25px;font-weight:700;letter-spacing:-.5px}
+.kpi .k-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+@media(max-width:1250px){.dash-grid{grid-template-columns:1fr}}
+.psub{font-size:10.5px;color:var(--dim);margin:-10px 0 13px;line-height:1.4}
+.panel{background:linear-gradient(180deg, rgba(21,25,42,.7), rgba(15,18,30,.7));border:1px solid var(--border);border-radius:var(--r);padding:18px 19px}
+.panel h3{font-family:'Sora';font-size:13.5px;font-weight:600;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between}
+.panel h3 .link{font-family:'Inter';font-size:11.5px;color:var(--acc2);font-weight:600;cursor:pointer}
+.panel h3 .link:hover{text-decoration:underline}
+.hbar{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.hbar .lbl{width:128px;flex:none;font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar .track{flex:1;height:19px;background:rgba(150,163,214,.05);border-radius:6px;overflow:hidden}
+.hbar .fill{height:100%;border-radius:6px;min-width:2px;transition:width .6s ease;background:var(--bc,#8b7cf6);opacity:.8}
+.hbar .val{width:44px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums}
+.chartp{display:flex;flex-direction:column}
+.vchart{height:clamp(190px, calc(100vh - 580px), 400px);display:flex;align-items:stretch;gap:6px;padding-top:6px}
+.vcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px}
+.vbar{width:min(100%,40px);height:calc((100% - 50px)*var(--f));min-height:3px;border-radius:10px 10px 5px 5px;opacity:.88;transition:opacity .15s}
+.vcol:hover .vbar{opacity:1}
+.vval{font-size:10px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.vlbl{font-size:9px;font-weight:600;color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.3px}
+.mini-list{display:flex;flex-direction:column;gap:4px}
+.mini-item{display:flex;align-items:center;gap:12px;padding:8px;border-radius:11px;cursor:pointer;transition:background .12s}
+.mini-item:hover{background:rgba(139,124,246,.06)}
+.mini-item img{width:92px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;flex:none;background:#0a0c14}
+.mini-item .mi-t{font-size:12.3px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mini-item .mi-s{font-size:11px;color:var(--dim);margin-top:3px;display:flex;gap:8px;align-items:center}
+.mini-item .mi-s b{color:var(--acc2)}
+.dash-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:1500px){.dash-3{grid-template-columns:1fr 1fr}}
+@media(max-width:1150px){.dash-grid,.dash-3{grid-template-columns:1fr}}
+.rm-mini{display:flex;align-items:center;gap:10px;padding:7.5px 8px;border-radius:10px;border-left:3px solid var(--gc,#666);background:rgba(150,163,214,.035);margin-bottom:6px}
+.rm-mini .d{font-size:10.5px;color:var(--dim);font-weight:600;width:56px;flex:none;font-variant-numeric:tabular-nums}
+.rm-mini .t{font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- Recos ---------- */
+.rcard{
+  background:linear-gradient(180deg, rgba(21,25,42,.72), rgba(15,18,30,.72));
+  border:1px solid var(--border);border-left:3px solid var(--gc,#555);border-radius:14px;margin-bottom:10px;
+  transition:border-color .15s;overflow:hidden;
+}
+.rcard:hover{border-color:var(--border2);border-left-color:var(--gc,#555)}
+.rhead{display:flex;align-items:center;gap:13px;padding:13px 16px;cursor:pointer}
+.rnum{font-size:10.5px;color:var(--dim);font-weight:700;width:34px;flex:none;font-variant-numeric:tabular-nums}
+.rtitle{font-size:13.5px;font-weight:600;flex:1;min-width:0;line-height:1.4}
+.rscore{font-family:'Sora';font-size:15px;font-weight:700;width:36px;text-align:right;flex:none}
+.rpot{flex:none}
+.pot-S{background:linear-gradient(90deg,rgba(251,191,36,.18),rgba(251,146,60,.14));color:#fbbf24;border:1px solid rgba(251,191,36,.35)}
+.pot-A{background:var(--accSoft);color:var(--acc2);border:1px solid rgba(139,124,246,.35)}
+.pot-B{background:rgba(125,211,252,.1);color:var(--blue);border:1px solid rgba(125,211,252,.3)}
+.pot-C{background:rgba(150,163,214,.08);color:var(--muted);border:1px solid var(--border)}
+.rvalid{flex:none}
+.val-x{background:rgba(74,222,128,.12);color:var(--green);border:1px solid rgba(74,222,128,.3)}
+.val-note{background:rgba(251,191,36,.1);color:var(--amber);border:1px solid rgba(251,191,36,.3)}
+.val-no{background:rgba(251,113,133,.08);color:var(--red);border:1px solid rgba(251,113,133,.25)}
+.rbody{display:none;padding:2px 16px 16px 63px;border-top:1px solid var(--border)}
+.rcard.open .rbody{display:block}
+.rrow{display:grid;grid-template-columns:150px 1fr;gap:9px;padding:8px 0;border-bottom:1px solid rgba(150,163,214,.05);font-size:12.5px;line-height:1.55}
+.rrow .k{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.9px;font-weight:600;padding-top:2px}
+.rrow .v{color:var(--text);white-space:pre-wrap}
+.note-dim{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);border-radius:10px;padding:10px 13px;margin:10px 0 4px;font-size:12.5px;line-height:1.55;color:#fde68a;white-space:pre-wrap}
+.note-dim b{display:block;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--amber);margin-bottom:5px}
+.copybtn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--acc2);background:var(--accSoft);border:1px solid rgba(139,124,246,.3);padding:4px 10px;border-radius:8px;margin-top:7px;transition:all .13s}
+.copybtn:hover{background:rgba(139,124,246,.22)}
+.copybtn.done{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.1)}
+
+/* ---------- Roadmap ---------- */
+.month-h{font-family:'Sora';font-size:14.5px;font-weight:700;color:var(--text);margin:26px 0 12px;display:flex;align-items:center;gap:12px;position:sticky;top:86px;z-index:5;background:linear-gradient(180deg,var(--bg) 70%,transparent);padding:6px 0}
+.month-h .line{flex:1;height:1px;background:var(--border)}
+.month-h .cnt{font-size:11px;color:var(--dim);font-weight:600}
+.rm-item{
+  display:flex;align-items:center;gap:14px;padding:11px 15px;margin-bottom:8px;border-radius:13px;
+  background:linear-gradient(180deg, rgba(21,25,42,.65), rgba(15,18,30,.65));
+  border:1px solid var(--border);border-left:3px solid var(--gc,#555);cursor:pointer;transition:border-color .14s;
+}
+.rm-item:hover{border-color:var(--border2);border-left-color:var(--gc,#555)}
+.rm-date{width:64px;flex:none;text-align:center}
+.rm-date .dd{font-family:'Sora';font-size:17px;font-weight:700;line-height:1.1}
+.rm-date .wd{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;font-weight:600}
+.rm-main{flex:1;min-width:0}
+.rm-t{font-size:13.5px;font-weight:600;line-height:1.35;margin-bottom:5px}
+.rm-tags{display:flex;flex-wrap:wrap;gap:5px}
+.src-monday{background:rgba(150,163,214,.1);color:var(--muted);border:1px solid rgba(150,163,214,.2)}
+.src-new{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.3)}
+.src-rot{background:rgba(251,191,36,.1);color:var(--amber);border:1px solid rgba(251,191,36,.3)}
+.rm-body{display:none;padding:4px 16px 14px 94px;font-size:12.5px}
+.rm-wrap.open .rm-body{display:block}
+.rm-wrap{margin-bottom:8px}
+.rm-wrap.open .rm-item{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
+.rm-wrap.open .rm-body{background:rgba(15,18,30,.65);border:1px solid var(--border);border-top:none;border-left:3px solid var(--gc,#555);border-radius:0 0 13px 13px;padding-top:10px}
+
+/* ---------- Keywords ---------- */
+.kw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+.kw-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:10px;background:linear-gradient(180deg, rgba(21,25,42,.7), rgba(15,18,30,.7));border:1px solid var(--border);cursor:pointer;transition:border-color .13s}
+.kw-item:hover{border-color:rgba(139,124,246,.45)}
+.kw-name{font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kw-n{font-size:10.5px;font-weight:700;color:var(--acc2);background:var(--accSoft);border-radius:12px;padding:2px 8px;flex:none}
+.kw-n.zero{color:var(--dim);background:rgba(150,163,214,.07)}
+
+/* ---------- Calendar ---------- */
+.cal-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0 16px;position:relative}
+.cal-month{font-family:'Sora';font-size:22px;font-weight:700;min-width:230px;text-align:center;letter-spacing:-.3px}
+.cal-nav .arrow{font-size:19px;padding:7px 17px;line-height:1}
+.cal-nav .today{position:absolute;right:0}
+.cal{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:rgba(15,18,30,.6)}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border);background:rgba(21,25,42,.6)}
+.cal-head div{padding:9px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim);font-weight:600;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-cell{height:clamp(88px, calc((100vh - 320px)/6), 175px);border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:6px;position:relative;overflow:hidden}
+.cal-grid .cal-cell:nth-child(7n){border-right:none}
+.cal-grid .cal-cell:nth-last-child(-n+7){border-bottom:none}
+.cal-cell .d{position:absolute;top:5px;right:7px;font-size:10.5px;color:var(--dim);font-weight:600}
+.cal-cell.out{background:rgba(5,6,10,.35)}
+.cal-cell.out .d{opacity:.4}
+.cal-cell.today{box-shadow:inset 0 0 0 1.5px rgba(139,124,246,.55)}
+.cal-cell .pills{margin-top:20px;display:flex;flex-direction:column;gap:3px}
+.cal-pill{font-size:10.5px;font-weight:700;color:#0d0f17;border-radius:5px;padding:3px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:11px;color:var(--muted)}
+.cal-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+
+/* ---------- Drawer ---------- */
+#backdrop{position:fixed;inset:0;background:rgba(4,5,9,.62);backdrop-filter:blur(3px);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+#backdrop.show{opacity:1;pointer-events:auto}
+#drawer{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.97);width:min(680px,94vw);max-height:88vh;z-index:70;overflow-y:auto;
+  background:#0e1120;border:1px solid var(--border2);border-radius:18px;
+  opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;box-shadow:0 40px 120px rgba(0,0,0,.72);
+}
+#drawer.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.dw-close{position:absolute;top:14px;right:14px;z-index:5;width:32px;height:32px;border-radius:10px;background:rgba(5,6,10,.7);backdrop-filter:blur(6px);color:var(--muted);display:grid;place-items:center;font-size:17px;transition:color .13s}
+.dw-close:hover{color:#fff}
+.dw-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#0a0c14}
+.dw-body{padding:20px 24px 34px}
+.dw-title{font-family:'Sora';font-size:17px;font-weight:700;line-height:1.45;margin-bottom:10px}
+.dw-title a:hover{color:var(--acc2)}
+.dw-sub{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.dw-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:18px}
+.dw-stat{background:rgba(150,163,214,.05);border:1px solid var(--border);border-radius:11px;padding:10px 11px}
+.dw-stat b{font-family:'Sora';font-size:14.5px;font-weight:700;display:block}
+.dw-stat span{font-size:9.3px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+.dw-stat.hl b{color:var(--acc2)}
+.dw-sec{margin-bottom:15px}
+.dw-sec .k{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--acc2);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.dw-sec .v{font-size:13px;line-height:1.65;color:#cdd2e9;white-space:pre-wrap}
+.dw-open{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:9px 18px;border-radius:11px;background:linear-gradient(90deg,#8b7cf6,#7c6cf0);color:#fff;font-weight:600;font-size:13px;box-shadow:0 6px 22px -6px rgba(139,124,246,.6);transition:transform .13s}
+.dw-open:hover{transform:translateY(-1px)}
+
+/* ---------- Loading / states ---------- */
+#loader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:var(--bg);transition:opacity .4s}
+#loader.hide{opacity:0;pointer-events:none}
+.loader-in{text-align:center}
+.loader-mark{width:74px;height:74px;border-radius:24px;margin:0 auto 22px;background:conic-gradient(from 220deg,#8b7cf6,#67e8f9,#f9a8d4,#8b7cf6);display:grid;place-items:center;animation:breathe 2.2s ease-in-out infinite;box-shadow:0 10px 50px rgba(139,124,246,.5)}
+.loader-mark::after{content:'';width:26px;height:26px;border-radius:50%;background:#07080d}
+@keyframes breathe{50%{transform:scale(1.07);box-shadow:0 10px 70px rgba(139,124,246,.75)}}
+.loader-in h2{font-family:'Sora';font-size:19px;font-weight:700;margin-bottom:7px}
+.loader-in p{color:var(--dim);font-size:12.5px}
+.err-box{max-width:430px;margin:60px auto;text-align:center;background:var(--panel);border:1px solid rgba(251,113,133,.3);border-radius:18px;padding:34px 30px}
+.err-box h3{font-family:'Sora';font-size:16px;margin-bottom:10px;color:var(--red)}
+.err-box p{color:var(--muted);font-size:12.5px;line-height:1.7;margin-bottom:16px}
+.empty{color:var(--dim);text-align:center;padding:60px 0;font-size:13px}
+.skel{border-radius:var(--r);background:linear-gradient(100deg,rgba(150,163,214,.05) 40%,rgba(150,163,214,.1) 50%,rgba(150,163,214,.05) 60%);background-size:200% 100%;animation:sk 1.3s infinite;height:280px}
+@keyframes sk{to{background-position:-200% 0}}
+@media(max-width:900px){
+  #sidebar{width:64px;padding:16px 8px}
+  .logo h1,.nav .count,.nav span.lbl,.side-foot .sync-txt,.sheet-link{display:none}
+  #main{margin-left:64px;padding:0 16px 40px}
+  :root{--sidebar:64px}
+}
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-in">
+  <div class="loader-mark"></div>
+  <h2>Lofi Radar</h2>
+  <p id="loader-msg">Syncing with the Opportunity Map…</p>
+</div></div>
+
+<aside id="sidebar">
+  <div class="logo">
+    <div class="mark"></div>
+    <div><h1>LOFI <span>RADAR</span><small>Opportunity Map</small></h1></div>
+  </div>
+  <nav class="nav" id="nav"></nav>
+  <div class="side-foot">
+    <div class="sync-row"><div class="sync-dot load" id="sync-dot"></div><div class="sync-txt" id="sync-txt">Connecting…</div></div>
+    <button class="btn-refresh" id="btn-refresh" onclick="refresh()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+      <span class="lbl">Sync now</span>
+    </button>
+    <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1XE_M9pQWn8w2Qu83vV_tv9sEFDFQ13fTePseG6mh1vI/edit" target="_blank">Open Google Sheet ↗</a>
+  </div>
+</aside>
+
+<main id="main">
+  <div class="topbar"><div><h2 id="view-title">Dashboard</h2><div class="sub" id="view-sub"></div></div></div>
+  <div id="view"></div>
+</main>
+
+<div id="backdrop" onclick="closeDrawer()"></div>
+<div id="drawer"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const SHEET_ID='1XE_M9pQWn8w2Qu83vV_tv9sEFDFQ13fTePseG6mh1vI';
+const XLSX_URL='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=xlsx';
+const CACHE_KEY='lofiradar_v1';
+
+const ICONS={
+ dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+ all:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9.5 5 2.5-5 2.5z" fill="currentColor" stroke="none"/></svg>',
+ trends:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>',
+ news:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+ recos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-4 12.7c.8.6 1 1.6 1 2.3h6c0-.7.2-1.7 1-2.3A7 7 0 0 0 12 2z"/><path d="M9.5 20h5M10.5 22h3"/></svg>',
+ roadmap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 9.5h18"/></svg>',
+ search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+ grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>',
+ rows:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+ flame:'<svg width="10" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2s5 4.5 5 9.5c0 1.5-.4 2.7-1 3.7.6-4-2-6.2-2-6.2.2 2.5-1 3.4-2.2 5-1 1.4-1 3-.2 4.5C9 17.6 7 15.5 7 12.5 7 7 12 2 12 2z"/></svg>'
+};
+
+/* ================= PARSE ================= */
+/*PARSE_START*/
+function cellAt(ws,r,c){return ws[XLSX.utils.encode_cell({r:r,c:c})];}
+function cv(ws,r,c){const x=cellAt(ws,r,c);return x==null?null:(x.v==null?null:x.v);}
+function cf(ws,r,c){const x=cellAt(ws,r,c);return x&&x.f?x.f:null;}
+function vidOf(s){if(!s)return null;const m=String(s).match(/(?:watch\?v=|\/vi\/)([\w-]{11})/);return m?m[1]:null;}
+function linkOf(s){if(!s)return null;const m=String(s).match(/HYPERLINK\("([^"]+)"/);return m?m[1]:null;}
+function toMs(x){
+  if(x==null)return null;
+  if(x instanceof Date)return x.getTime();
+  if(typeof x==='number')return Math.round((x-25569)*86400000);
+  const d=new Date(String(x));return isNaN(d)?null:d.getTime();
+}
+function num(x){if(x==null)return null;if(typeof x==='number')return x;const n=parseFloat(String(x).replace(/[,\s]/g,''));return isNaN(n)?null:n;}
+function str(x){return x==null?'':String(x).trim();}
+function findHeader(ws,col,label){
+  for(let r=0;r<14;r++){const x=cv(ws,r,col);if(x&&String(x).trim().toLowerCase()===label)return r;}
+  return -1;
+}
+function lastRow(ws){return XLSX.utils.decode_range(ws['!ref']).e.r;}
+function sheetByName(wb,frag){
+  const n=wb.SheetNames.find(s=>s.includes(frag));
+  return n?wb.Sheets[n]:null;
+}
+function parseVideos(ws,kind){
+  const hr=findHeader(ws,1,'title');if(hr<0)return[];
+  const out=[];const end=lastRow(ws);
+  for(let r=hr+1;r<=end;r++){
+    const title=str(cv(ws,r,1));if(!title)continue;
+    const vid=vidOf(cf(ws,r,1))||vidOf(cf(ws,r,0));
+    const o={
+      title:title,
+      vid:vid,
+      url:vid?('https://www.youtube.com/watch?v='+vid):(linkOf(cf(ws,r,1))||('https://www.youtube.com/results?search_query='+encodeURIComponent(title))),
+      durH:num(cv(ws,r,2)), views:num(cv(ws,r,3)), vpm:num(cv(ws,r,4)),
+      pub:toMs(cv(ws,r,5)), ageM:num(cv(ws,r,6)),
+      genre:str(cv(ws,r,7)), cluster:str(cv(ws,r,8)),
+      channel:str(cv(ws,r,9)), chUrl:linkOf(cf(ws,r,9)),
+      subs:num(cv(ws,r,10))
+    };
+    if(kind==='all'){o.kw=str(cv(ws,r,11));o.kwCount=num(cv(ws,r,12));o.pattern=str(cv(ws,r,13));}
+    else if(kind==='trends'){o.why=str(cv(ws,r,11));o.sugg=str(cv(ws,r,12));o.copy=str(cv(ws,r,13));o.musical=str(cv(ws,r,14));o.visual=str(cv(ws,r,15));}
+    else if(kind==='news'){o.disc=str(cv(ws,r,11));o.rank=num(cv(ws,r,12));o.days=num(cv(ws,r,13));o.why=str(cv(ws,r,14));o.angle=str(cv(ws,r,15));o.added=toMs(cv(ws,r,16));}
+    out.push(o);
+  }
+  return out;
+}
+function parseRecos(ws){
+  const hr=findHeader(ws,0,'n°');if(hr<0)return[];
+  const out=[];const end=lastRow(ws);
+  for(let r=hr+1;r<=end;r++){
+    const n=num(cv(ws,r,0));if(n==null)continue;
+    out.push({
+      n:n, valid:str(cv(ws,r,1)), pot:str(cv(ws,r,2)), score:num(cv(ws,r,3)),
+      genre:str(cv(ws,r,4)), niche:str(cv(ws,r,5)), perso:str(cv(ws,r,6)),
+      title:str(cv(ws,r,7)), concept:str(cv(ws,r,8)), scene:str(cv(ws,r,9)),
+      style:str(cv(ws,r,10)), dur:str(cv(ws,r,11)), desc:str(cv(ws,r,12)),
+      kw:str(cv(ws,r,13)), noteData:str(cv(ws,r,14)), launch:str(cv(ws,r,15)),
+      conf:num(cv(ws,r,16)), status:str(cv(ws,r,17)), recoClaude:str(cv(ws,r,18)),
+      scoreAdj:num(cv(ws,r,19)), recal:str(cv(ws,r,20))
+    });
+  }
+  return out;
+}
+function parseRoadmap(ws){
+  const hr=findHeader(ws,0,'date');if(hr<0)return[];
+  const out=[];const end=lastRow(ws);
+  for(let r=hr+1;r<=end;r++){
+    const t=str(cv(ws,r,3));if(!t)continue;
+    out.push({
+      date:toMs(cv(ws,r,0)), jour:str(cv(ws,r,1)), src:str(cv(ws,r,2)), title:t,
+      genre:str(cv(ws,r,4)), perso:str(cv(ws,r,5)), dur:str(cv(ws,r,6)),
+      concept:str(cv(ws,r,7)), scene:str(cv(ws,r,8)), style:str(cv(ws,r,9)),
+      niche:str(cv(ws,r,10)), cadence:str(cv(ws,r,11)), note:str(cv(ws,r,12))
+    });
+  }
+  return out;
+}
+function parseWorkbook(wb){
+  return {
+    all:parseVideos(sheetByName(wb,'All Videos'),'all'),
+    trends:parseVideos(sheetByName(wb,'Trends'),'trends'),
+    news:parseVideos(sheetByName(wb,'News'),'news'),
+    recos:parseRecos(sheetByName(wb,'Video Recommendations')),
+    roadmap:parseRoadmap(sheetByName(wb,'Roadmap'))
+  };
+}
+/*PARSE_END*/
+</script>
+<script>
+/* ================= HELPERS ================= */
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtN(x){
+  if(x==null||isNaN(x))return '—';
+  if(x>=1e9)return (x/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+  if(x>=1e6)return (x/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(x>=1e3)return (x/1e3).toFixed(x>=1e5?0:1).replace(/\.0$/,'')+'k';
+  return String(Math.round(x));
+}
+function fmtInt(x){return x==null?'—':Math.round(x).toLocaleString('en-US');}
+function fmtDur(h){
+  if(h==null)return '—';
+  if(h<1)return Math.round(h*60)+' min';
+  const H=Math.floor(h),M=Math.round((h-H)*60);
+  return M?H+'h'+String(M).padStart(2,'0'):H+'h';
+}
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(ms){if(!ms)return '—';const d=new Date(ms);return MONTHS[d.getMonth()]+' '+d.getFullYear();}
+function fmtDateFull(ms){if(!ms)return '—';const d=new Date(ms);return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
+function fmtAge(m){if(m==null)return '—';return m<1?'<1 mo':(m<12?m.toFixed(1).replace(/\.0$/,'')+' mo':(m/12).toFixed(1).replace(/\.0$/,'')+' yr');}
+function thumb(vid,q){return vid?('https://i.ytimg.com/vi/'+vid+'/'+(q||'mqdefault')+'.jpg'):'';}
+
+const GENRE_COLORS=[
+  [/house/i,'#6ee7b7'],
+  [/dark/i,'#818cf8'],
+  [/christmas|noël|noel/i,'#fb7185'],
+  [/halloween/i,'#f97316'],
+  [/guitar|guitare/i,'#fdba74'],
+  [/jazz|bossa/i,'#fbbf24'],
+  [/piano/i,'#f9a8d4'],
+  [/classi/i,'#fda4af'],
+  [/synth|retro/i,'#e879f9'],
+  [/meditation|wellness/i,'#5eead4'],
+  [/focus|study|étude/i,'#86efac'],
+  [/ambient sleep/i,'#7dd3fc'],
+  [/^sleep$|sleep &|sommeil/i,'#7dd3fc'],
+  [/nature/i,'#6ee7b7'],
+  [/ambient/i,'#67e8f9'],
+  [/lofi|chillhop/i,'#a78bfa'],
+];
+function gcolor(g){
+  if(!g)return '#9ca3af';
+  for(const [re,c] of GENRE_COLORS){if(re.test(g))return c;}
+  return '#9ca3af';
+}
+function gtag(g,extra){
+  if(!g)return '';
+  const c=gcolor(g);
+  return '<span class="tag" style="background:'+c+'1f;color:'+c+';border:1px solid '+c+'45">'+(extra?'':'<span class="dot" style="background:'+c+'"></span>')+esc(g)+'</span>';
+}
+function ghosttag(t){return t?'<span class="tag ghost">'+esc(t)+'</span>':'';}
+function median(arr){const a=arr.filter(x=>x!=null).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+function timeAgo(ms){
+  const s=(Date.now()-ms)/1000;
+  if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';
+}
+
+/* ================= STATE ================= */
+let DATA=null, SYNCED=null, route='dashboard';
+const VS={
+  all:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60},
+  trends:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60},
+  news:{q:'',genres:new Set(),cluster:'',sort:'added',mode:'grid',limit:60}
+};
+const RS={q:'',genres:new Set(),pot:'',perso:'',val:'',sort:'scoreAdj',limit:80};
+const RM={src:'',genre:'',year:'',mode:'cal',cal:null};
+
+/* ================= BOOT / SYNC ================= */
+function setSync(state,txt){
+  const d=document.getElementById('sync-dot');d.className='sync-dot '+state;
+  document.getElementById('sync-txt').innerHTML=txt;
+}
+async function fetchData(){
+  const res=await fetch(XLSX_URL,{redirect:'follow'});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const buf=await res.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array',cellDates:false});
+  const d=parseWorkbook(wb);
+  if(!d.all.length&&!d.trends.length)throw new Error('Parsed 0 rows — sheet structure may have changed');
+  return d;
+}
+function saveCache(d){
+  try{localStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),d:d}));}catch(e){}
+}
+function loadCache(){
+  try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const o=JSON.parse(raw);
+    o.d.recos.forEach(r=>{if(r.valid==null)r.valid='';});return o;}catch(e){return null;}
+}
+async function refresh(){
+  const btn=document.getElementById('btn-refresh');btn.classList.add('spinning');
+  setSync('load','Syncing…');
+  try{
+    const d=await fetchData();
+    DATA=d;SYNCED=Date.now();saveCache(d);
+    setSync('','Live · synced '+timeAgo(SYNCED));
+    renderNav();render();
+  }catch(e){
+    setSync('err','Sync failed<br>'+esc(e.message));
+    if(!DATA)showError(e);
+  }
+  btn.classList.remove('spinning');
+}
+function showError(e){
+  document.getElementById('loader').classList.add('hide');
+  document.getElementById('view').innerHTML=
+    '<div class="err-box"><h3>No data available</h3><p>'+esc(e.message)+
+    '<br><br>Keep <b>Lofi_Radar_data.js</b> next to this file (daily snapshot), or open the page from a web server for live sync.</p>'+
+    '<button class="load-more" onclick="boot()">Retry</button></div>';
+}
+async function boot(){
+  const cache=loadCache();
+  const snap=(window.LOFI_DATA&&window.LOFI_DATA.d)?window.LOFI_DATA:null;
+  let best=null,src='';
+  if(cache&&(!snap||cache.t>=snap.t)){best=cache;src='cache';}
+  else if(snap){best=snap;src='snap';}
+  if(best){
+    DATA=best.d;SYNCED=best.t;
+    document.getElementById('loader').classList.add('hide');
+    setSync('load',(src==='snap'?'Daily snapshot · ':'Cached · ')+'trying live sync…');
+    renderNav();render();
+    try{const d=await fetchData();DATA=d;SYNCED=Date.now();saveCache(d);setSync('','Live · synced just now');renderNav();render();}
+    catch(e){setSync('','Daily snapshot · '+fmtDateFull(best.t)+'<br>(live sync unavailable from a local file)');}
+  }else{
+    document.getElementById('loader-msg').textContent='Downloading live data from Google Sheets…';
+    try{
+      const d=await fetchData();DATA=d;SYNCED=Date.now();saveCache(d);
+      document.getElementById('loader').classList.add('hide');
+      setSync('','Live · synced just now');
+      renderNav();render();
+    }catch(e){showError(e);setSync('err','No data');}
+  }
+}
+
+/* ================= NAV / ROUTER ================= */
+const VIEWS=[
+  {id:'dashboard',label:'Dashboard',emo:'📊',cnt:()=>''},
+  {id:'all',label:'All Videos',emo:'🎬',cnt:()=>DATA?fmtN(DATA.all.length):''},
+  {id:'trends',label:'Trends',emo:'🔥',cnt:()=>DATA?fmtN(DATA.trends.length):''},
+  {id:'news',label:'News',emo:'📰',cnt:()=>DATA?String(DATA.news.length):''},
+  {id:'recos',label:'Recommendations',emo:'💡',cnt:()=>DATA?fmtN(DATA.recos.length):''},
+  {id:'roadmap',label:'Roadmap',emo:'🗓️',cnt:()=>DATA?String(DATA.roadmap.length):''},
+  {id:'kw',label:'Keywords',emo:'🔎',cnt:()=>String(KEYWORDS.length)}
+];
+function renderNav(){
+  document.getElementById('nav').innerHTML=
+    '<div class="nav-label">Workspace</div>'+
+    VIEWS.map(v=>'<button class="'+(route===v.id?'active':'')+'" onclick="go(\''+v.id+'\')"><span class="emo">'+v.emo+'</span><span class="lbl">'+v.label+'</span><span class="count">'+v.cnt()+'</span></button>').join('');
+}
+function go(r){route=r;renderNav();render();window.scrollTo({top:0});}
+function render(){
+  if(!DATA)return;
+  const t=document.getElementById('view-title'),s=document.getElementById('view-sub'),el=document.getElementById('view');
+  closeDrawer();
+  if(route==='dashboard'){t.innerHTML='Dashboard <span class="pill">LIVE</span>';s.textContent='Competitive intelligence across '+fmtInt(DATA.all.length)+' instrumental videos · updated daily by the scan';el.innerHTML=dashHTML();}
+  else if(route==='all'){t.textContent='All Videos';s.textContent='Full competitive audit · ≥1M views · long instrumental mixes · Lofi Girl excluded';el.innerHTML=videosHTML('all');}
+  else if(route==='trends'){t.innerHTML='Trends';s.textContent='Published <12 months · ≥500k views · sorted by velocity, with Lofi Girl adaptation notes';el.innerHTML=videosHTML('trends');}
+  else if(route==='news'){t.innerHTML='News <span class="pill">DAILY WATCH</span>';s.textContent='Fresh videos the YouTube algorithm just started pushing · deduplicated daily at 08:00';el.innerHTML=videosHTML('news');}
+  else if(route==='recos'){t.textContent='Recommendations';s.textContent=fmtInt(DATA.recos.length)+' original concepts ranked by potential · descriptions & SEO keywords ready to copy';el.innerHTML=recosHTML();}
+  else if(route==='roadmap'){t.textContent='Roadmap';s.textContent='Release plan balanced by genre, character and season · synced with Monday';el.innerHTML=roadmapHTML();}
+  else if(route==='kw'){t.textContent='Keywords';s.textContent='The search corpus scanned on every sync · what feeds All Videos, Trends & News';el.innerHTML=kwHTML();}
+  armAutoLoad();
+}
+
+/* ================= DASHBOARD ================= */
+function dashHTML(){
+  const A=DATA.all,T=DATA.trends,N=DATA.news,R=DATA.recos,RD=DATA.roadmap;
+  const channels=new Set(A.map(v=>v.channel)).size;
+  const medVpm=median(T.map(v=>v.vpm));
+  const validated=R.filter(r=>/^x/i.test(r.valid)).length;
+  const lastAdded=N.length?Math.max(...N.map(n=>n.added||0)):null;
+  const kpi=(lbl,val,sub,c)=>'<div class="kpi" style="--kc:'+c+'"><div class="k-lbl">'+lbl+'</div><div class="k-val">'+val+'</div><div class="k-sub">'+sub+'</div></div>';
+  let h='<div class="kpis">'+
+    kpi('Videos audited',fmtInt(A.length),'≥1M views · all time','#8b7cf6')+
+    kpi('Trending now',fmtInt(T.length),'<12 months · ≥500k views','#fbbf24')+
+    kpi('News watchlist',fmtInt(N.length),lastAdded?('last added '+fmtDateFull(lastAdded)):'daily scan','#67e8f9')+
+    kpi('Unique channels',fmtInt(channels),'competitive landscape','#f9a8d4')+
+    kpi('Median velocity',fmtN(medVpm),'views/month on Trends','#4ade80')+
+    kpi('Concepts validated',validated+' / '+fmtInt(R.length),'recommendations pipeline','#fb7185')+
+  '</div>';
+
+  const gcount={};A.forEach(v=>{if(v.genre)gcount[v.genre]=(gcount[v.genre]||0)+1;});
+  const gsorted=Object.entries(gcount).sort((a,b)=>b[1]-a[1]);
+  const gmax=gsorted.length?gsorted[0][1]:1;
+  const ccount={};A.forEach(v=>{if(v.cluster)ccount[v.cluster]=(ccount[v.cluster]||0)+1;});
+  const csorted=Object.entries(ccount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const cmax=csorted.length?csorted[0][1]:1;
+  const vel={};T.forEach(v=>{if(v.genre)(vel[v.genre]=vel[v.genre]||[]).push(v.vpm||0);});
+  const vsorted=Object.entries(vel).map(([k,a])=>[k,median(a)||0]).sort((a,b)=>b[1]-a[1]);
+  const vmax=vsorted.length?vsorted[0][1]:1;
+  const vbars=(rows,max,colorFn,fmt)=>'<div class="vchart">'+rows.map(([k,n])=>{
+    const c=colorFn(k);
+    return '<div class="vcol" title="'+esc(k)+' — '+fmtInt(n)+'"><span class="vval">'+(fmt?fmtN(n):fmtInt(n))+'</span>'+
+      '<div class="vbar" style="--f:'+(n/max)+';background:linear-gradient(180deg,'+c+','+c+'55)"></div>'+
+      '<span class="vlbl">'+esc(String(k).split('/')[0].trim())+'</span></div>';
+  }).join('')+'</div>';
+  const chartp=(t,sub,body)=>'<div class="panel chartp"><h3>'+t+'</h3><div class="psub">'+sub+'</div>'+body+'</div>';
+  h+='<div class="dash-grid">'+
+    chartp('Genre distribution','Number of audited videos per genre · full history, ≥1M views',vbars(gsorted,gmax,gcolor))+
+    chartp('Top use-case clusters','What the audited videos are made for (sleep, study, reading…)',vbars(csorted,cmax,()=>'#67e8f9'))+
+    chartp('Velocity by genre','Median views/month per genre · videos from the last 12 months',vbars(vsorted,vmax,gcolor,true))+
+  '</div>';
+
+  const hot=[...T].sort((a,b)=>(b.vpm||0)-(a.vpm||0)).slice(0,5);
+  const latest=[...N].sort((a,b)=>(b.added||0)-(a.added||0)).slice(0,5);
+  const today=Date.now()-86400000*2;
+  const coming=RD.filter(r=>r.date&&r.date>=today).sort((a,b)=>a.date-b.date).slice(0,7);
+  const mini=(v,statHTML,kind)=>'<div class="mini-item" onclick="openVid(\''+kind+'\','+JSON.stringify(v.vid||v.title).replace(/"/g,'&quot;')+')">'+
+    '<img loading="lazy" src="'+thumb(v.vid)+'" onerror="this.style.visibility=\'hidden\'">'+
+    '<div style="min-width:0"><div class="mi-t">'+esc(v.title)+'</div><div class="mi-s">'+statHTML+'</div></div></div>';
+  h+='<div class="dash-3">'+
+    '<div class="panel"><h3>🔥 Hot right now<span class="link" onclick="go(\'trends\')">View all →</span></h3><div class="psub">Fastest-growing videos published in the last 12 months</div><div class="mini-list">'+
+      hot.map(v=>mini(v,'<b>'+fmtN(v.vpm)+'/mo</b><span>'+esc(v.channel)+'</span>','trends')).join('')+'</div></div>'+
+    '<div class="panel"><h3>📰 Latest discoveries<span class="link" onclick="go(\'news\')">View all →</span></h3><div class="psub">New videos the YouTube algorithm just started pushing · daily scan</div><div class="mini-list">'+
+      (latest.length?latest.map(v=>mini(v,'<b>'+fmtN(v.views)+' views</b><span>'+fmtAge(v.ageM)+' old</span>','news')).join(''):'<div class="empty">No discoveries yet</div>')+'</div></div>'+
+    '<div class="panel"><h3>🗓️ Coming up<span class="link" onclick="go(\'roadmap\')">Full roadmap →</span></h3><div class="psub">Next planned releases · synced with Monday & rotation proposals</div>'+
+      coming.map(r=>{const d=new Date(r.date);return '<div class="rm-mini" style="--gc:'+gcolor(r.genre)+'"><div class="d">'+d.getDate()+' '+MONTHS[d.getMonth()]+'</div><div class="t">'+esc(r.title)+'</div>'+gtag(r.genre,1)+'</div>';}).join('')+'</div>'+
+  '</div>';
+  return h;
+}
+</script>
+<script>
+/* ================= KEYWORDS ================= */
+const KEYWORDS=["8 hours sleep music", "80s synthwave mix", "acoustic guitar for focus", "acoustic guitar for meditate", "acoustic guitar for read", "acoustic guitar for relax", "acoustic guitar for sleep", "acoustic guitar for study", "acoustic guitar for work", "acoustic guitar for write", "acoustic study music", "ADHD focus music", "airplane ambience music", "airplane lofi mix", "ambient for code", "ambient for focus", "ambient for meditate", "ambient for read", "ambient for relax", "ambient for sleep", "ambient for study", "ambient for work", "ambient music", "ambient music 3 hours", "ambient sleep music", "anime lofi", "anime lofi study mix", "asian lofi mix", "autumn ambient mix", "autumn bossa nova mix", "autumn jazz mix", "autumn jazzhop mix", "autumn lofi hip hop mix", "autumn lofi mix", "autumn piano mix", "autumn sleep music mix", "autumn synthwave mix", "balcony ambience music", "balcony lofi mix", "bedroom ambience music", "bedroom lofi mix", "black screen sleep music", "bookstore ambience music", "bookstore lofi mix", "bossa nova cafe", "bossa nova for code", "bossa nova for focus", "bossa nova for meditate", "bossa nova for read", "bossa nova for relax", "bossa nova for sleep", "bossa nova for study", "bossa nova for work", "bossa nova for write", "brown noise sleep", "cafe ambience music", "cafe lofi mix", "calm background music", "calm music for sleep", "castle library ambience music", "chill synthwave", "chillhop essentials mix", "classical music for code", "classical music for focus", "classical music for meditate", "classical music for read", "classical music for reading", "classical music for relax", "classical music for sleep", "classical music for study", "classical music for work", "classical music for write", "classical piano music", "classroom ambience music", "classroom lofi mix", "coding music mix", "coffee shop ambience", "coffee shop ambience music", "coffee shop jazz", "coffee shop lofi", "coffee shop lofi mix", "cozy ambience", "cozy ambient mix", "cozy bedroom ambience", "cozy bossa nova mix", "cozy coffee shop music", "cozy gaming playlist", "cozy jazz mix", "cozy jazzhop mix", "cozy lofi", "cozy lofi hip hop mix", "cozy lofi mix", "cozy piano mix", "cozy playlist", "cozy sleep music mix", "cozy synthwave mix", "cyberpunk ambience", "cyberpunk music mix", "dark academia ambience", "dark academia jazz", "dark academia piano", "dark academia playlist", "dark academia reading music", "dark academia study music", "dark ambient music", "dark synthwave mix", "deep focus music", "deep sleep music", "dreamy lofi mix", "dreamy piano playlist", "emotional piano music", "fantasy ambience for code", "fantasy ambience for focus", "fantasy ambience for meditate", "fantasy ambience for read", "fantasy ambience for relax", "fantasy ambience for sleep", "fantasy ambience for study", "fantasy ambience for work", "fantasy ambience for write", "fantasy ambience music", "fantasy lofi", "fantasy study music", "fireplace ambience", "focus ambient music", "focus music", "foggy ambient mix", "foggy bossa nova mix", "foggy jazz mix", "foggy jazzhop mix", "foggy lofi hip hop mix", "foggy lofi mix", "foggy sleep music mix", "forest ambience", "forest ambience for reading", "forest ambience music", "forest lofi mix", "ghibli lofi", "healing ambient music", "healing sleep music", "japanese garden ambience music", "japanese garden lofi mix", "japanese jazz mix", "japanese lofi mix", "jazz for code", "jazz for focus", "jazz for meditate", "jazz for read", "jazz for relax", "jazz for sleep", "jazz for study", "jazz for studying", "jazz for work", "jazz for write", "jazz mix 1 hour", "jazz piano background", "jazzhop for code", "jazzhop for focus", "jazzhop for meditate", "jazzhop for read", "jazzhop for relax", "jazzhop for sleep", "jazzhop for study", "jazzhop for work", "jazzhop for write", "lake ambience music", "lake lofi mix", "late night ambient mix", "late night bossa nova mix", "late night jazz", "late night jazz mix", "late night jazzhop mix", "late night lofi hip hop mix", "late night lofi mix", "late night piano mix", "late night playlist", "late night sleep music mix", "late night synthwave mix", "library ambience", "library ambience music", "library lofi mix", "library rain ambience", "lofi beats", "lofi chill mix", "lofi focus", "lofi for code", "lofi for focus", "lofi for meditate", "lofi for read", "lofi for relax", "lofi for sleep", "lofi for study", "lofi for work", "lofi for write", "lofi hip hop for code", "lofi hip hop for focus", "lofi hip hop for meditate", "lofi hip hop for read", "lofi hip hop for relax", "lofi hip hop for sleep", "lofi hip hop for study", "lofi hip hop for work", "lofi hip hop for write", "lofi hip hop mix", "lofi jazz", "lofi jazz mix", "lofi mix 1 hour", "lofi mix 3 hours", "lofi rain", "lofi sleep", "lofi study music", "lost in thoughts playlist", "medieval lofi", "medieval lofi for code", "medieval lofi for focus", "medieval lofi for meditate", "medieval lofi for read", "medieval lofi for relax", "medieval lofi for sleep", "medieval lofi for study", "medieval lofi for work", "medieval lofi for write", "medieval music for studying", "medieval tavern ambience", "meditation music", "meditation music 3 hours", "meditation piano", "meditation sleep music", "morning ambient mix", "morning bossa nova mix", "morning jazz mix", "morning jazzhop mix", "morning light playlist", "morning lofi", "morning lofi hip hop mix", "morning lofi mix", "morning piano mix", "morning piano music", "morning sleep music mix", "morning synthwave mix", "music for a quiet heart", "music for adhd focus", "music for chess", "music for cleaning", "music for concentration", "music for cooking", "music for deep work", "music for drawing", "music for gaming", "music for insomnia", "music for journaling", "music for overthinking", "music for painting", "music for plants", "music for productivity", "music for reading books", "music for sleeping 8 hours", "music for slow living", "music for when you feel lost", "music for writing", "music for writing a novel", "music that feels like a warm hug", "music that feels like autumn", "music that feels like midnight", "music that feels like morning light", "music that feels like playlist", "music to make your brain shut up", "nature ambient music", "night bus ambience music", "night bus lofi mix", "night drive mix", "night drive synthwave", "night lofi", "night train ambience", "nostalgic ambient mix", "nostalgic bossa nova mix", "nostalgic jazz mix", "nostalgic jazzhop mix", "nostalgic lofi hip hop mix", "nostalgic lofi mix", "nostalgic piano mix", "nostalgic sleep music mix", "nostalgic synthwave mix", "ocean ambience for sleep", "old books reading playlist", "outrun mix", "peaceful ambient mix", "peaceful bossa nova mix", "peaceful jazz mix", "peaceful jazzhop mix", "peaceful lofi hip hop mix", "peaceful lofi mix", "peaceful piano", "peaceful piano mix", "peaceful playlist", "peaceful sleep music mix", "peaceful synthwave mix", "piano for focus", "piano for meditate", "piano for read", "piano for relax", "piano for sleep", "piano for study", "piano for studying", "piano for work", "piano for write", "piano music", "piano music 1 hour", "piano reading music", "piano sleep music", "playlist for a cozy night", "playlist for a peaceful afternoon", "playlist for a slow morning", "playlist for rainy days", "playlist for reading old books", "playlist for studying at 3am", "pov you are driving through a neon city", "pov you are on a night train", "pov you are reading in a cafe", "pov you are studying in a library", "productivity music", "quiet ambient mix", "quiet bossa nova mix", "quiet jazz mix", "quiet jazzhop mix", "quiet lofi hip hop mix", "quiet lofi mix", "quiet piano mix", "quiet playlist", "quiet sleep music mix", "quiet synthwave mix", "rain ambience", "rain sleep sounds", "rainy ambient mix", "rainy bossa nova mix", "rainy coffee shop ambience", "rainy day playlist", "rainy jazz", "rainy jazz mix", "rainy jazzhop mix", "rainy lofi hip hop mix", "rainy lofi mix", "rainy piano mix", "rainy piano music", "rainy sleep music mix", "rainy synthwave mix", "reading ambience", "reading music", "relaxing guitar music", "relaxing jazz", "relaxing music", "relaxing music for anxiety", "relaxing music for stress relief", "relaxing piano music", "relaxing sleep music", "retro gaming music mix", "retrowave mix", "river ambience music", "river lofi mix", "rooftop ambience music", "rooftop lofi mix", "sad lofi mix", "sci fi ambient music", "seaside ambience music", "seaside lofi mix", "sleep music", "sleep music 8 hours", "sleep music for code", "sleep music for focus", "sleep music for meditate", "sleep music for read", "sleep music for relax", "sleep music for sleep", "sleep music for study", "sleep music for work", "sleep music for write", "smooth jazz mix", "snowy ambient mix", "snowy bossa nova mix", "snowy jazz mix", "snowy jazzhop mix", "snowy lofi hip hop mix", "snowy lofi mix", "snowy piano mix", "snowy sleep music mix", "snowy synthwave mix", "soft piano playlist", "spa music", "space ambient mix", "space ambient music", "space station ambience music", "space synthwave mix", "study music", "study playlist", "summer ambient mix", "summer bossa nova mix", "summer jazz mix", "summer jazzhop mix", "summer lofi", "summer lofi hip hop mix", "summer lofi mix", "summer piano mix", "summer sleep music mix", "summer synthwave mix", "sunrise ambient mix", "sunrise bossa nova mix", "sunrise jazz mix", "sunrise jazzhop mix", "sunrise lofi hip hop mix", "sunrise lofi mix", "sunrise piano mix", "sunrise sleep music mix", "sunrise synthwave mix", "sunset ambient mix", "sunset bossa nova mix", "sunset jazz mix", "sunset jazzhop mix", "sunset lofi hip hop mix", "sunset lofi mix", "sunset piano mix", "sunset sleep music mix", "sunset synthwave mix", "synthwave for focus", "synthwave for meditate", "synthwave for read", "synthwave for relax", "synthwave for sleep", "synthwave for study", "synthwave for work", "synthwave gaming mix", "synthwave mix", "synthwave study music", "tavern ambience music", "train ambience for studying", "train ambience music", "train lofi mix", "university library ambience music", "university library lofi mix", "vaporwave mix", "white noise sleep", "winter ambient mix", "winter bossa nova mix", "winter jazz mix", "winter jazzhop mix", "winter lofi hip hop mix", "winter lofi mix", "winter piano mix", "winter sleep music mix", "winter synthwave mix", "work music", "zen music"];
+let KWQ='';
+function kwCounts(){
+  if(window._kwc)return window._kwc;
+  const c={};KEYWORDS.forEach(k=>c[k.toLowerCase()]=0);
+  const tally=(s,sep)=>{if(!s)return;s.split(sep).forEach(x=>{const k=x.trim().toLowerCase();if(k in c)c[k]++;});};
+  DATA.all.forEach(v=>tally(v.kw,';'));
+  DATA.news.forEach(v=>tally(v.disc,','));
+  window._kwc=c;return c;
+}
+function kwHTML(){
+  const c=kwCounts();
+  let list=KEYWORDS.map(k=>[k,c[k.toLowerCase()]||0]);
+  if(KWQ){const q=KWQ.toLowerCase();list=list.filter(([k])=>k.toLowerCase().includes(q));}
+  list.sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  let h='<div class="panel" style="margin-bottom:16px"><div class="dw-sec" style="margin:0"><div class="k">🔎 How the radar works</div><div class="v">These '+KEYWORDS.length+' YouTube search queries are scanned on every sync, across all our music niches. Any long instrumental video ranking in the <b>top 100 results</b> of at least one query ends up in All Videos (≥1M views), Trends (<12 months, ≥500k) or News (fresh discoveries). The counter shows how many videos of the radar were found through each query.</div></div></div>';
+  h+='<div class="toolbar"><div class="search">'+ICONS.search+'<input placeholder="Filter keywords…" value="'+esc(KWQ)+'" oninput="KWQ=this.value;document.getElementById(\'kw-list\').innerHTML=kwListHTML()"><kbd>/</kbd></div>'+
+     '<div class="result-count"><b>'+list.length+'</b> keywords</div></div>';
+  h+='<div id="kw-list">'+kwListHTML()+'</div>';
+  return h;
+}
+function kwListHTML(){
+  const c=kwCounts();
+  let list=KEYWORDS.map(k=>[k,c[k.toLowerCase()]||0]);
+  if(KWQ){const q=KWQ.toLowerCase();list=list.filter(([k])=>k.toLowerCase().includes(q));}
+  list.sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+  return '<div class="kw-grid">'+list.map(([k,n])=>
+    '<div class="kw-item" data-kw="'+esc(k)+'" title="See the radar videos found through this query" onclick="kwGo(this.dataset.kw)">'+
+    '<span class="kw-name">'+esc(k)+'</span><span class="kw-n'+(n?'':' zero')+'">'+n+'</span></div>').join('')+'</div>';
+}
+function kwGo(k){VS.all.q=k;VS.all.limit=60;go('all');}
+
+
+/* ================= VIDEO VIEWS ================= */
+const SORTS={
+  vpm:{lbl:'Velocity (views/mo)',fn:(a,b)=>(b.vpm||0)-(a.vpm||0)},
+  views:{lbl:'Total views',fn:(a,b)=>(b.views||0)-(a.views||0)},
+  newest:{lbl:'Newest first',fn:(a,b)=>(b.pub||0)-(a.pub||0)},
+  oldest:{lbl:'Oldest first',fn:(a,b)=>(a.pub||0)-(b.pub||0)},
+  dur:{lbl:'Duration',fn:(a,b)=>(b.durH||0)-(a.durH||0)},
+  subs:{lbl:'Channel size',fn:(a,b)=>(b.subs||0)-(a.subs||0)},
+  added:{lbl:'Recently added',fn:(a,b)=>(b.added||0)-(a.added||0)}
+};
+function filterVids(kind){
+  const st=VS[kind];let rows=DATA[kind];
+  if(st.genres.size)rows=rows.filter(v=>st.genres.has(v.genre));
+  if(st.cluster)rows=rows.filter(v=>v.cluster===st.cluster);
+  if(st.q){const q=st.q.toLowerCase();rows=rows.filter(v=>(v.title+' '+v.channel+' '+(v.kw||'')+' '+(v.disc||'')).toLowerCase().includes(q));}
+  return [...rows].sort(SORTS[st.sort].fn);
+}
+function videosHTML(kind){
+  const st=VS[kind];
+  const all=DATA[kind];
+  const rows=filterVids(kind);
+  const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>all.filter(v=>v.genre===b).length-all.filter(v=>v.genre===a).length);
+  const clusters=[...new Set(all.map(v=>v.cluster).filter(Boolean))].sort();
+  const sortKeys=kind==='news'?['added','vpm','views','newest','dur']:['vpm','views','newest','oldest','dur','subs'];
+  let h='<div class="toolbar">'+
+    '<div class="search">'+ICONS.search+'<input id="q-'+kind+'" placeholder="Search titles, channels, keywords…" value="'+esc(st.q)+'" oninput="VS.'+kind+'.q=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')"><kbd>/</kbd></div>'+
+    '<select class="ctl" onchange="VS.'+kind+'.cluster=this.value;rerenderList(\''+kind+'\')">'+
+      '<option value="">All clusters</option>'+clusters.map(c=>'<option '+(st.cluster===c?'selected':'')+' value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select>'+
+    '<select class="ctl" onchange="VS.'+kind+'.sort=this.value;rerenderList(\''+kind+'\')">'+
+      sortKeys.map(k=>'<option '+(st.sort===k?'selected':'')+' value="'+k+'">Sort · '+SORTS[k].lbl+'</option>').join('')+'</select>'+
+    '<div class="viewtoggle">'+
+      '<button class="'+(st.mode==='grid'?'on':'')+'" onclick="VS.'+kind+'.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
+      '<button class="'+(st.mode==='table'?'on':'')+'" onclick="VS.'+kind+'.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
+    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> videos</div>'+
+  '</div>';
+  h+='<div class="chips" style="margin-bottom:18px">'+genres.map(g=>{
+    const c=gcolor(g),on=st.genres.has(g);
+    return '<span class="chip '+(on?'on':'')+'" style="--chipbg:'+c+'22;--chipbd:'+c+'66" onclick="toggleGenre(\''+kind+'\',\''+esc(g).replace(/'/g,"\\'")+'\')"><span class="dot" style="background:'+c+'"></span>'+esc(g)+' <span style="opacity:.55;font-weight:500">'+all.filter(v=>v.genre===g).length+'</span></span>';
+  }).join('')+'</div>';
+  h+='<div id="list-'+kind+'">'+listHTML(kind,rows)+'</div>';
+  return h;
+}
+function toggleGenre(kind,g){
+  const s=VS[kind].genres;s.has(g)?s.delete(g):s.add(g);VS[kind].limit=60;render();
+}
+function rerenderList(kind){
+  const rows=filterVids(kind);
+  const el=document.getElementById('list-'+kind);
+  if(el)el.innerHTML=listHTML(kind,rows);
+  const rc=document.querySelector('.result-count');if(rc)rc.innerHTML='<b>'+fmtInt(rows.length)+'</b> videos';
+  armAutoLoad();
+}
+function listHTML(kind,rows){
+  const st=VS[kind];
+  const page=rows.slice(0,st.limit);
+  if(!rows.length)return '<div class="empty">Nothing matches — try clearing filters.</div>';
+  let h;
+  if(st.mode==='grid'){
+    h='<div class="vgrid">'+page.map((v,i)=>vcardHTML(kind,v,i)).join('')+'</div>';
+  }else{
+    h='<table class="vtable"><thead><tr><th></th><th>Title</th><th>Views/mo</th><th>Views</th><th>Duration</th><th>Published</th><th>Genre</th><th>Channel</th><th>Subs</th></tr></thead><tbody>'+
+      page.map((v,i)=>'<tr class="row" onclick="openIdx(\''+kind+'\','+i+')">'+
+        '<td><img class="tthumb" loading="lazy" src="'+thumb(v.vid)+'" onerror="this.style.visibility=\'hidden\'"></td>'+
+        '<td class="ttitle">'+esc(v.title)+'</td>'+
+        '<td class="num vpmcell">'+fmtN(v.vpm)+'</td><td class="num">'+fmtN(v.views)+'</td>'+
+        '<td class="num">'+fmtDur(v.durH)+'</td><td class="num">'+fmtDate(v.pub)+'</td>'+
+        '<td>'+gtag(v.genre)+'</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(v.channel)+'</td>'+
+        '<td class="num">'+fmtN(v.subs)+'</td></tr>').join('')+'</tbody></table>';
+  }
+  if(rows.length>st.limit)h+='<button class="load-more" onclick="VS.'+kind+'.limit+=120;rerenderList(\''+kind+'\')">Loading more · '+fmtInt(rows.length-st.limit)+' remaining</button>';
+  window['_page_'+kind]=page;
+  return h;
+}
+function vcardHTML(kind,v,i){
+  const extra=kind==='news'
+    ? '<div class="vtags">'+(v.rank?'<span class="tag ghost">#'+v.rank+' search rank</span>':'')+(v.added?'<span class="tag ghost">added '+fmtDateFull(v.added)+'</span>':'')+'</div>'
+    : '';
+  return '<div class="vcard" onclick="openIdx(\''+kind+'\','+i+')">'+
+    '<div class="thumbwrap"><img loading="lazy" src="'+thumb(v.vid)+'" onerror="this.src=\'https://i.ytimg.com/vi/'+(v.vid||'')+'/hqdefault.jpg\';this.onerror=null;">'+
+      '<span class="vpm-flag">'+ICONS.flame+' '+fmtN(v.vpm)+'/mo</span>'+
+      (v.durH!=null?'<span class="dur">'+fmtDur(v.durH)+'</span>':'')+'</div>'+
+    '<div class="vbody">'+
+      '<div class="vtitle">'+esc(v.title)+'</div>'+
+      '<div class="vmeta"><a href="'+esc(v.chUrl||'#')+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a><span class="subs">· '+fmtN(v.subs)+' subs</span></div>'+
+      '<div class="vtags">'+gtag(v.genre)+ghosttag(v.cluster)+'</div>'+extra+
+      '<div class="vstats">'+
+        '<div class="vstat hl"><b>'+fmtN(v.vpm)+'</b><span>views/mo</span></div>'+
+        '<div class="vstat"><b>'+fmtN(v.views)+'</b><span>views</span></div>'+
+        '<div class="vstat"><b>'+fmtAge(v.ageM)+'</b><span>age</span></div>'+
+        '<div class="vstat"><b>'+fmtDate(v.pub)+'</b><span>published</span></div>'+
+      '</div></div></div>';
+}
+
+/* ================= DRAWER ================= */
+function openIdx(kind,i){const v=(window['_page_'+kind]||[])[i];if(v)openDrawer(kind,v);}
+function openVid(kind,key){
+  const v=DATA[kind].find(x=>x.vid===key||x.title===key);if(v)openDrawer(kind,v);
+}
+function openDrawer(kind,v){
+  const sec=(k,val,icon)=>val?'<div class="dw-sec"><div class="k">'+(icon||'')+' '+k+'</div><div class="v">'+esc(val)+'</div></div>':'';
+  let extra='';
+  if(kind==='trends'){
+    extra=sec('Why trending',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg,'💡')+sec('What to copy',v.copy,'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨');
+  }else if(kind==='news'){
+    extra=sec('Why notable',v.why,'📌')+sec('Lofi Girl angle',v.angle,'💡')+sec('Discovery keywords',v.disc,'🔎')+
+      (v.rank?sec('Best search rank','#'+Math.round(v.rank),'🏁'):'')+
+      (v.days?sec('Days surfaced',String(Math.round(v.days)),'📅'):'')+
+      (v.added?sec('Added to scan',fmtDateFull(v.added),'🗓️'):'');
+  }else{
+    extra=sec('Found via search keywords',v.kw,'🔎')+sec('Title pattern',v.pattern,'✏️');
+  }
+  document.getElementById('drawer').innerHTML=
+    '<button class="dw-close" onclick="closeDrawer()">✕</button>'+
+    (v.vid?'<img class="dw-thumb" src="https://i.ytimg.com/vi/'+v.vid+'/hq720.jpg" onerror="this.src=\''+thumb(v.vid,'hqdefault')+'\';this.onerror=null;">':'')+
+    '<div class="dw-body">'+
+      '<div class="dw-title"><a href="'+esc(v.url)+'" target="_blank">'+esc(v.title)+'</a></div>'+
+      '<div class="dw-sub">'+gtag(v.genre)+ghosttag(v.cluster)+
+        (v.chUrl?'<a class="tag ghost" href="'+esc(v.chUrl)+'" target="_blank">'+esc(v.channel)+' ↗</a>':ghosttag(v.channel))+
+        '<span class="tag ghost">'+fmtN(v.subs)+' subs</span></div>'+
+      '<div class="dw-stats">'+
+        '<div class="dw-stat hl"><b>'+fmtN(v.vpm)+'</b><span>views/mo</span></div>'+
+        '<div class="dw-stat"><b>'+fmtN(v.views)+'</b><span>views</span></div>'+
+        '<div class="dw-stat"><b>'+fmtDur(v.durH)+'</b><span>duration</span></div>'+
+        '<div class="dw-stat"><b>'+fmtAge(v.ageM)+'</b><span>age</span></div>'+
+      '</div>'+extra+
+      '<a class="dw-open" href="'+esc(v.url)+'" target="_blank">▶ &nbsp;Watch on YouTube</a>'+
+    '</div>';
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('backdrop').classList.add('show');
+  document.getElementById('drawer').scrollTop=0;
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('backdrop').classList.remove('show');
+}
+const IO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){IO.unobserve(e.target);e.target.click();}})},{rootMargin:'600px'});
+function armAutoLoad(){document.querySelectorAll('.load-more').forEach(b=>IO.observe(b));}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeDrawer();
+  if(e.key==='/'&&!/input|select|textarea/i.test(document.activeElement.tagName)){
+    e.preventDefault();const inp=document.querySelector('.search input');if(inp)inp.focus();
+  }
+});
+</script>
+<script>
+/* ================= RECOMMENDATIONS ================= */
+function validState(v){
+  if(!v||v==='')return '';
+  if(v==='-')return 'no';
+  if(/^x\s*$/i.test(v))return 'x';
+  return 'note';
+}
+function filterRecos(){
+  let rows=DATA.recos;
+  if(RS.genres.size)rows=rows.filter(r=>RS.genres.has(r.genre||'(unset)'));
+  if(RS.pot)rows=rows.filter(r=>r.pot&&r.pot.startsWith(RS.pot));
+  if(RS.perso)rows=rows.filter(r=>r.perso===RS.perso);
+  if(RS.val==='x')rows=rows.filter(r=>validState(r.valid)==='x');
+  else if(RS.val==='note')rows=rows.filter(r=>validState(r.valid)==='note');
+  else if(RS.val==='any')rows=rows.filter(r=>validState(r.valid)==='x'||validState(r.valid)==='note');
+  else if(RS.val==='pending')rows=rows.filter(r=>!validState(r.valid));
+  if(RS.q){const q=RS.q.toLowerCase();rows=rows.filter(r=>(r.title+' '+r.niche+' '+r.concept+' '+r.perso+' '+r.kw).toLowerCase().includes(q));}
+  const sf=RS.sort;
+  return [...rows].sort((a,b)=>sf==='n'?(a.n-b.n):(((b[sf]!=null?b[sf]:b.score)||0)-((a[sf]!=null?a[sf]:a.score)||0)));
+}
+function recosHTML(){
+  const all=DATA.recos;
+  const rows=filterRecos();
+  const genres=[...new Set(all.map(r=>r.genre||'(unset)'))].sort();
+  const persos=[...new Set(all.map(r=>r.perso).filter(Boolean))].sort();
+  let h='<div class="toolbar">'+
+    '<div class="search">'+ICONS.search+'<input placeholder="Search concepts, titles, niches…" value="'+esc(RS.q)+'" oninput="RS.q=this.value;RS.limit=80;rerenderRecos()"><kbd>/</kbd></div>'+
+    '<select class="ctl" onchange="RS.pot=this.value;rerenderRecos()">'+
+      '<option value="">All potential</option>'+['S','A','B','C'].map(p=>'<option '+(RS.pot===p?'selected':'')+' value="'+p+'">'+({S:'S — Rente potentielle',A:'A — Fort',B:'B — Solide',C:'C — Niche / à tester'})[p]+'</option>').join('')+'</select>'+
+    '<select class="ctl" onchange="RS.perso=this.value;rerenderRecos()">'+
+      '<option value="">All characters</option>'+persos.map(p=>'<option '+(RS.perso===p?'selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>').join('')+'</select>'+
+    '<select class="ctl" onchange="RS.val=this.value;rerenderRecos()">'+
+      '<option value="">Any status</option><option '+(RS.val==='x'?'selected':'')+' value="x">✓ Validated</option><option '+(RS.val==='note'?'selected':'')+' value="note">📝 With Dim note</option><option '+(RS.val==='any'?'selected':'')+' value="any">Validated or noted</option><option '+(RS.val==='pending'?'selected':'')+' value="pending">Pending review</option></select>'+
+    '<select class="ctl" onchange="RS.sort=this.value;rerenderRecos()">'+
+      '<option value="scoreAdj">Sort · Adjusted score</option><option '+(RS.sort==='score'?'selected':'')+' value="score">Sort · Score</option><option '+(RS.sort==='conf'?'selected':'')+' value="conf">Sort · Confidence</option><option '+(RS.sort==='n'?'selected':'')+' value="n">Sort · N°</option></select>'+
+    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> concepts</div>'+
+  '</div>';
+  h+='<div class="chips" style="margin-bottom:18px">'+genres.map(g=>{
+    const c=gcolor(g),on=RS.genres.has(g);
+    return '<span class="chip '+(on?'on':'')+'" style="--chipbg:'+c+'22;--chipbd:'+c+'66" onclick="toggleRGenre(\''+esc(g).replace(/'/g,"\\'")+'\')"><span class="dot" style="background:'+c+'"></span>'+esc(g)+' <span style="opacity:.55;font-weight:500">'+all.filter(r=>(r.genre||'(unset)')===g).length+'</span></span>';
+  }).join('')+'</div>';
+  h+='<div id="reco-list">'+recoListHTML(rows)+'</div>';
+  return h;
+}
+function toggleRGenre(g){RS.genres.has(g)?RS.genres.delete(g):RS.genres.add(g);RS.limit=80;render();}
+function rerenderRecos(){
+  const rows=filterRecos();
+  const el=document.getElementById('reco-list');if(el)el.innerHTML=recoListHTML(rows);
+  const rc=document.querySelector('.result-count');if(rc)rc.innerHTML='<b>'+fmtInt(rows.length)+'</b> concepts';
+  armAutoLoad();
+}
+function recoListHTML(rows){
+  if(!rows.length)return '<div class="empty">Nothing matches — try clearing filters.</div>';
+  const page=rows.slice(0,RS.limit);
+  window._pageRecos=page;
+  let h=page.map((r,i)=>{
+    const vs=validState(r.valid);
+    const vbadge=vs==='x'?'<span class="tag val-x rvalid">✓ Validé</span>':vs==='note'?'<span class="tag val-note rvalid">📝 Note Dim</span>':vs==='no'?'<span class="tag val-no rvalid">–</span>':'';
+    const pot=r.pot?('<span class="tag rpot pot-'+r.pot[0]+'">'+esc(r.pot)+'</span>'):'';
+    const score=(r.scoreAdj!=null?r.scoreAdj:r.score);
+    return '<div class="rcard" style="--gc:'+gcolor(r.genre)+'" id="rc'+i+'">'+
+      '<div class="rhead" onclick="document.getElementById(\'rc'+i+'\').classList.toggle(\'open\')">'+
+        '<span class="rnum">#'+Math.round(r.n)+'</span>'+
+        '<div class="rtitle">'+esc(r.title)+'<div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">'+gtag(r.genre)+ghosttag(r.perso)+ghosttag(r.niche)+(r.dur?ghosttag(r.dur):'')+'</div></div>'+
+        vbadge+pot+'<span class="rscore" title="Adjusted score">'+(score!=null?Math.round(score):'—')+'</span>'+
+      '</div>'+
+      '<div class="rbody">'+
+        (vs==='note'||vs==='no'?'<div class="note-dim"><b>Note Dim (Validé)</b>'+esc(r.valid)+'</div>':'')+
+        recoRow('Concept',r.concept)+recoRow('Thumbnail scene',r.scene)+recoRow('Music style',r.style)+
+        recoRow('Launch format',r.launch)+recoRow('Data note',r.noteData)+recoRow('Reco Claude',r.recoClaude)+
+        recoRow('Recalibrage',r.recal)+
+        (r.conf!=null?recoRow('Confidence',Math.round(r.conf)+' / 100'):'')+(r.status?recoRow('Status',r.status):'')+
+        (r.desc?'<div class="rrow"><div class="k">Description</div><div class="v">'+esc(r.desc)+'<br><button class="copybtn" onclick="copyTxt(this,'+i+',\'desc\')">⧉ Copy description</button></div></div>':'')+
+        (r.kw?'<div class="rrow"><div class="k">SEO keywords</div><div class="v" style="color:var(--muted)">'+esc(r.kw)+'<br><button class="copybtn" onclick="copyTxt(this,'+i+',\'kw\')">⧉ Copy keywords</button> <button class="copybtn" onclick="copyTxt(this,'+i+',\'title\')">⧉ Copy title</button></div></div>':'')+
+      '</div></div>';
+  }).join('');
+  if(rows.length>RS.limit)h+='<button class="load-more" onclick="RS.limit+=120;rerenderRecos()">Loading more · '+fmtInt(rows.length-RS.limit)+' remaining</button>';
+  return h;
+}
+function recoRow(k,v){return v?'<div class="rrow"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div></div>':'';}
+function copyTxt(btn,i,field){
+  const r=window._pageRecos[i];if(!r)return;
+  navigator.clipboard.writeText(r[field]||'').then(()=>{
+    const old=btn.textContent;btn.textContent='✓ Copied';btn.classList.add('done');
+    setTimeout(()=>{btn.textContent=old;btn.classList.remove('done');},1400);
+  });
+}
+
+/* ================= ROADMAP ================= */
+function roadmapHTML(){
+  let rows=DATA.roadmap.filter(r=>r.date);
+  const genres=[...new Set(DATA.roadmap.map(r=>r.genre).filter(Boolean))].sort();
+  if(RM.src)rows=rows.filter(r=>r.src===RM.src);
+  if(RM.genre)rows=rows.filter(r=>r.genre===RM.genre);
+  rows.sort((a,b)=>a.date-b.date);
+  let h='<div class="toolbar">'+
+    '<select class="ctl" onchange="RM.src=this.value;render()">'+
+      '<option value="">All sources</option>'+['Existant (Monday)','Nouveau mix (à produire)','Proposition rotation (à valider)'].map(s=>'<option '+(RM.src===s?'selected':'')+' value="'+esc(s)+'">'+esc(s)+'</option>').join('')+'</select>'+
+    '<select class="ctl" onchange="RM.genre=this.value;render()">'+
+      '<option value="">All genres</option>'+genres.map(g=>'<option '+(RM.genre===g?'selected':'')+' value="'+esc(g)+'">'+esc(g)+'</option>').join('')+'</select>'+
+    '<div class="result-count"><b>'+rows.length+'</b> releases · '+
+      '<span style="color:var(--muted)">gris Monday</span> · <span style="color:var(--green)">vert à produire</span> · <span style="color:var(--amber)">jaune à valider</span></div>'+
+  '</div>';
+  h+=calHTML(rows);
+  h+='<div class="month-h" style="position:static;margin-top:34px">📋 All releases<span class="cnt">'+rows.length+'</span><span class="line"></span></div>';
+  const now=Date.now()-86400000*3;
+  let curMonth='';
+  rows.forEach((r,i)=>{
+    const d=new Date(r.date);
+    const mk=MONTHS[d.getMonth()]+' '+d.getFullYear();
+    if(mk!==curMonth){
+      curMonth=mk;
+      const cnt=rows.filter(x=>{const xd=new Date(x.date);return MONTHS[xd.getMonth()]+' '+xd.getFullYear()===mk;}).length;
+      h+='<div class="month-h">'+mk+'<span class="cnt">'+cnt+' release'+(cnt>1?'s':'')+'</span><span class="line"></span></div>';
+    }
+    const srcClass=/Monday/.test(r.src)?'src-monday':/Nouveau/.test(r.src)?'src-new':'src-rot';
+    const past=r.date<now?'opacity:.5':'';
+    h+='<div class="rm-wrap" id="rm'+i+'" style="'+past+'">'+
+      '<div class="rm-item" style="--gc:'+gcolor(r.genre)+'" onclick="document.getElementById(\'rm'+i+'\').classList.toggle(\'open\')">'+
+        '<div class="rm-date"><div class="dd">'+d.getDate()+'</div><div class="wd">'+esc((r.jour||'').slice(0,3))+'</div></div>'+
+        '<div class="rm-main"><div class="rm-t">'+esc(r.title)+'</div>'+
+          '<div class="rm-tags">'+gtag(r.genre)+ghosttag(r.perso)+(r.dur?ghosttag(r.dur):'')+(r.niche?ghosttag(r.niche):'')+'</div></div>'+
+        '<span class="tag '+srcClass+'">'+esc((r.src||'').replace(/\s*\(.*\)/,''))+'</span>'+
+      '</div>'+
+      '<div class="rm-body" style="--gc:'+gcolor(r.genre)+'">'+
+        recoRow('Concept',r.concept)+recoRow('Thumbnail scene',r.scene)+recoRow('Music style',r.style)+
+        recoRow('Cadence',r.cadence)+recoRow('Seasonal note',r.note)+
+      '</div></div>';
+  });
+  return h;
+}
+function calShift(d){const b=RM.cal?new Date(RM.cal):new Date();b.setDate(1);b.setMonth(b.getMonth()+d);RM.cal=b.getTime();render();}
+function calToday(){RM.cal=Date.now();render();}
+function calHTML(rows){
+  const base=RM.cal?new Date(RM.cal):new Date();
+  const y=base.getFullYear(),m=base.getMonth();
+  const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const first=new Date(y,m,1);
+  const start=new Date(y,m,1-((first.getDay()+6)%7));
+  const today=new Date();today.setHours(0,0,0,0);
+  const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+  const byDay={};rows.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
+  let h='<div class="cal-nav">'+
+    '<button class="ctl-btn arrow" onclick="calShift(-1)" title="Previous month">‹</button>'+
+    '<div class="cal-month">'+MFULL[m]+' '+y+'</div>'+
+    '<button class="ctl-btn arrow" onclick="calShift(1)" title="Next month">›</button>'+
+    '<button class="ctl-btn today" onclick="calToday()">Today</button></div>';
+  h+='<div class="cal"><div class="cal-head">'+['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>'<div>'+x+'</div>').join('')+'</div><div class="cal-grid">';
+  for(let i=0;i<42;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const evs=byDay[key(d)]||[];
+    h+='<div class="cal-cell'+(d.getMonth()!==m?' out':'')+(d.getTime()===today.getTime()?' today':'')+'">'+
+      '<span class="d">'+String(d.getDate()).padStart(2,'0')+'</span><div class="pills">'+
+      evs.map(r=>{const c=gcolor(r.genre);
+        return '<div class="cal-pill" style="background:'+c+'" title="'+esc(r.title+' — '+(r.genre||'?')+' · '+(r.perso||'')+' · '+(r.src||''))+'">'+esc(r.title)+'</div>';}).join('')+
+      '</div></div>';
+  }
+  h+='</div></div>';
+  const lg=[...new Set(rows.map(r=>r.genre).filter(Boolean))];
+  h+='<div class="cal-legend">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+'"></i>'+esc(g)+'</span>').join('')+'</div>';
+  return h;
+}
+
+boot();
+</script>
+</body>
+</html>
