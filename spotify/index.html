@@ -276,8 +276,8 @@ td.selc,th.selc{width:44px;padding-left:14px}
 
 /* Artistes cards */
 .acards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:13px}
-.viewtoggle{display:flex;gap:4px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:13px;padding:4px;flex:none;height:38px;box-sizing:border-box;margin-left:8px}
-.viewtoggle button{width:34px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:14px;color:var(--dim)}
+.viewtoggle{display:flex;gap:4px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:13px;padding:2.5px;flex:none;height:38px;box-sizing:border-box;margin-left:8px}
+.viewtoggle button{width:34px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:14px;color:var(--dim)}
 .viewtoggle button.on{background:linear-gradient(90deg,#1ed760,#4ade80);color:#052e12}
 .viewtoggle button:hover:not(.on){color:var(--text)}
 .plcard .cov{width:100%;height:150px;border-radius:12px;margin:0 0 12px}
@@ -458,7 +458,7 @@ const EN_MAP = {
   "Spotify ne montre pas le compteur de followers pour cette playlist":"Spotify does not show the follower count for this playlist",
   "toutes tailles confondues":"all sizes combined","du total":"of total","playlists à fort potentiel":"high-potential playlists",
   "Followers cumulés":"Total followers","playlists avec followers visibles":"playlists with visible followers",
-  "Qualifiées (≥10k)":"Qualified (≥10k)","Toutes les playlists":"All playlists","Vue liste":"List view","Vue grille":"Grid view",
+  "Qualifiées (≥10k)":"Qualified (≥10k)","Toutes les playlists":"All playlists","Vue liste":"List view","Vue grille":"Grid view","Voir les playlists qualifiées":"View qualified playlists",
   "Aucun artiste ne correspond à ces filtres.":"No artist matches these filters.",
   "Évolution 30j":"30-day change","Tri : évolution 30j":"Sort: 30-day change","Historique en cours":"History building up",
   "Pas encore assez d'historique pour calculer une évolution, repasser dans quelques jours":"Not enough history yet to compute a trend, check back in a few days",
@@ -615,12 +615,12 @@ const artistSearch = n => 'https://open.spotify.com/search/'+encodeURIComponent(
 /* ---------- état ---------- */
 const S = {
   view:'overview', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false,
-  q:'', statut:'all', min:0, period:'all', artist:-1, rel:'all',
+  q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all',
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', shownA:60, aseg:'all',
   newDays:90, shownN:100,
-  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified', plmode:'table',
-  amode:'table', omode:'table',
+  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified', plmode:'grid',
+  amode:'grid', omode:'grid',
 };
 
 /* ---------- navigation ---------- */
@@ -686,6 +686,13 @@ function avatarHtml(g){
   if (g.top && g.top[8]) return `<img class="avp on" src="${esc(g.top[8])}" alt="">`;
   if (g.top) return `<img class="avp" data-tid="${g.top[6]}" alt="">`;
   return '';
+}
+/* même logique que avatarHtml, mais en cover plein-largeur (vue grille, style aligné sur All tracks/All playlists) */
+function artistCoverHtml(g){
+  if (g.img) return `<div class="cov has" style="background-image:url('${esc(g.img)}')"></div>`;
+  if (g.top && g.top[8]) return `<div class="cov has" style="background-image:url('${esc(g.top[8])}')"></div>`;
+  if (g.top) return `<div class="cov" data-tid="${g.top[6]}"></div>`;
+  return `<div class="cov"></div>`;
 }
 
 /* relation au label, 4 paliers par nb de sorties chez Lofi (vert>jaune>orange>rouge) */
@@ -793,7 +800,7 @@ function overviewPlaylistsSection(){
         <div class="vals"><div class="v1">${fmt(r[4])}</div><div class="v2">${plGrowthCell(r)}</div></div>
       </div>`).join('')}
     <div style="text-align:center;padding-top:12px">
-      <button class="chip" onclick="goTab('playlists')">${T('Voir toutes les playlists')} (${fmtFull(PLmeta.playlists_discovered)}) →</button>
+      <button class="chip" onclick="goTab('playlists')">${T('Voir les playlists qualifiées')} (${fmtFull(PLmeta.playlists_10k_plus)}) →</button>
     </div>
   </div>`;
 }
@@ -1160,32 +1167,17 @@ function renderArtists(){
     ${slice.map(g=>{
       const p = g.n ? Math.round(g.self/g.n*100) : 0;
       return `
-      <div class="acard" onclick="goArtist(${g.i})">
+      <div class="acard plcard" onclick="goArtist(${g.i})">
         ${wlStar('a',g.name)}
-        <div class="top">
-          <div class="av">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div>
-          <div style="min-width:0">
-            <div class="nm">${esc(g.name)}</div>
-            <div style="font-size:11px;color:var(--dim);margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${segBadge(g)} <span>${g.lofi?g.lofi+' '+T('tracks chez Lofi'):''}${g.disco?' · '+T('découverte')+' ('+esc(g.origin||'related')+')':''}</span></div>
-          </div>
-        </div>
+        ${artistCoverHtml(g)}
+        <div class="nm">${esc(g.name)}</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${segBadge(g)} <span>${g.lofi?g.lofi+' '+T('tracks chez Lofi'):''}${g.disco?' · '+T('découverte')+' ('+esc(g.origin||'related')+')':''}</span></div>
         <div class="stats">
           <div class="st"><div class="v">${fmt(g.streams)}</div><div class="l">${T('streams')}</div></div>
           <div class="st"><div class="v">${g.n}</div><div class="l">tracks</div></div>
           <div class="st"><div class="v" style="color:${g.hot?'var(--acc2)':'inherit'}">${g.hot}</div><div class="l">≥ 500k</div></div>
         </div>
-        <div class="mini-split">
-          <div style="width:${p}%;background:#4ade80"></div>
-          <div style="width:${100-p}%;background:#b45309"></div>
-        </div>
-        <div class="foot">
-          <span style="color:var(--cyan);font-weight:600">≈ ${money(g.mstreams*RATE)}/${T('mois')}</span>
-          <span>· ${p}% ${T('indé')}</span>
-          <span>· ${T('dernière sortie')} ${g.last||'?'}</span>
-        </div>
-        ${g.link?`<div class="foot" style="margin-top:6px" onclick="event.stopPropagation()">
-          <a href="${esc(g.link)}" target="_blank" rel="noopener" style="color:var(--violet)">${g.link.includes('instagram')?'📷 Instagram':'🔗 Site'}</a>
-        </div>`:''}
+        <div class="foot">≈ ${money(g.mstreams*RATE)}/${T('mois')} · ${p}% ${T('indé')} · ${T('dernière sortie')} ${g.last||'?'}${g.link?` · <a href="${esc(g.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--violet)">${g.link.includes('instagram')?'📷':'🔗'}</a>`:''}</div>
       </div>`;}).join('')}
   </div>
   ${sentinel(list.length-S.shownA)}`;
@@ -1507,10 +1499,6 @@ function renderPlaylists(){
     </div>
   </div>
   <div class="toolbar">
-    <button class="chip ${S.plview==='qualified'?'on':''}" data-plview="qualified">${T('Qualifiées (≥10k)')} (${fmtFull(PLmeta.playlists_10k_plus)})</button>
-    <button class="chip ${S.plview==='all'?'on':''}" data-plview="all">${T('Toutes les playlists')} (${fmtFull(PLmeta.playlists_discovered)})</button>
-  </div>
-  <div class="toolbar">
     <button class="chip ${S.plcur==='all'?'on':''}" data-plcur="all">${T('Tous')}</button>
     <button class="chip ${S.plcur==='editorial'?'on':''}" data-plcur="editorial">${T('Éditoriales')}</button>
     <button class="chip ${S.plcur==='independent'?'on':''}" data-plcur="independent">${T('Indépendantes')}</button>
@@ -1534,7 +1522,6 @@ function renderPlaylists(){
 
   document.querySelectorAll('.viewtoggle button[data-plmode]').forEach(b=>b.addEventListener('click', ()=>{ S.plmode=b.dataset.plmode; keepScroll(renderPlaylists); }));
   document.getElementById('pl-q').addEventListener('input', e=>{ S.plq=e.target.value; S.shownPL=80; keepScroll(renderPlaylists); keepFocus('pl-q'); });
-  document.querySelectorAll('.chip[data-plview]').forEach(c=>c.addEventListener('click', ()=>{ S.plview=c.dataset.plview; S.shownPL=80; keepScroll(renderPlaylists); }));
   document.querySelectorAll('.chip[data-plcur]').forEach(c=>c.addEventListener('click', ()=>{ S.plcur=c.dataset.plcur; S.shownPL=80; keepScroll(renderPlaylists); }));
   document.getElementById('pl-only').addEventListener('change', e=>{ S.plonly=e.target.checked; S.shownPL=80; keepScroll(renderPlaylists); });
   document.getElementById('pl-sort').addEventListener('change', e=>{ S.plsort=e.target.value; keepScroll(renderPlaylists); });
@@ -1555,7 +1542,7 @@ function render(){
 /* ---------- init ---------- */
 document.getElementById('c-opps').textContent = fmt(R.length);
 document.getElementById('c-art').textContent = withTracks.length;
-(function(){ const c=document.getElementById('c-pl'); if(c && PLmeta) c.textContent = fmt(PLrows.length); })();
+(function(){ const c=document.getElementById('c-pl'); if(c && PLmeta) c.textContent = fmt(PLmeta.playlists_10k_plus); })();
 (function(){ const w=wlGet(); const c=document.getElementById('c-watch'); if(c) c.textContent = (w.t.length+w.a.length)||''; })();
 function fmtTs(ts){
   const m = (''+ts).match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
