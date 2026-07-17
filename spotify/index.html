@@ -274,6 +274,12 @@ td.selc,th.selc{width:44px;padding-left:14px}
 
 /* Artistes cards */
 .acards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:13px}
+.viewtoggle{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:3px;flex:none;height:fit-content}
+.viewtoggle button{width:32px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:14px;color:var(--dim)}
+.viewtoggle button.on{background:linear-gradient(90deg,#1ed760,#4ade80);color:#052e12}
+.viewtoggle button:hover:not(.on){color:var(--text)}
+.plcard .cov{width:100%;height:150px;border-radius:12px;margin:0 0 12px}
+.plcard .nm{font-family:'Sora';font-weight:700;font-size:14px;margin-bottom:4px}
 .acard{
   background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--border);
   border-radius:var(--r);padding:15px 17px;cursor:pointer;transition:all .15s;position:relative;
@@ -364,9 +370,8 @@ td.selc,th.selc{width:44px;padding-left:14px}
     <button data-v="overview" class="active" data-fr="Vue d'ensemble"><span class="emo">📊</span>Vue d'ensemble</button>
     <button data-v="opps" data-fr="Toutes les pistes"><span class="emo">🎶</span>Toutes les pistes<span class="count" id="c-opps"></span></button>
     <button data-v="artists" data-fr="Tous les artistes"><span class="emo">🎸</span>Tous les artistes<span class="count" id="c-art"></span></button>
+    <button data-v="playlists" data-fr="Toutes les playlists"><span class="emo">📻</span>Toutes les playlists<span class="count" id="c-pl"></span></button>
     <button data-v="watch" data-fr="Watchlist"><span class="emo">⭐</span>Watchlist<span class="count" id="c-watch"></span></button>
-    <div class="nav-label" data-fr="Expansion">Expansion</div>
-    <button data-v="playlists" data-fr="Playlists"><span class="emo">📻</span>Playlists<span class="count" id="c-pl"></span></button>
   </nav>
   <div class="side-foot">
     <div class="sync-row">
@@ -410,6 +415,7 @@ const EN_MAP = {
   "priorités rachat":"buyout priorities","tracks en indé":"self-released tracks",
   "Sorties 90 j":"Releases (90d)","veille nouveautés":"new-release watch","artistes découverte":"discovery artists",
   "Top artistes par streams hors Lofi":"Top artists by non-Lofi streams","clic = détail des tracks":"click = track details",
+  "Top playlists":"Top playlists","clic = ouvrir sur Spotify":"click = open on Spotify",
   "tracks hors Lofi":"tracks outside Lofi","indé":"indie","label":"label","dernière sortie":"last release","streams":"streams",
   "Voir tous les artistes":"View all artists","Indé vs autres labels":"Indie vs other labels","Autre label":"Other label","Sorties par année":"Releases per year",
   "régulier":"regular","occasionnel":"occasional",
@@ -446,7 +452,10 @@ const EN_MAP = {
   "Spotify ne montre pas le compteur de followers pour cette playlist":"Spotify does not show the follower count for this playlist",
   "toutes tailles confondues":"all sizes combined","du total":"of total","playlists à fort potentiel":"high-potential playlists",
   "Followers cumulés":"Total followers","playlists avec followers visibles":"playlists with visible followers",
-  "Qualifiées (≥10k)":"Qualified (≥10k)","Toutes les playlists":"All playlists",
+  "Qualifiées (≥10k)":"Qualified (≥10k)","Toutes les playlists":"All playlists","Vue liste":"List view","Vue grille":"Grid view",
+  "Aucun artiste ne correspond à ces filtres.":"No artist matches these filters.",
+  "Évolution 30j":"30-day change","Tri : évolution 30j":"Sort: 30-day change","Historique en cours":"History building up",
+  "Pas encore assez d'historique pour calculer une évolution, repasser dans quelques jours":"Not enough history yet to compute a trend, check back in a few days",
   "Éditoriales":"Editorial","Indépendantes":"Independent","Éditoriale":"Editorial","Indépendante":"Independent","Non déterminé":"Undetermined",
   "Fiche détaillée uniquement":"Detailed profile only",
   "Tri : followers":"Sort: followers","Tri : nb tracks":"Sort: track count","Tri : fit score":"Sort: fit score","Tri : vue récemment":"Sort: recently viewed",
@@ -604,7 +613,8 @@ const S = {
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', shownA:60, aseg:'all',
   newDays:90, shownN:100,
-  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified',
+  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified', plmode:'table',
+  amode:'grid',
 };
 
 /* ---------- navigation ---------- */
@@ -750,6 +760,34 @@ function renderOverview(){
           ${yk.map(y=>`<div class="ybar"><div class="b" style="height:${Math.max(years[y]/maxY*100,3)}px" title="${y} : ${years[y]}"></div><span class="y">${y.slice(2)}</span></div>`).join('')}
         </div>
       </div>
+    </div>
+  </div>
+  ${PLmeta ? overviewPlaylistsSection() : ''}`;
+}
+function overviewPlaylistsSection(){
+  const topPl = PLrows.filter(r=>r[17]).slice().sort((a,b)=>b[4]-a[4]).slice(0,8);
+  return `
+  <div class="freshbar" style="margin-top:18px">
+    <div class="fitem">📻 ${T('Playlists découvertes')} <b>${fmtFull(PLmeta.playlists_discovered)}</b></div>
+    <div class="fitem">${T('Fiches détaillées')} <b>${fmtFull(PLmeta.playlists_enriched)}</b></div>
+    <div class="fitem">≥ 10k followers <b>${fmtFull(PLmeta.playlists_10k_plus)}</b></div>
+    <div class="fitem">${T('Followers cumulés')} <b>${fmt(PLmeta.followers_sum)}</b></div>
+    <div class="fitem"><span class="fdot2"></span>${T('Snapshot')} <b>${esc(PLmeta.snapshot_ts)}</b></div>
+  </div>
+  <div class="panel">
+    <h3>${T('Top playlists')} (≥10k followers) <span class="hint">${T('clic = ouvrir sur Spotify')}</span></h3>
+    ${topPl.map((r,ix)=>`
+      <div class="top-row" onclick="window.open('https://open.spotify.com/playlist/${r[0]}','_blank')">
+        <span class="rank">${ix+1}</span>
+        <div class="cov" data-plid="${r[0]}" style="width:46px;height:46px;border-radius:10px;margin:0"></div>
+        <div class="ti">
+          <div class="nm"><span class="nmtxt">${esc(r[1])}</span> ${plCuratorBadge(r[3])}</div>
+          <div class="sub">${esc(r[2])} · ${r[6]||'?'} tracks · ${esc(r[10]||'?')}${r[11]?' · '+esc(r[11]):''}</div>
+        </div>
+        <div class="vals"><div class="v1">${fmt(r[4])}</div><div class="v2">${plGrowthCell(r)}</div></div>
+      </div>`).join('')}
+    <div style="text-align:center;padding-top:12px">
+      <button class="chip" onclick="goTab('playlists')">${T('Voir toutes les playlists')} (${fmtFull(PLmeta.playlists_discovered)}) →</button>
     </div>
   </div>`;
 }
@@ -1083,29 +1121,7 @@ function renderArtists(){
   else if (S.asort==='n') list.sort((a,b)=>b.n-a.n);
   else if (S.asort==='last') list.sort((a,b)=>(b.last||'').localeCompare(a.last||''));
   const slice = list.slice(0,S.shownA);
-  V.innerHTML = `
-  <div class="page-head">
-    <div>
-      <h2>${T('Tous les artistes')}</h2>
-      <p>${T("Un profil par artiste : volume hors Lofi, part d'indé, priorités ≥ 500k. Clic sur une carte pour ouvrir ses tracks.")}</p>
-    </div>
-  </div>
-  <div class="toolbar">
-    <button class="chip ${S.aseg==='all'?'on':''}" data-seg="all">${T('Tous')}</button>
-    <button class="chip ${S.aseg==='top'?'on':''}" data-seg="top"><span class="fdot" style="background:#fb923c"></span>Top artists</button>
-    <button class="chip ${S.aseg==='reg'?'on':''}" data-seg="reg"><span class="fdot" style="background:#a78bfa"></span>Regulars</button>
-    <button class="chip ${S.aseg==='occ'?'on':''}" data-seg="occ"><span class="fdot" style="background:#60a5fa"></span>${T('Occasionnels')}</button>
-    <button class="chip ${S.aseg==='ext'?'on':''}" data-seg="ext"><span class="fdot" style="background:#fb7185"></span>${T('Jamais')}</button>
-    <select id="a-sort">
-      <option value="streams" ${S.asort==='streams'?'selected':''}>${T('Tri : streams hors Lofi')}</option>
-      <option value="hot" ${S.asort==='hot'?'selected':''}>${T('Tri : tracks ≥ 500k')}</option>
-      <option value="n" ${S.asort==='n'?'selected':''}>${T('Tri : nb de tracks')}</option>
-      <option value="last" ${S.asort==='last'?'selected':''}>${T('Tri : sortie la plus récente')}</option>
-    </select>
-    <span class="spacer"></span>
-    <span class="result-count">${list.length} ${T('artistes')}</span>
-    <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="a-q" placeholder="${T('Rechercher un artiste…')}" value="${esc(S.aq)}"></div>
-  </div>
+  const gridView = `
   <div class="acards">
     ${slice.map(g=>{
       const p = g.n ? Math.round(g.self/g.n*100) : 0;
@@ -1139,7 +1155,67 @@ function renderArtists(){
       </div>`;}).join('')}
   </div>
   ${sentinel(list.length-S.shownA)}`;
+  const tableView = `
+  <div class="panel" style="padding:6px 14px 14px">
+    <table>
+      <thead><tr>
+        <th></th>
+        <th>${T('Artiste')}</th>
+        <th class="num">${T('streams')}</th>
+        <th class="num">tracks</th>
+        <th class="num">≥ 500k</th>
+        <th class="num">${T('indé')}</th>
+        <th>${T('dernière sortie')}</th>
+      </tr></thead>
+      <tbody>
+      ${slice.map(g=>{
+        const p = g.n ? Math.round(g.self/g.n*100) : 0;
+        return `
+        <tr onclick="goArtist(${g.i})" style="cursor:pointer">
+          <td class="covtd"><div class="av-sm">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div></td>
+          <td>${esc(g.name)} ${wlStar('a',g.name)} ${segBadge(g)}</td>
+          <td class="num">${fmt(g.streams)}</td>
+          <td class="num">${g.n}</td>
+          <td class="num" style="color:${g.hot?'var(--acc2)':'inherit'}">${g.hot}</td>
+          <td class="num">${p}%</td>
+          <td style="white-space:nowrap">${g.last||'?'}</td>
+        </tr>`;}).join('')}
+      </tbody>
+    </table>
+    ${list.length===0?'<div class="empty">'+T('Aucun artiste ne correspond à ces filtres.')+'</div>':''}
+    ${sentinel(list.length-S.shownA)}
+  </div>`;
 
+  V.innerHTML = `
+  <div class="page-head">
+    <div>
+      <h2>${T('Tous les artistes')}</h2>
+      <p>${T("Un profil par artiste : volume hors Lofi, part d'indé, priorités ≥ 500k. Clic sur une carte pour ouvrir ses tracks.")}</p>
+    </div>
+    <div class="viewtoggle">
+      <button class="${S.amode==='table'?'on':''}" data-amode="table" title="${T('Vue liste')}">☰</button>
+      <button class="${S.amode==='grid'?'on':''}" data-amode="grid" title="${T('Vue grille')}">▦</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <button class="chip ${S.aseg==='all'?'on':''}" data-seg="all">${T('Tous')}</button>
+    <button class="chip ${S.aseg==='top'?'on':''}" data-seg="top"><span class="fdot" style="background:#fb923c"></span>Top artists</button>
+    <button class="chip ${S.aseg==='reg'?'on':''}" data-seg="reg"><span class="fdot" style="background:#a78bfa"></span>Regulars</button>
+    <button class="chip ${S.aseg==='occ'?'on':''}" data-seg="occ"><span class="fdot" style="background:#60a5fa"></span>${T('Occasionnels')}</button>
+    <button class="chip ${S.aseg==='ext'?'on':''}" data-seg="ext"><span class="fdot" style="background:#fb7185"></span>${T('Jamais')}</button>
+    <select id="a-sort">
+      <option value="streams" ${S.asort==='streams'?'selected':''}>${T('Tri : streams hors Lofi')}</option>
+      <option value="hot" ${S.asort==='hot'?'selected':''}>${T('Tri : tracks ≥ 500k')}</option>
+      <option value="n" ${S.asort==='n'?'selected':''}>${T('Tri : nb de tracks')}</option>
+      <option value="last" ${S.asort==='last'?'selected':''}>${T('Tri : sortie la plus récente')}</option>
+    </select>
+    <span class="spacer"></span>
+    <span class="result-count">${list.length} ${T('artistes')}</span>
+    <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="a-q" placeholder="${T('Rechercher un artiste…')}" value="${esc(S.aq)}"></div>
+  </div>
+  ${S.amode==='table' ? tableView : gridView}`;
+
+  document.querySelectorAll('.viewtoggle button[data-amode]').forEach(b=>b.addEventListener('click', ()=>{ S.amode=b.dataset.amode; keepScroll(renderArtists); }));
   document.getElementById('a-q').addEventListener('input', e=>{ S.aq=e.target.value; S.shownA=60; keepScroll(renderArtists); keepFocus('a-q'); });
   document.querySelectorAll('.chip[data-seg]').forEach(c=>c.addEventListener('click', ()=>{ S.aseg=c.dataset.seg; S.shownA=60; keepScroll(renderArtists); }));
   document.getElementById('a-sort').addEventListener('change', e=>{ S.asort=e.target.value; keepScroll(renderArtists); });
@@ -1208,6 +1284,7 @@ function covPersist(){
 }
 function covKeyUrl(img){
   if (img.dataset.tid) return {key:'t'+img.dataset.tid, url:'https://open.spotify.com/track/'+img.dataset.tid};
+  if (img.dataset.plid) return {key:'p'+img.dataset.plid, url:'https://open.spotify.com/playlist/'+img.dataset.plid};
   return {key:'a'+img.dataset.aid, url:'https://open.spotify.com/artist/'+img.dataset.aid};
 }
 function covShow(el, u){
@@ -1247,7 +1324,7 @@ function attachCovers(){
   document.querySelectorAll('.cov[data-cover], .avp[data-img]').forEach(el=>{
     covShow(el, el.dataset.cover || el.dataset.img);
   });
-  const imgs = [...document.querySelectorAll('.cov[data-tid], img.avp[data-tid]')];
+  const imgs = [...document.querySelectorAll('.cov[data-tid], .cov[data-plid], img.avp[data-tid]')];
   const pending = [];
   for (const img of imgs){
     const {key, url} = covKeyUrl(img);
@@ -1297,6 +1374,7 @@ function plFiltered(){
     tracks: (a,b)=>b[6]-a[6],
     fit: (a,b)=>b[12]-a[12],
     recent: (a,b)=> (a[8]<b[8]?1:(a[8]>b[8]?-1:0)),
+    growth: (a,b)=> (b[18]==null?-1e15:b[18]) - (a[18]==null?-1e15:a[18]),
   };
   rows = rows.slice().sort(sorters[S.plsort] || sorters.followers);
   return rows;
@@ -1316,21 +1394,88 @@ function plEstDateCell(r){
   const confTxt = r[15] ? ' ('+T('confiance')+' '+esc(r[15])+')' : '';
   return `<span title="${T('Estimation, pas une date certaine')}${confTxt}">${T('Estimation')} ${fmtDate(r[14])}</span>`;
 }
+function plGrowthCell(r){
+  if (r[5]!=='ok') return '<span style="color:var(--dim)">—</span>';
+  if (r[18]==null) return `<span style="color:var(--dim)" title="${T("Pas encore assez d'historique pour calculer une évolution, repasser dans quelques jours")}">${T('Historique en cours')}</span>`;
+  const g = r[18], days = r[19];
+  const sign = g>0?'+':'';
+  const color = g>0?'var(--acc2)':(g<0?'var(--red)':'var(--dim)');
+  const daysTxt = days<30 ? ` <span style="color:var(--dim);font-size:10.5px">(${days}${T('j')})</span>` : '';
+  return `<span style="color:${color};font-weight:600">${sign}${fmtFull(g)}</span>${daysTxt}`;
+}
 
 function renderPlaylists(){
   if (!PLmeta){
-    V.innerHTML = `<div class="page-head"><div><h2>Playlists</h2><p>${T('Aucune donnée playlists chargée pour le moment.')}</p></div></div>`;
+    V.innerHTML = `<div class="page-head"><div><h2>${T('Toutes les playlists')}</h2><p>${T('Aucune donnée playlists chargée pour le moment.')}</p></div></div>`;
     return;
   }
   const rows = plFiltered();
   const slice = rows.slice(0, S.shownPL);
   const kwPct = PLmeta.kw_total ? Math.round(100*PLmeta.kw_scanned/PLmeta.kw_total) : 0;
   const enrPct = PLmeta.playlists_discovered ? Math.round(100*PLmeta.playlists_enriched/PLmeta.playlists_discovered) : 0;
+  const tableView = `
+  <div class="panel" style="padding:6px 14px 14px">
+    <table>
+      <thead><tr>
+        <th></th>
+        <th>Playlist</th>
+        <th>${T('Curateur')}</th>
+        <th class="num">Followers</th>
+        <th class="num">${T('Évolution 30j')}</th>
+        <th class="num">Tracks</th>
+        <th>Genre</th>
+        <th>Usage</th>
+        <th>${T('Création estimée')}</th>
+        <th>${T('Dernière observation')}</th>
+        <th>${T('Lien')}</th>
+      </tr></thead>
+      <tbody>
+      ${slice.map(r=>`
+        <tr>
+          <td class="covtd"><div class="cov" data-plid="${r[0]}"></div></td>
+          <td><span class="tk">${esc(r[1])}</span>${r[16]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</td>
+          <td>${esc(r[2])} ${plCuratorBadge(r[3])}</td>
+          <td class="num" title="${fmtFull(r[4])}">${plFollowersCell(r)}</td>
+          <td class="num">${plGrowthCell(r)}</td>
+          <td class="num">${r[16]?(r[6]||'?'):'—'}</td>
+          <td>${esc(r[10]||'?')}</td>
+          <td>${esc(r[11]||'?')}</td>
+          <td style="white-space:nowrap">${plEstDateCell(r)}</td>
+          <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[8])}</td>
+          <td><a href="https://open.spotify.com/playlist/${r[0]}" target="_blank" rel="noopener">${T('Ouvrir')} ↗</a></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${rows.length===0?'<div class="empty">'+T('Aucune playlist ne correspond à ces filtres.')+'</div>':''}
+    ${sentinel(rows.length-S.shownPL)}
+  </div>`;
+  const gridView = `
+  <div class="acards">
+    ${slice.map(r=>`
+    <div class="acard plcard" onclick="window.open('https://open.spotify.com/playlist/${r[0]}','_blank')">
+      <div class="cov" data-plid="${r[0]}"></div>
+      <div class="nm">${esc(r[1])}${r[16]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(r[2])} ${plCuratorBadge(r[3])}</div>
+      <div class="stats">
+        <div class="st"><div class="v">${plFollowersCell(r)}</div><div class="l">Followers</div></div>
+        <div class="st"><div class="v">${plGrowthCell(r)}</div><div class="l">30j</div></div>
+        <div class="st"><div class="v">${r[16]?(r[6]||'?'):'—'}</div><div class="l">Tracks</div></div>
+      </div>
+      <div class="foot">${esc(r[10]||'?')} · ${esc(r[11]||'?')}</div>
+    </div>`).join('')}
+  </div>
+  ${rows.length===0?'<div class="empty">'+T('Aucune playlist ne correspond à ces filtres.')+'</div>':''}
+  ${sentinel(rows.length-S.shownPL)}`;
+
   V.innerHTML = `
   <div class="page-head">
     <div>
-      <h2>Playlists <span class="badge new" style="vertical-align:middle">${T('Scan incomplet, pause sécurité Spotify')}</span></h2>
+      <h2>${T('Toutes les playlists')} <span class="badge new" style="vertical-align:middle">${T('Scan incomplet, pause sécurité Spotify')}</span></h2>
       <p>${T("Recensement des playlists éditoriales Spotify et indépendantes sur nos genres, alimenté par le scanner de mots-clés. Suivi des followers et du fit pour repérer ce qui marche.")}</p>
+    </div>
+    <div class="viewtoggle">
+      <button class="${S.plmode==='table'?'on':''}" data-plmode="table" title="${T('Vue liste')}">☰</button>
+      <button class="${S.plmode==='grid'?'on':''}" data-plmode="grid" title="${T('Vue grille')}">▦</button>
     </div>
   </div>
   <div class="freshbar">
@@ -1361,51 +1506,22 @@ function renderPlaylists(){
       <option value="tracks" ${S.plsort==='tracks'?'selected':''}>${T('Tri : nb tracks')}</option>
       <option value="fit" ${S.plsort==='fit'?'selected':''}>${T('Tri : fit score')}</option>
       <option value="recent" ${S.plsort==='recent'?'selected':''}>${T('Tri : vue récemment')}</option>
+      <option value="growth" ${S.plsort==='growth'?'selected':''}>${T('Tri : évolution 30j')}</option>
     </select>
     <span class="spacer"></span>
     <span class="result-count">${fmtFull(rows.length)} playlists</span>
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="pl-q" placeholder="${T('Rechercher playlist, curateur, genre…')}" value="${esc(S.plq)}"></div>
   </div>
-  <div class="panel" style="padding:6px 14px 14px">
-    <table>
-      <thead><tr>
-        <th>Playlist</th>
-        <th>${T('Curateur')}</th>
-        <th class="num">Followers</th>
-        <th class="num">Tracks</th>
-        <th>Genre</th>
-        <th>Usage</th>
-        <th>${T('Création estimée')}</th>
-        <th>${T('Dernière observation')}</th>
-        <th>${T('Mots-clés')}</th>
-        <th>${T('Lien')}</th>
-      </tr></thead>
-      <tbody>
-      ${slice.map(r=>`
-        <tr>
-          <td><span class="tk">${esc(r[1])}</span>${r[16]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</td>
-          <td>${esc(r[2])} ${plCuratorBadge(r[3])}</td>
-          <td class="num" title="${fmtFull(r[4])}">${plFollowersCell(r)}</td>
-          <td class="num">${r[16]?(r[6]||'?'):'—'}</td>
-          <td>${esc(r[10]||'?')}</td>
-          <td>${esc(r[11]||'?')}</td>
-          <td style="white-space:nowrap">${plEstDateCell(r)}</td>
-          <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[8])}</td>
-          <td>${(r[13]?r[13].split('|'):[]).map(k=>'<span class="kwtag">'+esc(k)+'</span>').join('')}</td>
-          <td><a href="https://open.spotify.com/playlist/${r[0]}" target="_blank" rel="noopener">${T('Ouvrir')} ↗</a></td>
-        </tr>`).join('')}
-      </tbody>
-    </table>
-    ${rows.length===0?'<div class="empty">'+T('Aucune playlist ne correspond à ces filtres.')+'</div>':''}
-    ${sentinel(rows.length-S.shownPL)}
-  </div>`;
+  ${S.plmode==='grid' ? gridView : tableView}`;
 
+  document.querySelectorAll('.viewtoggle button[data-plmode]').forEach(b=>b.addEventListener('click', ()=>{ S.plmode=b.dataset.plmode; keepScroll(renderPlaylists); }));
   document.getElementById('pl-q').addEventListener('input', e=>{ S.plq=e.target.value; S.shownPL=80; keepScroll(renderPlaylists); keepFocus('pl-q'); });
   document.querySelectorAll('.chip[data-plview]').forEach(c=>c.addEventListener('click', ()=>{ S.plview=c.dataset.plview; S.shownPL=80; keepScroll(renderPlaylists); }));
   document.querySelectorAll('.chip[data-plcur]').forEach(c=>c.addEventListener('click', ()=>{ S.plcur=c.dataset.plcur; S.shownPL=80; keepScroll(renderPlaylists); }));
   document.getElementById('pl-only').addEventListener('change', e=>{ S.plonly=e.target.checked; S.shownPL=80; keepScroll(renderPlaylists); });
   document.getElementById('pl-sort').addEventListener('change', e=>{ S.plsort=e.target.value; keepScroll(renderPlaylists); });
   attachInfinite(()=>{ const y=window.scrollY; S.shownPL+=80; renderPlaylists(); window.scrollTo(0,y); });
+  if (typeof attachCovers==='function') attachCovers();
 }
 
 function render(){
@@ -1426,8 +1542,9 @@ document.getElementById('c-art').textContent = withTracks.length;
 function fmtTs(ts){
   const m = (''+ts).match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
   if (!m) return ts;
+  // format européen (jour/mois/année) dans les deux langues, jamais le format américain
   if (LANG==='fr') return m[3]+'/'+m[2]+'/'+m[1] + (m[4] ? ' à '+m[4] : '');
-  return m[2]+'/'+m[3]+'/'+m[1] + (m[4] ? ', '+m[4] : '');
+  return m[3]+'/'+m[2]+'/'+m[1] + (m[4] ? ', '+m[4] : '');
 }
 function updateFooter(){
   document.getElementById('sync-txt').innerHTML =
