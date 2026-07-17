@@ -226,6 +226,7 @@ td.covtd{width:82px;padding:6px 2px 6px 10px}
     <button data-v="new"><span class="emo">🆕</span>Sorties récentes<span class="count" id="c-new"></span></button>
     <div class="nav-label">Expansion</div>
     <button data-v="disco"><span class="emo">🔭</span>Découverte<span class="count" id="c-disco"></span></button>
+    <button data-v="playlists"><span class="emo">📻</span>Playlists<span class="count">soon</span></button>
   </nav>
   <div class="side-foot">
     <div class="sync-row">
@@ -308,6 +309,11 @@ function goArtist(i){
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v==='opps'));
   render(); window.scrollTo(0,0);
 }
+function goTab(v){
+  S.view = v;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v===v));
+  render(); window.scrollTo(0,0);
+}
 function goBack(){
   const b = S.back; S.back = null; S.artist = -1; S.shown = 100;
   S.view = b ? b.view : 'opps';
@@ -369,7 +375,7 @@ function renderOverview(){
   const nReg = withTracks.filter(g=>seg(g)==='reg').length;
   const nOcc = withTracks.filter(g=>seg(g)==='occ').length;
   const nExt = withTracks.filter(g=>seg(g)==='ext').length;
-  const top = [...withTracks].sort((a,b)=>b.streams-a.streams).slice(0,15);
+  const top = [...withTracks].sort((a,b)=>b.streams-a.streams).slice(0,10);
   const years = {};
   for (const r of R){ const y = r[2].slice(0,4); if(y>='2015') years[y]=(years[y]||0)+1; }
   const yk = Object.keys(years).sort();
@@ -405,6 +411,9 @@ function renderOverview(){
           </div>
           <div class="vals"><div class="v1">${fmt(g.streams)}</div><div class="v2">streams</div></div>
         </div>`;}).join('')}
+      <div style="text-align:center;padding-top:12px">
+        <button class="chip" onclick="goTab('artists')">Voir tous les artistes (${withTracks.length}) →</button>
+      </div>
     </div>
     <div>
       <div class="panel">
@@ -752,12 +761,37 @@ function sentinel(remaining){
   return remaining>0 ? `<div id="scroll-sentinel" class="empty" style="padding:18px">Chargement… (${fmtFull(remaining)} restantes)</div>` : '';
 }
 
+function renderPlaylists(){
+  V.innerHTML = `
+  <div class="page-head">
+    <div>
+      <h2>Playlists <span class="badge new" style="vertical-align:middle">bientôt disponible</span></h2>
+      <p>Prochain module, en préparation : scan des playlists de nos genres, éditoriales Spotify et indépendantes, avec suivi dans le temps du nombre de followers de chacune. Objectif : repérer ce qui marche (formats, genres, positionnements) pour s'en inspirer, et alimenter la découverte d'artistes.</p>
+    </div>
+  </div>
+  <div class="kpis">
+    ${kpi('Playlists suivies', '—', 'scan à venir')}
+    ${kpi('Éditoriales vs indés', '—', 'répartition à venir')}
+    ${kpi('Followers trackés', '—', 'évolution hebdomadaire')}
+  </div>
+  <div class="panel">
+    <h3>Ce que le module fera</h3>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><b>Recensement</b><p>Playlists éditoriales Spotify et grosses playlists indépendantes sur nos genres (lofi, ambient, piano, jazz, synthwave…), avec leur curateur et leur taille.</p></div>
+      <div class="step"><div class="n">2</div><b>Suivi des followers</b><p>Relevé régulier du nombre de followers de chaque playlist : courbes d'évolution, croissance hebdo, détection de celles qui explosent.</p></div>
+      <div class="step"><div class="n">3</div><b>Analyse</b><p>Comparaison édito vs indé, genres qui montent, formats qui marchent. De quoi s'inspirer pour nos propres playlists et le positionnement du label.</p></div>
+      <div class="step"><div class="n">4</div><b>Synergie découverte</b><p>Les artistes présents dans les playlists qui performent alimenteront la file de découverte, en plus des "fans also like".</p></div>
+    </div>
+  </div>`;
+}
+
 function render(){
   if (S.view==='overview') renderOverview();
   else if (S.view==='opps') renderOpps();
   else if (S.view==='artists') renderArtists();
   else if (S.view==='new') renderNew();
   else if (S.view==='disco') renderDisco();
+  else if (S.view==='playlists') renderPlaylists();
   attachCovers();
 }
 
