@@ -1004,9 +1004,8 @@ function renderArtists(){
           <span>· ${p}% ${T('indé')}</span>
           <span>· ${T('dernière sortie')} ${g.last||'?'}</span>
         </div>
-        ${g.email||g.link?`<div class="foot" style="margin-top:6px" onclick="event.stopPropagation()">
-          ${g.email?`<span style="color:var(--acc2)">✉ ${T('email dispo')}</span>`:''}
-          ${g.link?`<a href="${esc(g.link)}" target="_blank" rel="noopener" style="color:var(--violet)">${g.link.includes('instagram')?'📷 Instagram':'🔗 Site'}</a>`:''}
+        ${g.link?`<div class="foot" style="margin-top:6px" onclick="event.stopPropagation()">
+          <a href="${esc(g.link)}" target="_blank" rel="noopener" style="color:var(--violet)">${g.link.includes('instagram')?'📷 Instagram':'🔗 Site'}</a>
         </div>`:''}
       </div>`;}).join('')}
   </div>
