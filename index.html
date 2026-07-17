@@ -108,7 +108,8 @@ input,select{font-family:inherit;color:var(--text)}
 .topbar .sub{color:var(--muted);font-size:12.5px;margin-top:5px}
 
 /* ---------- Toolbar ---------- */
-.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px;margin:6px 0 18px}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:10px;margin:6px 0 18px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex:none}
 .search{
   display:flex;align-items:center;gap:9px;background:var(--panel);border:1.5px solid var(--border2);
   border-radius:12px;padding:10px 15px;min-width:270px;flex:1;max-width:380px;transition:border .15s,box-shadow .15s;
@@ -125,6 +126,20 @@ select.ctl, .ctl-btn{
 select.ctl:hover,.ctl-btn:hover{border-color:rgba(139,124,246,.5);color:var(--text)}
 select.ctl option{background:#141828;color:var(--text)}
 .ctl-btn.on{color:var(--acc2);border-color:rgba(139,124,246,.4);background:var(--accSoft)}
+select.ctl.c-period{border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.07)}
+select.ctl.c-period:hover{border-color:rgba(74,222,128,.7)}
+select.ctl.c-genre{border-color:rgba(244,114,182,.4);background:rgba(244,114,182,.07)}
+select.ctl.c-genre:hover{border-color:rgba(244,114,182,.7)}
+select.ctl.c-cluster{border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.07)}
+select.ctl.c-cluster:hover{border-color:rgba(96,165,250,.7)}
+select.ctl.c-sort{border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.07)}
+select.ctl.c-sort:hover{border-color:rgba(251,191,36,.7)}
+select.ctl.c-tier{border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.07)}
+select.ctl.c-tier:hover{border-color:rgba(167,139,250,.7)}
+select.ctl.c-char{border-color:rgba(45,212,191,.4);background:rgba(45,212,191,.07)}
+select.ctl.c-char:hover{border-color:rgba(45,212,191,.7)}
+select.ctl.c-status{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.07)}
+select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{
   display:inline-flex;align-items:center;gap:6px;padding:5.5px 11px;border-radius:20px;font-size:11.5px;font-weight:600;
@@ -834,10 +849,10 @@ const VS={
   news:{q:'',genre:'',cluster:'',sort:'added',mode:'grid',limit:60},
   mix:{q:'',genre:'',cluster:'',sort:'vpm',mode:'grid',limit:60,age:'all'}
 };
-const RS={q:'',genres:new Set(),pot:'',perso:'',val:'',sort:'scoreAdj',limit:80};
+const RS={q:'',genre:'',pot:'',perso:'',val:'',sort:'scoreAdj',limit:80};
 const RM={src:'',genre:'',year:'',mode:'cal',cal:null,view:'month'};
 const LS={q:'',sort:'now',mode:'grid',limit:60};
-const CS={q:'',niches:new Set(),sort:'subs',limit:150};
+const CS={q:'',niche:'',sort:'subs',limit:150};
 const CHAN_URL='https://docs.google.com/spreadsheets/d/1jDbcryjTDbRsW4Uw6OP_SYwgvbPoLQu_KcSWqC3Dfoc/export?format=xlsx';
 const CHAN_CACHE='lofiradar_chan_v1';
 let CHAN=null, CHAN_ERR=null, CHAN_T=null;
@@ -1182,10 +1197,10 @@ function videosHTML(kind){
   const rows=filterVids(kind);
   let ageSel='';
   if(kind==='mix'){
-    ageSel='<select class="ctl" onchange="setAge(this.value)">'+AGES.map(a=>{
+    ageSel='<select class="ctl c-period" onchange="setAge(this.value)">'+AGES.map(a=>{
       const n=a[2]==null?all.length:all.filter(v=>inAge(v,a[0])).length;
       const label=a[1].replace(/<[^>]*>/g,'');
-      return '<option '+(st.age===a[0]?'selected':'')+' value="'+a[0]+'">'+label+' · '+fmtInt(n)+'</option>';
+      return '<option '+(st.age===a[0]?'selected':'')+' value="'+a[0]+'">🕐 '+label+' · '+fmtInt(n)+'</option>';
     }).join('')+'</select>';
   }
   const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>all.filter(v=>v.genre===b).length-all.filter(v=>v.genre===a).length);
@@ -1194,16 +1209,16 @@ function videosHTML(kind){
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input id="q-'+kind+'" placeholder="Search titles, channels, keywords…" value="'+esc(st.q)+'" oninput="VS.'+kind+'.q=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')"><kbd>/</kbd></div>'+
     ageSel+
-    '<select class="ctl" onchange="VS.'+kind+'.genre=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')">'+
-      '<option value="">All genres</option>'+genres.map(g=>'<option '+(st.genre===g?'selected':'')+' value="'+esc(g)+'">'+esc(g)+' · '+all.filter(v=>v.genre===g).length+'</option>').join('')+'</select>'+
-    '<select class="ctl" onchange="VS.'+kind+'.cluster=this.value;rerenderList(\''+kind+'\')">'+
-      '<option value="">All clusters</option>'+clusters.map(c=>'<option '+(st.cluster===c?'selected':'')+' value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select>'+
-    '<select class="ctl" onchange="VS.'+kind+'.sort=this.value;rerenderList(\''+kind+'\')">'+
-      sortKeys.map(k=>'<option '+(st.sort===k?'selected':'')+' value="'+k+'">Sort · '+SORTS[k].lbl+'</option>').join('')+'</select>'+
-    '<div class="viewtoggle">'+
+    '<select class="ctl c-genre" onchange="VS.'+kind+'.genre=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')">'+
+      '<option value="">🎵 All genres</option>'+genres.map(g=>'<option '+(st.genre===g?'selected':'')+' value="'+esc(g)+'">🎵 '+esc(g)+' · '+all.filter(v=>v.genre===g).length+'</option>').join('')+'</select>'+
+    '<select class="ctl c-cluster" onchange="VS.'+kind+'.cluster=this.value;rerenderList(\''+kind+'\')">'+
+      '<option value="">🗂️ All clusters</option>'+clusters.map(c=>'<option '+(st.cluster===c?'selected':'')+' value="'+esc(c)+'">🗂️ '+esc(c)+'</option>').join('')+'</select>'+
+    '<select class="ctl c-sort" onchange="VS.'+kind+'.sort=this.value;rerenderList(\''+kind+'\')">'+
+      sortKeys.map(k=>'<option '+(st.sort===k?'selected':'')+' value="'+k+'">⚡ Sort · '+SORTS[k].lbl+'</option>').join('')+'</select>'+
+    '<div class="tb-right"><div class="viewtoggle">'+
       '<button class="'+(st.mode==='grid'?'on':'')+'" onclick="VS.'+kind+'.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(st.mode==='table'?'on':'')+'" onclick="VS.'+kind+'.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> videos</div>'+
+    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> videos</div></div>'+
   '</div>';
   h+='<div id="list-'+kind+'">'+listHTML(kind,rows)+'</div>';
   return h;
@@ -1409,7 +1424,7 @@ function autoSaveComment(n){
 }
 function filterRecos(){
   let rows=DATA.recos;
-  if(RS.genres.size)rows=rows.filter(r=>RS.genres.has(r.genre||'(unset)'));
+  if(RS.genre)rows=rows.filter(r=>(r.genre||'(unset)')===RS.genre);
   if(RS.pot)rows=rows.filter(r=>r.pot&&r.pot.startsWith(RS.pot));
   if(RS.perso)rows=rows.filter(r=>r.perso===RS.perso);
   if(RS.val==='x')rows=rows.filter(r=>['x','xnote'].includes(validState(r.valid)));
@@ -1427,24 +1442,21 @@ function recosHTML(){
   const persos=[...new Set(all.map(r=>r.perso).filter(Boolean))].sort();
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input placeholder="Search concepts, titles, niches…" value="'+esc(RS.q)+'" oninput="RS.q=this.value;RS.limit=80;rerenderRecos()"><kbd>/</kbd></div>'+
-    '<select class="ctl" onchange="RS.pot=this.value;rerenderRecos()">'+
-      '<option value="">All potential</option>'+['S','A','B','C'].map(p=>'<option '+(RS.pot===p?'selected':'')+' value="'+p+'">'+((typeof LANG!=='undefined'&&LANG==='fr')?{S:'S — Rente potentielle',A:'A — Fort',B:'B — Solide',C:'C — Niche / à tester'}:{S:'S — Steady income',A:'A — Strong',B:'B — Solid',C:'C — Niche / to test'})[p]+'</option>').join('')+'</select>'+
-    '<select class="ctl" onchange="RS.perso=this.value;rerenderRecos()">'+
-      '<option value="">All characters</option>'+persos.map(p=>'<option '+(RS.perso===p?'selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>').join('')+'</select>'+
-    '<select class="ctl" onchange="RS.val=this.value;rerenderRecos()">'+
-      '<option value="">Any status</option><option '+(RS.val==='x'?'selected':'')+' value="x">✓ Validated</option><option '+(RS.val==='note'?'selected':'')+' value="note">📝 With Dim note</option><option '+(RS.val==='any'?'selected':'')+' value="any">Validated or noted</option><option '+(RS.val==='pending'?'selected':'')+' value="pending">Pending review</option></select>'+
-    '<select class="ctl" onchange="RS.sort=this.value;rerenderRecos()">'+
-      '<option value="scoreAdj">Sort · Adjusted score</option><option '+(RS.sort==='score'?'selected':'')+' value="score">Sort · Score</option><option '+(RS.sort==='conf'?'selected':'')+' value="conf">Sort · Confidence</option><option '+(RS.sort==='n'?'selected':'')+' value="n">Sort · N°</option></select>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> concepts</div>'+
+    '<select class="ctl c-genre" onchange="RS.genre=this.value;RS.limit=80;rerenderRecos()">'+
+      '<option value="">🎵 All genres</option>'+genres.map(g=>'<option '+(RS.genre===g?'selected':'')+' value="'+esc(g)+'">🎵 '+esc(g)+' · '+all.filter(r=>(r.genre||'(unset)')===g).length+'</option>').join('')+'</select>'+
+    '<select class="ctl c-tier" onchange="RS.pot=this.value;rerenderRecos()">'+
+      '<option value="">⭐ All potential</option>'+['S','A','B','C'].map(p=>'<option '+(RS.pot===p?'selected':'')+' value="'+p+'">⭐ '+((typeof LANG!=='undefined'&&LANG==='fr')?{S:'S — Rente potentielle',A:'A — Fort',B:'B — Solide',C:'C — Niche / à tester'}:{S:'S — Steady income',A:'A — Strong',B:'B — Solid',C:'C — Niche / to test'})[p]+'</option>').join('')+'</select>'+
+    '<select class="ctl c-char" onchange="RS.perso=this.value;rerenderRecos()">'+
+      '<option value="">🎭 All characters</option>'+persos.map(p=>'<option '+(RS.perso===p?'selected':'')+' value="'+esc(p)+'">🎭 '+esc(p)+'</option>').join('')+'</select>'+
+    '<select class="ctl c-status" onchange="RS.val=this.value;rerenderRecos()">'+
+      '<option value="">🔘 Any status</option><option '+(RS.val==='x'?'selected':'')+' value="x">✅ Validated</option><option '+(RS.val==='note'?'selected':'')+' value="note">📝 With Dim note</option><option '+(RS.val==='any'?'selected':'')+' value="any">✅ Validated or noted</option><option '+(RS.val==='pending'?'selected':'')+' value="pending">⏳ Pending review</option></select>'+
+    '<select class="ctl c-sort" onchange="RS.sort=this.value;rerenderRecos()">'+
+      '<option value="scoreAdj">⚡ Sort · Adjusted score</option><option '+(RS.sort==='score'?'selected':'')+' value="score">⚡ Sort · Score</option><option '+(RS.sort==='conf'?'selected':'')+' value="conf">⚡ Sort · Confidence</option><option '+(RS.sort==='n'?'selected':'')+' value="n">⚡ Sort · N°</option></select>'+
+    '<div class="tb-right"><div class="result-count"><b>'+fmtInt(rows.length)+'</b> concepts</div></div>'+
   '</div>';
-  h+='<div class="chips" style="margin-bottom:18px">'+genres.map(g=>{
-    const c=gcolor(g),on=RS.genres.has(g);
-    return '<span class="chip '+(on?'on':'')+'" style="--chipbg:'+c+'22;--chipbd:'+c+'66" onclick="toggleRGenre(\''+esc(g).replace(/'/g,"\\'")+'\')"><span class="dot" style="background:'+c+'"></span>'+esc(g)+' <span style="opacity:.55;font-weight:500">'+all.filter(r=>(r.genre||'(unset)')===g).length+'</span></span>';
-  }).join('')+'</div>';
   h+='<div id="reco-list">'+recoListHTML(rows)+'</div>';
   return h;
 }
-function toggleRGenre(g){RS.genres.has(g)?RS.genres.delete(g):RS.genres.add(g);RS.limit=80;render();}
 function rerenderRecos(){
   const rows=filterRecos();
   const el=document.getElementById('reco-list');if(el){el.innerHTML=recoListHTML(rows);i18nZone(el);}
@@ -2323,12 +2335,12 @@ function livesHTML(){
   if(!all.length)return '<div class="empty">No livestream data yet — the 📡 Live Streams tab of the Sheet is empty or missing. It fills up on the next ChatGPT scan.</div>';
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input placeholder="Search streams, channels, keywords…" value="'+esc(LS.q)+'" oninput="LS.q=this.value;LS.limit=60;rerenderLives()"><kbd>/</kbd></div>'+
-    '<select class="ctl" onchange="LS.sort=this.value;rerenderLives()">'+
-      '<option value="now">Sort · Viewers now</option><option '+(LS.sort==='peak'?'selected':'')+' value="peak">Sort · Peak viewers</option><option '+(LS.sort==='started'?'selected':'')+' value="started">Sort · Recently started</option><option '+(LS.sort==='channel'?'selected':'')+' value="channel">Sort · Channel</option></select>'+
-    '<div class="viewtoggle">'+
+    '<select class="ctl c-sort" onchange="LS.sort=this.value;rerenderLives()">'+
+      '<option value="now">⚡ Sort · Viewers now</option><option '+(LS.sort==='peak'?'selected':'')+' value="peak">⚡ Sort · Peak viewers</option><option '+(LS.sort==='started'?'selected':'')+' value="started">⚡ Sort · Recently started</option><option '+(LS.sort==='channel'?'selected':'')+' value="channel">⚡ Sort · Channel</option></select>'+
+    '<div class="tb-right"><div class="viewtoggle">'+
       '<button class="'+(LS.mode==='grid'?'on':'')+'" onclick="LS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(LS.mode==='table'?'on':'')+'" onclick="LS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> streams</div>'+
+    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> streams</div></div>'+
   '</div>';
   h+='<div id="live-list">'+liveListHTML(rows)+'</div>';
   return h;
@@ -2439,7 +2451,7 @@ function chanSeries(url,idx){
 }
 function filterChans(){
   let rows=CHAN.channels;
-  if(CS.niches.size)rows=rows.filter(c=>CS.niches.has(c.niche||'(unset)'));
+  if(CS.niche)rows=rows.filter(c=>(c.niche||'(unset)')===CS.niche);
   if(CS.q){const q=CS.q.toLowerCase();rows=rows.filter(c=>(c.name+' '+c.niche+' '+c.country).toLowerCase().includes(q));}
   const sf=CS.sort;
   return [...rows].sort((a,b)=>sf==='name'?String(a.name).localeCompare(String(b.name)):(((b[sf]!=null?b[sf]:0))-((a[sf]!=null?a[sf]:0))));
@@ -2464,18 +2476,15 @@ function chanHTML(){
   const niches=[...new Set(all.map(c=>c.niche||'(unset)'))].sort((a,b)=>all.filter(c=>(c.niche||'(unset)')===b).length-all.filter(c=>(c.niche||'(unset)')===a).length);
   h+='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input placeholder="Search channels, niches, countries…" value="'+esc(CS.q)+'" oninput="CS.q=this.value;CS.limit=150;rerenderChans()"><kbd>/</kbd></div>'+
-    '<select class="ctl" onchange="CS.sort=this.value;rerenderChans()">'+
-      '<option value="subs">Sort · Subscribers</option><option '+(CS.sort==='viewsYr'?'selected':'')+' value="viewsYr">Sort · Views / year</option><option '+(CS.sort==='avg10'?'selected':'')+' value="avg10">Sort · Avg last 10</option><option '+(CS.sort==='upMo'?'selected':'')+' value="upMo">Sort · Uploads / month</option><option '+(CS.sort==='lastUp'?'selected':'')+' value="lastUp">Sort · Last upload</option><option '+(CS.sort==='name'?'selected':'')+' value="name">Sort · Name</option></select>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> channels</div>'+
+    '<select class="ctl c-genre" onchange="CS.niche=this.value;CS.limit=150;rerenderChans()">'+
+      '<option value="">🎯 All niches</option>'+niches.map(n=>'<option '+(CS.niche===n?'selected':'')+' value="'+esc(n)+'">🎯 '+esc(n)+' · '+all.filter(x=>(x.niche||'(unset)')===n).length+'</option>').join('')+'</select>'+
+    '<select class="ctl c-sort" onchange="CS.sort=this.value;rerenderChans()">'+
+      '<option value="subs">⚡ Sort · Subscribers</option><option '+(CS.sort==='viewsYr'?'selected':'')+' value="viewsYr">⚡ Sort · Views / year</option><option '+(CS.sort==='avg10'?'selected':'')+' value="avg10">⚡ Sort · Avg last 10</option><option '+(CS.sort==='upMo'?'selected':'')+' value="upMo">⚡ Sort · Uploads / month</option><option '+(CS.sort==='lastUp'?'selected':'')+' value="lastUp">⚡ Sort · Last upload</option><option '+(CS.sort==='name'?'selected':'')+' value="name">⚡ Sort · Name</option></select>'+
+    '<div class="tb-right"><div class="result-count"><b>'+fmtInt(rows.length)+'</b> channels</div></div>'+
   '</div>';
-  h+='<div class="chips" style="margin-bottom:18px">'+niches.map(n=>{
-    const c=gcolor(n),on=CS.niches.has(n);
-    return '<span class="chip '+(on?'on':'')+'" style="--chipbg:'+c+'22;--chipbd:'+c+'66" onclick="toggleNiche(\''+esc(n).replace(/'/g,"\\'")+'\')"><span class="dot" style="background:'+c+'"></span>'+esc(n)+' <span style="opacity:.55;font-weight:500">'+all.filter(x=>(x.niche||'(unset)')===n).length+'</span></span>';
-  }).join('')+'</div>';
   h+='<div id="chan-list">'+chanListHTML(rows)+'</div>';
   return h;
 }
-function toggleNiche(n){const s=CS.niches;s.has(n)?s.delete(n):s.add(n);CS.limit=150;render();}
 function chanListHTML(rows){
   if(!rows.length)return '<div class="empty">Nothing matches — try clearing filters.</div>';
   const page=rows.slice(0,CS.limit);
@@ -2660,7 +2669,7 @@ const FR_LIT=[
 ['📋 All releases','📋 Toutes les sorties'],[' releases<',' sorties<'],[' release<',' sortie<'],['>Today<','>Aujourd’hui<'],
 ['📈 View history','📈 Historique des vues'],['📡 Concurrent viewers','📡 Spectateurs simultanés'],['🔬 Diagnosis','🔬 Diagnostic'],['💡 Linked recommendation','💡 Recommandation liée'],['⚖️ Cohort','⚖️ Cohorte'],['📚 Catalog','📚 Catalogue'],['📈 Subscribers','📈 Abonnés'],['📈 Total views','📈 Vues totales'],['🔥 Why trending / notable','🔥 Pourquoi ça tourne'],['🔥 Why trending','🔥 Pourquoi en tendance'],['📌 Why notable','📌 Pourquoi notable'],['💡 Lofi Girl suggestion','💡 Suggestion Lofi Girl'],['💡 Lofi Girl angle','💡 Angle Lofi Girl'],['🎯 What to copy','🎯 À copier'],['🎼 Musical direction','🎼 Direction musicale'],['🎨 Visual direction','🎨 Direction visuelle'],['🔎 Discovery keywords','🔎 Mots-clés de découverte'],['🏁 Best search rank','🏁 Meilleur rang de recherche'],['🗓️ First seen by the scan','🗓️ Première détection'],['🔎 Found via search keywords','🔎 Trouvée via ces recherches'],['✏️ Title pattern','✏️ Structure du titre'],['🎬 Concept','🎬 Concept'],['🖼️ Thumbnail scene','🖼️ Scène de miniature'],['🎼 Music style','🎼 Style musical'],['🔁 Cadence','🔁 Cadence'],['🍂 Seasonal note','🍂 Note saisonnière'],
 ['✓ Validated · click to undo','✓ Validée · cliquer pour annuler'],['✓ Validate','✓ Valider'],['💾 Save to Sheet','💾 Enregistrer dans le Sheet'],['Your note — ChatGPT reads it at the next scan to recalibrate…','Ta note — ChatGPT la lit au prochain scan pour recalibrer…'],
-['>✓ Validated</option>','>✓ Validées</option>'],['>📝 With Dim note</option>','>📝 Avec note Dim</option>'],['>Validated or noted</option>','>Validées ou notées</option>'],['>Pending review</option>','>À trier</option>'],
+['>✅ Validated</option>','>✅ Validées</option>'],['>📝 With Dim note</option>','>📝 Avec note Dim</option>'],['>✅ Validated or noted</option>','>✅ Validées ou notées</option>'],['>⏳ Pending review</option>','>⏳ À trier</option>'],['>🎯 All niches</option>','>🎯 Toutes les niches</option>'],
 ['Nothing matches — try clearing filters.','Aucun résultat, essaie de retirer des filtres.'],['Nothing matches — try clearing the search.','Aucun résultat, essaie de vider la recherche.'],
 ['Tracking just started — the curve appears from the 2nd scan. 📡','Suivi tout juste lancé, la courbe apparaît dès le 2e scan. 📡'],[' scans · ',' scans · '],['/day measured','/jour mesuré'],['concurrent viewers · ','spectateurs simultanés · '],['>latest<','>dernier<'],
 ['found on the scan keywords','trouvés sur les mots-clés du scan'],['of our streams surfacing in results','de nos streams dans les résultats'],
