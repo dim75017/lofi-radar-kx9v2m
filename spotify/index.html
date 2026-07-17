@@ -393,7 +393,8 @@ const EN_MAP = {
   "Ouvrir sur Spotify":"Open on Spotify","Épinglé":"Pinned","Épingler":"Pin",
   "Revenus & rachat estimés (0,0035$/stream, +20% multi-plateformes, modèle LOFI RECORDS). L'historique des streams est capté par la veille pour tracer la tendance dans le temps.":"Revenue & buyout estimated (0.0035$/stream, +20% multi-platform, LOFI RECORDS model). Stream history is captured by the watch to plot the trend over time.",
   "Aucun artiste épinglé. Clique sur l'étoile ☆ d'une carte artiste.":"No pinned artists yet. Hit the ☆ on any artist card.",
-  "Base : revenu 24 mois projeté (vélocité × 0,0035$/stream) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille et paramètres repris du modèle LOFI RECORDS. Estimation indicative, hors CIPP (rachat catalogue non éligible).":"Base: projected 24-month revenue (velocity × $0.0035/stream) → EUR ×0.875, −8% Orchard, −12% costs, −15% haircut. Grid and parameters from the LOFI RECORDS model. Indicative estimate, excl. CIPP (catalog buyouts not eligible)."
+  "Base : revenu 24 mois projeté (vélocité × 0,0035$/stream) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille et paramètres repris du modèle LOFI RECORDS. Estimation indicative, hors CIPP (rachat catalogue non éligible).":"Base: projected 24-month revenue (velocity × $0.0035/stream) → EUR ×0.875, −8% Orchard, −12% costs, −15% haircut. Grid and parameters from the LOFI RECORDS model. Indicative estimate, excl. CIPP (catalog buyouts not eligible).",
+  "Base : revenu 24 mois projeté (vélocité × 0,0035$/stream, +20% Apple Music & autres plateformes) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille du modèle LOFI RECORDS. Publishing = +10% sur l'avance. Coche des tracks pour simuler. Estimation indicative, hors CIPP.":"Base: projected 24-month revenue (velocity × $0.0035/stream, +20% Apple Music & other platforms) → EUR ×0.875, −8% Orchard, −12% costs, −15% haircut. LOFI RECORDS grid. Publishing = +10% on the advance. Tick tracks to simulate. Indicative estimate, excl. CIPP."
 };
 const T = s => LANG === 'fr' ? s : (EN_MAP[s] !== undefined ? EN_MAP[s] : s);
 const HOT = 500000;                       // seuil de mise en évidence
@@ -680,7 +681,7 @@ function offerHtml(g, selMonthly, selCount, totCount){
       <div class="ob"><div class="l">${T('Payback')}</div><div class="v ${none?'':paybackClass(pb)}">${none?'—':paybackTxt(pb)}</div></div>
       <div class="ob"><div class="l">${T('Contact')}</div><div class="v" style="font-size:12.5px;font-family:Inter;font-weight:600;margin-top:8px">${contact}</div></div>
     </div>
-    <div style="font-size:10.5px;color:var(--dim);margin-top:12px">${none?'<b style="color:var(--acc2)">'+T('Aucune track sélectionnée — coche des lignes pour simuler une offre.')+'</b><br>':''}${T("Base : revenu 24 mois projeté (vélocité × 0,0035$/stream, +20% Apple Music & autres plateformes) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille du modèle LOFI RECORDS. Publishing = +10% sur l'avance. Estimation indicative, hors CIPP.")}</div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:12px">${T("Base : revenu 24 mois projeté (vélocité × 0,0035$/stream, +20% Apple Music & autres plateformes) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille du modèle LOFI RECORDS. Publishing = +10% sur l'avance. Coche des tracks pour simuler. Estimation indicative, hors CIPP.")}</div>
   </div>`;
 }
 function setPalier(k){ S.palier = k; render(); }
