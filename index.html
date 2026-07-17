@@ -206,9 +206,9 @@ select.ctl option{background:#141828;color:var(--text)}
 #lang-btn .lg-opt{position:relative;z-index:2;width:36px;height:26px;display:grid;place-items:center;border-radius:999px;opacity:.4;filter:saturate(.5);transition:opacity .2s,filter .2s}
 #lang-btn .lg-opt.on{opacity:1;filter:none}
 #lang-btn img{width:20px;height:15px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
-.wl-star{position:absolute;right:8px;top:8px;z-index:5;background:rgba(5,6,10,.75);border:1px solid var(--border);border-radius:8px;color:#fbbf24;font-size:13px;width:28px;height:26px;cursor:pointer;backdrop-filter:blur(4px)}
+.wl-star{position:absolute;right:9px;top:9px;z-index:5;background:rgba(5,6,10,.75);border:1px solid var(--border);border-radius:9px;color:#fbbf24;font-size:19px;width:38px;height:36px;cursor:pointer;backdrop-filter:blur(4px)}
 .wl-star:hover{border-color:#fbbf2466}
-.wl-star.inline{position:static;width:26px;height:24px;margin-left:4px}
+.wl-star.inline{position:static;width:26px;height:24px;font-size:13px;margin-left:4px}
 .dash-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-top:14px}
 .vtable .tthumb{width:86px;aspect-ratio:16/9;border-radius:7px;object-fit:cover;display:block;background:#0a0c14}
 .vtable .ttitle{font-weight:600;max-width:420px;line-height:1.4}
@@ -249,6 +249,7 @@ select.ctl option{background:#141828;color:var(--text)}
 .mini-item{display:flex;align-items:center;gap:12px;padding:8px;border-radius:11px;cursor:pointer;transition:background .12s}
 .mini-item:hover{background:rgba(139,124,246,.06)}
 .mini-item img{width:92px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;flex:none;background:#0a0c14}
+.mini-item .ch-ava img{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:1/1;object-fit:cover;border-radius:50%}
 .mini-item .mi-t{font-size:12.3px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .mini-item .mi-s{font-size:11px;color:var(--dim);margin-top:3px;display:flex;gap:8px;align-items:center}
 .mini-item .mi-s b{color:var(--acc2)}
@@ -275,6 +276,14 @@ select.ctl option{background:#141828;color:var(--text)}
 .pot-A{background:var(--accSoft);color:var(--acc2);border:1px solid rgba(139,124,246,.35)}
 .pot-B{background:rgba(125,211,252,.1);color:var(--blue);border:1px solid rgba(125,211,252,.3)}
 .pot-C{background:rgba(150,163,214,.08);color:var(--muted);border:1px solid var(--border)}
+.rtier{flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-size:14px;font-weight:800}
+.tier-S{background:rgba(248,113,113,.18);color:#f87171;border:1px solid rgba(248,113,113,.45)}
+.tier-A{background:rgba(251,146,60,.18);color:#fb923c;border:1px solid rgba(251,146,60,.45)}
+.tier-B{background:rgba(251,191,36,.16);color:#fbbf24;border:1px solid rgba(251,191,36,.4)}
+.tier-C{background:rgba(52,211,153,.14);color:#34d399;border:1px solid rgba(52,211,153,.4)}
+.tier-D{background:rgba(125,211,252,.14);color:#7dd3fc;border:1px solid rgba(125,211,252,.4)}
+.reco-group-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.reco-group-h .cnt{font-size:11px;font-weight:600;color:var(--dim);background:rgba(150,163,214,.08);border:1px solid var(--border);border-radius:20px;padding:2px 9px}
 .rvalid{flex:none}
 .val-x{background:rgba(74,222,128,.12);color:var(--green);border:1px solid rgba(74,222,128,.3)}
 .val-note{background:rgba(251,191,36,.1);color:var(--amber);border:1px solid rgba(251,191,36,.3)}
@@ -1095,7 +1104,7 @@ function vcardHTML(kind,v,i){
     '<div class="vbody">'+
       '<div class="vtitle">'+esc(v.title)+'</div>'+
       '<div class="vmeta"><a href="'+esc(v.chUrl||'#')+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a><span class="subs">· '+fmtN(v.subs)+' subs</span></div>'+
-      '<div class="vtags">'+gtag(v.genre)+ghosttag(v.cluster)+'</div>'+extra+
+      '<div class="vtags">'+gtag(v.genre)+ghosttag(v.cluster)+aiBadge(chanByUrl(v.chUrl))+'</div>'+extra+
       '<div class="vstats">'+
         '<div class="vstat hl"><b>'+fmtN(v.vpm)+'</b><span>views/mo</span></div>'+
         '<div class="vstat"><b>'+fmtN(v.views)+'</b><span>views</span></div>'+
@@ -1252,21 +1261,17 @@ function rerenderRecos(){
   const rc=document.querySelector('.result-count');if(rc)rc.innerHTML='<b>'+fmtInt(rows.length)+'</b> concepts';
   armAutoLoad();
 }
-function recoListHTML(rows){
-  if(!rows.length)return '<div class="empty">Nothing matches — try clearing filters.</div>';
-  const page=rows.slice(0,RS.limit);
-  window._pageRecos=page;
-  let h=page.map((r,i)=>{
+function recoCardHTML(r,i){
     const vs=validState(r.valid);
     const vbadge=(vs==='x'?'<span class="tag val-x rvalid">✓ Validé</span>':vs==='xnote'?'<span class="tag val-x rvalid">✓ Validé</span><span class="tag val-note rvalid">📝</span>':vs==='note'?'<span class="tag val-note rvalid">📝 Note Dim</span>':vs==='no'?'<span class="tag val-no rvalid">–</span>':'');
     const isVal=/^x/i.test(String(r.valid||'').trim());
-    const pot=r.pot?('<span class="tag rpot pot-'+r.pot[0]+'">'+esc(r.pot)+'</span>'):'';
-    const score=(r.scoreAdj!=null?r.scoreAdj:r.score);
+    const tierL=r.pot?r.pot[0].toUpperCase():null;
+    const tier=tierL?('<span class="rtier tier-'+tierL+'" title="Tier '+tierL+'">'+tierL+'</span>'):'<span class="rtier" style="opacity:.35">—</span>';
     return '<div class="rcard" style="--gc:'+gcolor(r.genre)+'" id="rc'+i+'">'+
       '<div class="rhead" onclick="document.getElementById(\'rc'+i+'\').classList.toggle(\'open\')">'+
-        '<span class="rnum">#'+Math.round(r.n)+'</span>'+
+        tier+
         '<div class="rtitle">'+esc(r.title)+'<div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">'+gtag(r.genre)+ghosttag(r.perso)+ghosttag(r.niche)+(r.dur?ghosttag(r.dur):'')+'</div></div>'+
-        vbadge+pot+'<span class="rscore" title="Adjusted score">'+(score!=null?Math.round(score):'—')+'</span>'+
+        vbadge+
       '</div>'+
       '<div class="rbody">'+
         '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
@@ -1283,7 +1288,18 @@ function recoListHTML(rows){
         (r.desc?'<div class="rrow"><div class="k">Description</div><div class="v">'+esc(r.desc)+'<br><button class="copybtn" onclick="copyTxt(this,'+i+',\'desc\')">⧉ Copy description</button></div></div>':'')+
         (r.kw?'<div class="rrow"><div class="k">SEO keywords</div><div class="v" style="color:var(--muted)">'+esc(r.kw)+'<br><button class="copybtn" onclick="copyTxt(this,'+i+',\'kw\')">⧉ Copy keywords</button> <button class="copybtn" onclick="copyTxt(this,'+i+',\'title\')">⧉ Copy title</button></div></div>':'')+
       '</div></div>';
-  }).join('');
+}
+function recoListHTML(rows){
+  if(!rows.length)return '<div class="empty">Nothing matches — try clearing filters.</div>';
+  const page=rows.slice(0,RS.limit);
+  window._pageRecos=page;
+  const valRows=page.filter(r=>/^x/i.test(String(r.valid||'').trim()));
+  const pendRows=page.filter(r=>!/^x/i.test(String(r.valid||'').trim()));
+  let h='';
+  h+='<div class="reco-group-h">✓ Validé<span class="cnt">'+valRows.length+'</span></div>';
+  h+=valRows.length?valRows.map(r=>recoCardHTML(r,page.indexOf(r))).join(''):'<div class="empty">Aucune recommandation validée pour l’instant.</div>';
+  h+='<div class="reco-group-h">À valider<span class="cnt">'+pendRows.length+'</span></div>';
+  h+=pendRows.length?pendRows.map(r=>recoCardHTML(r,page.indexOf(r))).join(''):'<div class="empty">Tout est validé 🎉</div>';
   if(rows.length>RS.limit)h+='<button class="load-more" onclick="RS.limit+=120;rerenderRecos()">Loading more · '+fmtInt(rows.length-RS.limit)+' remaining</button>';
   return h;
 }
@@ -1763,9 +1779,9 @@ function chanListHTML(rows){
   if(!rows.length)return '<div class="empty">Nothing matches — try clearing filters.</div>';
   const page=rows.slice(0,CS.limit);
   window._page_chan=page;
-  let h='<table class="vtable"><thead><tr><th>Channel</th><th>Niche</th><th>Country</th><th>Subs</th><th>Subs / mo</th><th>Total views</th><th>Views / yr</th><th>Avg last 10</th><th>Up / mo</th><th>Last upload</th></tr></thead><tbody>'+
+  let h='<table class="vtable"><thead><tr><th>Channel</th><th>Niche</th><th>Country</th><th>Subs</th><th>Subs per month</th><th>Total views</th><th>Views per year</th><th>Avg last 10</th><th>Uploads per month</th><th>Last upload</th></tr></thead><tbody>'+
     page.map((c,i)=>'<tr class="row" onclick="openChanIdx('+i+')">'+
-      '<td><div style="display:flex;align-items:center;gap:12px">'+chAva(c,64)+'<span class="ttitle">'+esc(c.name)+(c.ours?' <span class="tag" style="background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55;margin-left:6px">OURS</span>':'')+' '+aiBadge(c)+'</span><span style="margin-left:auto"></span>'+wlStar('c',normUrl(c.url)).replace('wl-star','wl-star inline')+'</div></td>'+
+      '<td><div style="display:flex;align-items:center;gap:12px">'+chAva(c,64)+'<span class="ttitle">'+esc(c.name)+(c.ours?' <span class="tag" style="background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55;margin-left:6px">OURS</span>':'')+' '+aiBadge(c)+'</span>'+wlStar('c',normUrl(c.url)).replace('class="wl-star','style="margin-left:8px" class="wl-star inline')+'</div></td>'+
       '<td>'+gtag(c.niche)+'</td>'+
       '<td style="white-space:nowrap">'+flagOf(c.country)+' '+esc(c.country||'—')+'</td>'+
       '<td class="num vpmcell">'+fmtN(c.subs)+'</td>'+
@@ -1908,7 +1924,7 @@ const FR_LIT=[
 ['</b> videos<','</b> vidéos<'],['</b> streams<','</b> streams<'],['</b> channels<','</b> chaînes<'],['</b> concepts<','</b> concepts<'],
 [' remaining<',' restantes<'],['Loading more · ','Chargement · '],
 ['>Stream<','>Stream<'],['>👀 Now<','>👀 Actuel<'],['>Peak<','>Pic<'],['>Started<','>Lancé<'],['>Discovery keywords<','>Mots-clés de découverte<'],
-['>Channel</th>','>Chaîne</th>'],['>Niche<','>Niche<'],['>Country<','>Pays<'],['>Subs</th>','>Abonnés</th>'],['>Subs / mo<','>Abonnés / mois<'],['>Total views<','>Vues totales<'],['>Views / yr<','>Vues / an<'],['>Avg last 10<','>Moy. 10 dern.<'],['>Up / mo<','>Up / mois<'],['>Last upload<','>Dernier upload<'],['>Title<','>Titre<'],['>Views/mo<','>Vues/mois<'],['>Views<','>Vues<'],['>Duration<','>Durée<'],['>Published<','>Publiée<'],['>Genre<','>Genre<'],
+['>Channel</th>','>Chaîne</th>'],['>Niche<','>Niche<'],['>Country<','>Pays<'],['>Subs</th>','>Abonnés</th>'],['>Subs per month<','>Abonnés par mois<'],['>Total views<','>Vues totales<'],['>Views per year<','>Vues par an<'],['>Avg last 10<','>Moy. 10 dern.<'],['>Uploads per month<','>Uploads par mois<'],['>Last upload<','>Dernier upload<'],['>Title<','>Titre<'],['>Views/mo<','>Vues/mois<'],['>Views<','>Vues<'],['>Duration<','>Durée<'],['>Published<','>Publiée<'],['>Genre<','>Genre<'],
 ['>views/mo</span>','>vues/mois</span>'],['>views</span>','>vues</span>'],['>age</span>','>âge</span>'],['>published</span>','>publiée</span>'],['>duration</span>','>durée</span>'],['>watching now</span>','>spectateurs</span>'],['>peak measured</span>','>pic mesuré</span>'],['>peak</span>','>pic</span>'],['>started</span>','>lancé</span>'],['>scans</span>','>scans</span>'],['>subscribers</span>','>abonnés</span>'],['>total views</span>','>vues totales</span>'],['>views / year</span>','>vues / an</span>'],['>avg last 10</span>','>moy. 10 dern.</span>'],['>percentile vs market</span>','>percentile vs marché</span>'],['>percentile · channel</span>','>percentile · chaîne</span>'],['th · channel<','e · chaîne<'],['>avg view duration (median ','>durée moy. de vue (médiane '],['>views/mo lifetime</span>','>vues/mois (vie)</span>'],['>views/mo now</span>','>vues/mois (actuel)</span>'],['>impressions</span>','>impressions</span>'],['>avg view duration</span>','>durée moy. de vue</span>'],['>reco score</span>','>score reco</span>'],['>potential</span>','>potentiel</span>'],['>release date</span>','>date de sortie</span>'],
 [' watching</span>',' spectateurs</span>'],[' watching<',' spectateurs<'],
 ['>Overperforming<','>Surperforme<'],['>In line<','>Dans la norme<'],['>Underperforming<','>Sous-performe<'],['>Too early<','>Trop tôt<'],
