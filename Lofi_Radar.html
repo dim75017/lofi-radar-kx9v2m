@@ -300,6 +300,7 @@ select.ctl option{background:#141828;color:var(--text)}
 .rst-ko{background:rgba(251,113,133,.12);color:var(--red);border:1.5px solid rgba(251,113,133,.45)}
 .rst-x{flex:none;width:36px;height:38px;border-radius:11px;background:rgba(150,163,214,.07);border:1px solid var(--border);color:var(--muted);font-size:15px;cursor:pointer;transition:color .12s,border-color .12s}
 .rst-x:hover{color:var(--red);border-color:rgba(251,113,133,.5)}
+.age-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:-1px}
 .rcomment-btn{flex:none;width:30px;height:30px;border-radius:9px;background:rgba(150,163,214,.06);border:1px solid var(--border);color:var(--dim);cursor:pointer;font-size:13px}
 /* ---- grille de recos en tuiles ---- */
 .rgrid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
@@ -1160,7 +1161,7 @@ function ageMonths(v){
   if(v.pub)return (Date.now()-v.pub)/2629800000;
   return null;
 }
-const AGES=[['3m','🌱 Last 3 months',3],['6m','🔥 Last 6 months',6],['12m','📈 Last 12 months',12],['all','🌍 All time',null]];
+const AGES=[['3m','<span class="age-dot" style="background:#4ade80;box-shadow:0 0 9px rgba(74,222,128,.7)"></span>Last 3 months',3],['6m','<span class="age-dot" style="background:#fbbf24;box-shadow:0 0 9px rgba(251,191,36,.7)"></span>Last 6 months',6],['12m','<span class="age-dot" style="background:#fb923c;box-shadow:0 0 9px rgba(251,146,60,.7)"></span>Last 12 months',12],['all','<span class="age-dot" style="background:#60a5fa;box-shadow:0 0 9px rgba(96,165,250,.7)"></span>All time',null]];
 function inAge(v,code){
   if(code==='all')return true;
   const A=AGES.find(a=>a[0]===code);if(!A)return true;
@@ -2567,7 +2568,7 @@ const FR_LIT=[
 ['📡 Top livestreams','📡 Top livestreams'],['Most-watched 24/7 streams on the scan keywords · viewers at last scan','Streams 24/7 les plus regardés sur les mots-clés du scan · spectateurs au dernier scan'],
 ['📺 Top channels','📺 Top chaînes'],['Biggest channels in the competitive audit','Plus grosses chaînes de l’audit concurrentiel'],
 ['View all →','Tout voir →'],['Full roadmap →','Roadmap complète →'],
-['🆕 <1 month','🆕 <1 mois'],['🌱 Last 3 months','🌱 3 derniers mois'],['🔥 Last 6 months','🔥 6 derniers mois'],['📈 Last 12 months','📈 12 derniers mois'],['🌍 All time','🌍 Tout l’historique'],
+['🆕 <1 month','🆕 <1 mois'],['Last 3 months','3 derniers mois'],['Last 6 months','6 derniers mois'],['Last 12 months','12 derniers mois'],['All time','Tout l’historique'],
 ['Search titles, channels, keywords…','Chercher titres, chaînes, mots-clés…'],['Search streams, channels, keywords…','Chercher streams, chaînes, mots-clés…'],['Search channels, niches, countries…','Chercher chaînes, niches, pays…'],['Search concepts, titles, niches…','Chercher concepts, titres, niches…'],
 ['All clusters','Tous les clusters'],['All potential','Tout potentiel'],['All characters','Tous les personnages'],['Any status','Tout statut'],['All sources','Toutes les sources'],['All genres','Tous les genres'],
 ['>Sort · Velocity (views/mo)<','>Tri · Vélocité (vues/mois)<'],['>Sort · Total views<','>Tri · Vues totales<'],['>Sort · Newest first<','>Tri · Plus récentes<'],['>Sort · Oldest first<','>Tri · Plus anciennes<'],['>Sort · Duration<','>Tri · Durée<'],['>Sort · Channel size<','>Tri · Taille de chaîne<'],['>Sort · Recently added<','>Tri · Ajout récent<'],['>Sort · Viewers now<','>Tri · Spectateurs actuels<'],['>Sort · Peak viewers<','>Tri · Pic de spectateurs<'],['>Sort · Recently started<','>Tri · Lancement récent<'],['>Sort · Channel<','>Tri · Chaîne<'],['>Sort · Subscribers<','>Tri · Abonnés<'],['>Sort · Views / year<','>Tri · Vues / an<'],['>Sort · Avg last 10<','>Tri · Moy. 10 dernières<'],['>Sort · Uploads / month<','>Tri · Uploads / mois<'],['>Sort · Last upload<','>Tri · Dernier upload<'],['>Sort · Name<','>Tri · Nom<'],['>Sort · Adjusted score<','>Tri · Score ajusté<'],['>Sort · Score<','>Tri · Score<'],['>Sort · Confidence<','>Tri · Confiance<'],['>Sort · N°<','>Tri · N°<'],['>Sort · Worst percentile first<','>Tri · Pire percentile d’abord<'],['>Sort · Best percentile first<','>Tri · Meilleur percentile d’abord<'],['>Sort · Most views<','>Tri · Plus de vues<'],
