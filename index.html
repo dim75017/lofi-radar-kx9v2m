@@ -200,13 +200,13 @@ select.ctl option{background:#141828;color:var(--text)}
 #nav button.nsmall{margin-top:auto;opacity:.55;font-size:11px;padding:6px 12px}
 #nav button.nsmall .emo{font-size:12px}
 #nav button.nsmall.active{opacity:1}
-#lang-btn{position:fixed;top:14px;right:18px;z-index:60;display:flex;align-items:center;gap:8px;padding:10px;border-radius:999px;border:1px solid var(--border);background:rgba(15,18,30,.88);backdrop-filter:blur(8px);cursor:pointer;user-select:none}
+#lang-btn{position:fixed;top:14px;right:18px;z-index:60;display:flex;align-items:center;gap:5px;padding:5px;border-radius:999px;border:1px solid var(--border);background:rgba(15,18,30,.88);backdrop-filter:blur(8px);cursor:pointer;user-select:none}
 #lang-btn:hover{border-color:rgba(139,124,246,.5)}
-#lang-btn .lg-slide{position:absolute;top:10px;left:10px;width:90px;height:65px;border-radius:999px;background:rgba(139,124,246,.28);border:1px solid rgba(139,124,246,.6);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:1}
-#lang-btn.fr .lg-slide{transform:translateX(98px)}
-#lang-btn .lg-opt{position:relative;z-index:2;width:90px;height:65px;display:grid;place-items:center;border-radius:999px;opacity:.4;filter:saturate(.5);transition:opacity .2s,filter .2s}
+#lang-btn .lg-slide{position:absolute;top:5px;left:5px;width:34px;height:25px;border-radius:999px;background:rgba(139,124,246,.28);border:1px solid rgba(139,124,246,.6);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:1}
+#lang-btn.fr .lg-slide{transform:translateX(37px)}
+#lang-btn .lg-opt{position:relative;z-index:2;width:34px;height:25px;display:grid;place-items:center;border-radius:999px;opacity:.4;filter:saturate(.5);transition:opacity .2s,filter .2s}
 #lang-btn .lg-opt.on{opacity:1;filter:none}
-#lang-btn img{width:50px;height:38px;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+#lang-btn img{width:20px;height:15px;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
 .wl-star{position:absolute;right:9px;top:9px;z-index:5;background:rgba(5,6,10,.75);border:1px solid var(--border);border-radius:8px;color:#fbbf24;font-size:19px;width:27px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
 .wl-star:hover{border-color:#fbbf2466}
 .wl-star.inline{position:static;width:26px;height:24px;font-size:13px;margin-left:4px}
@@ -829,10 +829,10 @@ function timeAgo(ms){
 /* ================= STATE ================= */
 let DATA=null, SYNCED=null, route='dashboard';
 const VS={
-  all:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60},
-  trends:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60},
-  news:{q:'',genres:new Set(),cluster:'',sort:'added',mode:'grid',limit:60},
-  mix:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60,age:'all'}
+  all:{q:'',genre:'',cluster:'',sort:'vpm',mode:'grid',limit:60},
+  trends:{q:'',genre:'',cluster:'',sort:'vpm',mode:'grid',limit:60},
+  news:{q:'',genre:'',cluster:'',sort:'added',mode:'grid',limit:60},
+  mix:{q:'',genre:'',cluster:'',sort:'vpm',mode:'grid',limit:60,age:'all'}
 };
 const RS={q:'',genres:new Set(),pot:'',perso:'',val:'',sort:'scoreAdj',limit:80};
 const RM={src:'',genre:'',year:'',mode:'cal',cal:null,view:'month'};
@@ -1170,7 +1170,7 @@ function inAge(v,code){
 function filterVids(kind){
   const st=VS[kind];let rows=(kind==='mix')?mixRows():DATA[kind];
   if(kind==='mix'&&st.age!=='all')rows=rows.filter(v=>inAge(v,st.age));
-  if(st.genres.size)rows=rows.filter(v=>st.genres.has(v.genre));
+  if(st.genre)rows=rows.filter(v=>v.genre===st.genre);
   if(st.cluster)rows=rows.filter(v=>v.cluster===st.cluster);
   if(st.q){const q=st.q.toLowerCase();rows=rows.filter(v=>(v.title+' '+v.channel+' '+(v.kw||'')+' '+(v.disc||'')).toLowerCase().includes(q));}
   return [...rows].sort(SORTS[st.sort].fn);
@@ -1180,18 +1180,22 @@ function videosHTML(kind){
   const st=VS[kind];
   const all=(kind==='mix')?mixRows():DATA[kind];
   const rows=filterVids(kind);
-  let seg='';
+  let ageSel='';
   if(kind==='mix'){
-    seg='<div class="seg">'+AGES.map(a=>{
+    ageSel='<select class="ctl" onchange="setAge(this.value)">'+AGES.map(a=>{
       const n=a[2]==null?all.length:all.filter(v=>inAge(v,a[0])).length;
-      return '<button class="'+(st.age===a[0]?'on':'')+'" onclick="setAge(\''+a[0]+'\')">'+a[1]+'<span class="cnt">'+fmtInt(n)+'</span></button>';
-    }).join('')+'</div>';
+      const label=a[1].replace(/<[^>]*>/g,'');
+      return '<option '+(st.age===a[0]?'selected':'')+' value="'+a[0]+'">'+label+' · '+fmtInt(n)+'</option>';
+    }).join('')+'</select>';
   }
   const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>all.filter(v=>v.genre===b).length-all.filter(v=>v.genre===a).length);
   const clusters=[...new Set(all.map(v=>v.cluster).filter(Boolean))].sort();
   const sortKeys=kind==='news'?['added','vpm','views','newest','dur']:(kind==='mix'?['vpm','views','newest','oldest','dur','subs','added']:['vpm','views','newest','oldest','dur','subs']);
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input id="q-'+kind+'" placeholder="Search titles, channels, keywords…" value="'+esc(st.q)+'" oninput="VS.'+kind+'.q=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')"><kbd>/</kbd></div>'+
+    ageSel+
+    '<select class="ctl" onchange="VS.'+kind+'.genre=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')">'+
+      '<option value="">All genres</option>'+genres.map(g=>'<option '+(st.genre===g?'selected':'')+' value="'+esc(g)+'">'+esc(g)+' · '+all.filter(v=>v.genre===g).length+'</option>').join('')+'</select>'+
     '<select class="ctl" onchange="VS.'+kind+'.cluster=this.value;rerenderList(\''+kind+'\')">'+
       '<option value="">All clusters</option>'+clusters.map(c=>'<option '+(st.cluster===c?'selected':'')+' value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select>'+
     '<select class="ctl" onchange="VS.'+kind+'.sort=this.value;rerenderList(\''+kind+'\')">'+
@@ -1200,16 +1204,9 @@ function videosHTML(kind){
       '<button class="'+(st.mode==='grid'?'on':'')+'" onclick="VS.'+kind+'.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(st.mode==='table'?'on':'')+'" onclick="VS.'+kind+'.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
     '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> videos</div>'+
-  '</div>'+seg;
-  h+='<div class="chips" style="margin-bottom:18px">'+genres.map(g=>{
-    const c=gcolor(g),on=st.genres.has(g);
-    return '<span class="chip '+(on?'on':'')+'" style="--chipbg:'+c+'22;--chipbd:'+c+'66" onclick="toggleGenre(\''+kind+'\',\''+esc(g).replace(/'/g,"\\'")+'\')"><span class="dot" style="background:'+c+'"></span>'+esc(g)+' <span style="opacity:.55;font-weight:500">'+all.filter(v=>v.genre===g).length+'</span></span>';
-  }).join('')+'</div>';
+  '</div>';
   h+='<div id="list-'+kind+'">'+listHTML(kind,rows)+'</div>';
   return h;
-}
-function toggleGenre(kind,g){
-  const s=VS[kind].genres;s.has(g)?s.delete(g):s.add(g);VS[kind].limit=60;render();
 }
 function rerenderList(kind){
   const rows=filterVids(kind);
