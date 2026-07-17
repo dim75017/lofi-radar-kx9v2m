@@ -940,14 +940,12 @@ function ageMonths(v){
   if(v.pub)return (Date.now()-v.pub)/2629800000;
   return null;
 }
-const AGES=[['1m','🆕 New · fresh this month',1],['6m','🔥 Last 6 months',6],['12m','📈 Last 12 months',12],['all','🌍 All time',null]];
+const AGES=[['1m','🆕 <1 month',1],['3m','🌱 Last 3 months',3],['6m','🔥 Last 6 months',6],['12m','📈 Last 12 months',12],['all','🌍 All time',null]];
 function inAge(v,code){
   if(code==='all')return true;
   const lim=AGES.find(a=>a[0]===code)[2];
   const m=ageMonths(v);
-  if(m!=null&&m<=lim)return true;
-  if(code==='1m'&&v.added&&(Date.now()-v.added)<=2629800000)return true;
-  return false;
+  return m!=null&&m<=lim;
 }
 function filterVids(kind){
   const st=VS[kind];let rows=(kind==='mix')?mixRows():DATA[kind];
