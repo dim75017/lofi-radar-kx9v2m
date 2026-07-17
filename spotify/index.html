@@ -114,8 +114,9 @@ input,select{font-family:inherit;color:var(--text)}
 .top-row .rank{width:26px;text-align:center;font-family:'Sora';font-weight:700;font-size:14px;color:var(--dim);flex:none}
 .av-sm{width:46px;height:46px;border-radius:50%;position:relative;overflow:hidden;display:grid;place-items:center;font-family:'Sora';font-weight:700;font-size:16px;color:#052e12;background:linear-gradient(135deg,#4ade80,#67e8f9);flex:none}
 .top-row .ti{flex:1;min-width:0}
-.top-row .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.top-row .nm .nmtxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.top-row .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:14px}
+.top-row .nm .nmtxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.top-row .nm .badge{margin-left:auto;flex:none}
 .top-row .sub{font-size:11.5px;color:var(--muted);margin:4px 0 6px}
 .top-row .vals{text-align:right;flex:none}
 .top-row .v1{font-family:'Sora';font-weight:800;font-size:16.5px}
@@ -183,8 +184,9 @@ td .ar{color:var(--muted);cursor:pointer}
 td .ar:hover{color:var(--acc2)}
 td .lb{color:var(--dim);font-size:11.5px;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 td.covtd{width:82px;padding:6px 2px 6px 10px}
-.cov{width:68px;height:68px;border-radius:9px;background:rgba(150,214,170,.07);object-fit:cover;display:block;box-shadow:0 2px 8px rgba(0,0,0,.35)}
-.cov[src]{background:none}
+.cov{width:68px;height:68px;border-radius:9px;background:linear-gradient(135deg,#1f2e26,#141828);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);flex:none}
+.cov::after{content:'♪';color:rgba(150,214,170,.32);font-size:22px}
+.cov.has::after{content:none}
 .avp{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:0;transition:opacity .25s}
 .avp.on{opacity:1}
 .badge{display:inline-block;padding:2.5px 9px;border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
@@ -194,6 +196,12 @@ td.covtd{width:82px;padding:6px 2px 6px 10px}
 .badge.hot{color:#052e12;background:linear-gradient(90deg,#1ed760,#4ade80)}
 .badge.lofi{color:#a78bfa;background:rgba(167,139,250,.12);box-shadow:inset 0 0 0 1px rgba(167,139,250,.25)}
 .badge.disco{color:#f9a8d4;background:rgba(249,168,212,.10);box-shadow:inset 0 0 0 1px rgba(249,168,212,.25)}
+.badge.seg-top{color:#4ade80;background:rgba(74,222,128,.14);box-shadow:inset 0 0 0 1px rgba(74,222,128,.4)}
+.badge.seg-reg{color:#fbbf24;background:rgba(251,191,36,.13);box-shadow:inset 0 0 0 1px rgba(251,191,36,.34)}
+.badge.seg-occ{color:#fb923c;background:rgba(251,146,60,.13);box-shadow:inset 0 0 0 1px rgba(251,146,60,.34)}
+.badge.seg-ext{color:#fb7185;background:rgba(251,113,133,.12);box-shadow:inset 0 0 0 1px rgba(251,113,133,.32)}
+td.selc{width:34px;padding-left:12px}
+td.selc input,th.selc input{width:16px;height:16px;accent-color:#1db954;cursor:pointer}
 .more-wrap{text-align:center;padding:16px 0 4px}
 .btn-more{
   padding:9px 22px;border-radius:11px;border:1px solid var(--border2);font-size:12.5px;font-weight:600;
@@ -336,6 +344,9 @@ const EN_MAP = {
   "Simulation d'offre de rachat":"Buyout offer simulator",
   "Choisir le split artiste / label. Avance = prix d'achat de la part cédée. Payback = temps pour rembourser l'avance avec les revenus captés (objectif 2-3 ans).":"Pick the artist / label split. Advance = purchase price of the ceded share. Payback = time to recoup the advance from captured revenue (target 2-3 years).",
   "rachat total":"full buyout","Avance à verser":"Advance to pay","Revenu capté /mois":"Captured revenue /mo","Payback":"Payback","Part cédée au label":"Share ceded to label","Contact":"Contact","contact à trouver":"contact to find",
+  "top artiste":"top artist","Tracks sélectionnées":"Selected tracks","Tout sélectionner":"Select all",
+  "Coche les tracks à racheter ci-dessous, choisis le split artiste / label : l'avance et le payback se recalculent. Objectif payback 2-3 ans.":"Tick the tracks to buy below, pick the artist / label split: advance and payback recompute. Target payback 2-3 years.",
+  "Aucune track sélectionnée — coche des lignes pour simuler une offre.":"No track selected — tick rows to simulate an offer.",
   "Base : revenu 24 mois projeté (vélocité × 0,0035$/stream) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille et paramètres repris du modèle LOFI RECORDS. Estimation indicative, hors CIPP (rachat catalogue non éligible).":"Base: projected 24-month revenue (velocity × $0.0035/stream) → EUR ×0.875, −8% Orchard, −12% costs, −15% haircut. Grid and parameters from the LOFI RECORDS model. Indicative estimate, excl. CIPP (catalog buyouts not eligible)."
 };
 const T = s => LANG === 'fr' ? s : (EN_MAP[s] !== undefined ? EN_MAP[s] : s);
@@ -448,7 +459,7 @@ const artistSearch = n => 'https://open.spotify.com/search/'+encodeURIComponent(
 
 /* ---------- état ---------- */
 const S = {
-  view:'overview', back:null, palier:'100/0',
+  view:'overview', back:null, palier:'100/0', sel:new Set(),
   q:'', statut:'all', min:0, period:'all', artist:-1, rel:'all',
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', shownA:60, aseg:'all',
@@ -465,7 +476,7 @@ document.getElementById('nav').addEventListener('click', e=>{
 });
 function goArtist(i){
   S.back = {view:S.view, y:window.scrollY};
-  S.view='opps'; S.artist=i; S.q=''; S.statut='all'; S.min=0; S.period='all'; S.shown=100;
+  S.view='opps'; S.artist=i; S.q=''; S.statut='all'; S.min=0; S.period='all'; S.shown=100; S.sel=new Set();
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v==='opps'));
   syncHash(); render(); window.scrollTo(0,0);
 }
@@ -519,13 +530,14 @@ function avatarHtml(g){
   return '';
 }
 
-/* relation au label : régulier (≥10 tracks Lofi), occasionnel (1-9), hors label (0) */
-function seg(g){ return g.lofi>=10 ? 'reg' : (g.lofi>0 ? 'occ' : 'ext'); }
+/* relation au label, 4 paliers par nb de sorties chez Lofi (vert>jaune>orange>rouge) */
+function seg(g){ return g.lofi>=30 ? 'top' : (g.lofi>=10 ? 'reg' : (g.lofi>0 ? 'occ' : 'ext')); }
 function segBadge(g){
   const s = seg(g);
-  if (s==='reg') return '<span class="badge lofi">'+T('régulier')+'</span>';
-  if (s==='occ') return '<span class="badge other">'+T('occasionnel')+'</span>';
-  return '<span class="badge disco">'+T('hors label')+'</span>';
+  if (s==='top') return '<span class="badge seg-top">★ '+T('top artiste')+'</span>';
+  if (s==='reg') return '<span class="badge seg-reg">'+T('régulier')+'</span>';
+  if (s==='occ') return '<span class="badge seg-occ">'+T('occasionnel')+'</span>';
+  return '<span class="badge seg-ext">'+T('hors label')+'</span>';
 }
 
 function renderOverview(){
@@ -599,26 +611,27 @@ function renderOverview(){
   </div>`;
 }
 
-function offerHtml(g){
+function offerHtml(g, selMonthly, selCount, totCount){
   const p = palier();
-  const adv = advance(g.mstreams);
-  const lm = labelMonthly(g.mstreams);
-  const pb = payback(g.mstreams);
+  const none = selCount===0;
+  const adv = none?0:advance(selMonthly);
+  const lm = none?0:labelMonthly(selMonthly);
+  const pb = none?null:payback(selMonthly);
   const contact = g.email?`<a href="mailto:${esc(g.email)}" style="color:var(--cyan)">✉ ${esc(g.email)}</a>`:(g.link?`<a href="${esc(g.link)}" target="_blank" style="color:var(--violet)">${g.link.includes('instagram')?'📷 Instagram':'🔗 Site'}</a>`:'<span style="color:var(--dim)">'+T('contact à trouver')+'</span>');
   return `<div class="offer">
     <h3>💰 ${T("Simulation d'offre de rachat")}</h3>
-    <div class="osub">${T("Choisir le split artiste / label. Avance = prix d'achat de la part cédée. Payback = temps pour rembourser l'avance avec les revenus captés (objectif 2-3 ans).")}</div>
+    <div class="osub">${T("Coche les tracks à racheter ci-dessous, choisis le split artiste / label : l'avance et le payback se recalculent. Objectif payback 2-3 ans.")}</div>
     <div class="pal">
       ${BUY.paliers.map(pp=>`<button class="${pp.k===S.palier?'on':''}" onclick="setPalier('${pp.k}')">${pp.k}${pp.k==='100/0'?' · '+T('rachat total'):''}</button>`).join('')}
     </div>
     <div class="ogrid">
-      <div class="ob"><div class="l">${T('Avance à verser')}</div><div class="v" style="color:var(--acc2)">${eur(adv)}</div></div>
-      <div class="ob"><div class="l">${T('Revenu capté /mois')}</div><div class="v" style="color:var(--cyan)">${eur(lm)}</div></div>
-      <div class="ob"><div class="l">${T('Payback')}</div><div class="v ${paybackClass(pb)}">${paybackTxt(pb)}</div></div>
-      <div class="ob"><div class="l">${T('Part cédée au label')}</div><div class="v">${Math.round((1-p.artist)*100)}%</div></div>
+      <div class="ob"><div class="l">${T('Tracks sélectionnées')}</div><div class="v">${selCount}<span style="font-size:12px;color:var(--dim);font-weight:600"> / ${totCount}</span></div></div>
+      <div class="ob"><div class="l">${T('Avance à verser')}</div><div class="v" style="color:var(--acc2)">${none?'—':eur(adv)}</div></div>
+      <div class="ob"><div class="l">${T('Revenu capté /mois')}</div><div class="v" style="color:var(--cyan)">${none?'—':eur(lm)}</div></div>
+      <div class="ob"><div class="l">${T('Payback')}</div><div class="v ${none?'':paybackClass(pb)}">${none?'—':paybackTxt(pb)}</div></div>
       <div class="ob"><div class="l">${T('Contact')}</div><div class="v" style="font-size:12.5px;font-family:Inter;font-weight:600;margin-top:8px">${contact}</div></div>
     </div>
-    <div style="font-size:10.5px;color:var(--dim);margin-top:12px">${T("Base : revenu 24 mois projeté (vélocité × 0,0035$/stream) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille et paramètres repris du modèle LOFI RECORDS. Estimation indicative, hors CIPP (rachat catalogue non éligible).")}</div>
+    <div style="font-size:10.5px;color:var(--dim);margin-top:12px">${none?'<b style="color:var(--acc2)">'+T('Aucune track sélectionnée — coche des lignes pour simuler une offre.')+'</b><br>':''}${T("Base : revenu 24 mois projeté (vélocité × 0,0035$/stream) → EUR ×0,875, −8% Orchard, −12% coûts, −15% décote. Grille et paramètres repris du modèle LOFI RECORDS. Estimation indicative, hors CIPP (rachat catalogue non éligible).")}</div>
   </div>`;
 }
 function setPalier(k){ S.palier = k; render(); }
@@ -638,7 +651,7 @@ function renderOpps(){
       <p>${T("Toutes les tracks hors Lofi Records. Les lignes vertes dépassent 500 000 streams (priorités). Streams / mois = vélocité depuis la sortie.")}</p>
     </div>
   </div>
-  ${ag?offerHtml(ag):''}
+  ${ag?offerHtml(ag, rows.filter(r=>S.sel.has(r[6])).reduce((s,r)=>s+Math.max(perMonth(r),0),0), rows.filter(r=>S.sel.has(r[6])).length, rows.length):''}
   <div class="toolbar">
     <input type="text" id="f-q" placeholder="${T('Rechercher track, artiste, label…')}" value="${esc(S.q)}">
     <button class="chip ${S.statut==='all'?'on':''}" data-st="all">${T('Tous')}</button>
@@ -670,6 +683,7 @@ function renderOpps(){
   <div class="panel" style="padding:6px 14px 14px">
     <table>
       <thead><tr>
+        ${ag?`<th class="selc"><input type="checkbox" id="sel-all" title="${T('Tout sélectionner')}" ${rows.length&&rows.every(r=>S.sel.has(r[6]))?'checked':''}></th>`:''}
         <th></th>
         <th data-k="1">Track</th>
         <th data-k="0">${T('Artiste')} ${sortArrow(0)}</th>
@@ -683,8 +697,9 @@ function renderOpps(){
       </tr></thead>
       <tbody>
       ${slice.map(r=>`
-        <tr class="${r[3]>=HOT?'hot':''}">
-          <td class="covtd">${r[8]?`<img class="cov on" src="${esc(r[8])}" alt="">`:`<img class="cov" data-tid="${r[6]}" alt="">`}</td>
+        <tr class="${r[3]>=HOT?'hot':''} ${ag&&S.sel.has(r[6])?'hot':''}">
+          ${ag?`<td class="selc"><input type="checkbox" class="sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>`:''}
+          <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td><a class="tk" href="${trackUrl(r[6])}" target="_blank" rel="noopener">${esc(r[1])}</a>${r[7]?' <span class="badge new">'+T('détectée')+' '+r[7].slice(5)+'</span>':''}</td>
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
           <td class="num" title="${fmtFull(r[3])}">${r[3]>=HOT?'<span class="badge hot">'+fmt(r[3])+'</span>':fmt(r[3])}</td>
@@ -714,6 +729,17 @@ function renderOpps(){
     if (S.sort.k===k) S.sort.dir*=-1; else S.sort={k, dir:-1};
     renderOpps();
   }));
+  document.querySelectorAll('.sel-track').forEach(cb=>cb.addEventListener('change', ()=>{
+    const y=window.scrollY;
+    if (cb.checked) S.sel.add(cb.dataset.tid); else S.sel.delete(cb.dataset.tid);
+    renderOpps(); window.scrollTo(0,y);
+  }));
+  const selAll = document.getElementById('sel-all');
+  if (selAll) selAll.addEventListener('change', ()=>{
+    const y=window.scrollY;
+    if (selAll.checked) rows.forEach(r=>S.sel.add(r[6])); else rows.forEach(r=>S.sel.delete(r[6]));
+    renderOpps(); window.scrollTo(0,y);
+  });
   if (typeof attachCovers==='function') attachCovers();
 }
 function keepFocus(id){ const el=document.getElementById(id); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length);} }
@@ -812,7 +838,7 @@ function renderNew(){
       <tbody>
       ${slice.map(r=>`
         <tr class="${r[3]>=HOT?'hot':''}">
-          <td class="covtd">${r[8]?`<img class="cov on" src="${esc(r[8])}" alt="">`:`<img class="cov" data-tid="${r[6]}" alt="">`}</td>
+          <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td>${r[2]}</td>
           <td><a class="tk" href="${trackUrl(r[6])}" target="_blank" rel="noopener">${esc(r[1])}</a>${r[7]?' <span class="badge new">'+T('détectée')+'</span>':''}</td>
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
@@ -895,10 +921,16 @@ function covKeyUrl(img){
   if (img.dataset.tid) return {key:'t'+img.dataset.tid, url:'https://open.spotify.com/track/'+img.dataset.tid};
   return {key:'a'+img.dataset.aid, url:'https://open.spotify.com/artist/'+img.dataset.aid};
 }
-function covShow(img, u){
-  if (!img.isConnected) return;
-  img.onload = ()=>img.classList.add('on');
-  img.src = u; if (img.complete && img.naturalWidth>0) img.classList.add('on');
+function covShow(el, u){
+  if (!el.isConnected) return;
+  if (el.tagName === 'IMG'){
+    el.onload = ()=>el.classList.add('on');
+    el.src = u; if (el.complete && el.naturalWidth>0) el.classList.add('on');
+  } else {
+    const im = new Image();
+    im.onload = ()=>{ if (el.isConnected){ el.style.backgroundImage = 'url("'+u+'")'; el.classList.add('has'); } };
+    im.src = u;
+  }
 }
 const covQueue = []; let covActive = 0;
 function covPump(){
@@ -922,7 +954,11 @@ function attachCovers(){
   // l'observer ne sert plus qu'à faire passer en tête de file ce qui approche de l'écran.
   if (covObserver) covObserver.disconnect();
   covQueue.length = 0;
-  const imgs = [...document.querySelectorAll('img.cov[data-tid], img.avp[data-tid]')];
+  // covers/avatars avec URL directe (data.js) : affichage immédiat, aucune requête
+  document.querySelectorAll('.cov[data-cover], .avp[data-img]').forEach(el=>{
+    covShow(el, el.dataset.cover || el.dataset.img);
+  });
+  const imgs = [...document.querySelectorAll('.cov[data-tid], img.avp[data-tid]')];
   const pending = [];
   for (const img of imgs){
     const {key, url} = covKeyUrl(img);
