@@ -33,6 +33,10 @@ body{
 }
 a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.chip,.pal button,.nav button,.btn-back,.lang-switch button,.acard,.top-row,.btn-more,.offer .ob{transition:transform .13s cubic-bezier(.34,1.56,.64,1),background .15s,border-color .15s,box-shadow .15s,color .15s}
+.chip:active,.pal button:active,.nav button:active,.btn-back:active,.lang-switch button:active,.btn-more:active{transform:scale(.94)}
+.top-row:active{transform:scale(.995)}
+.tk,.ar{transition:color .12s}
 input,select{font-family:inherit;color:var(--text)}
 
 /* ---------- Sidebar ---------- */
@@ -202,10 +206,11 @@ td.covtd{width:82px;padding:6px 2px 6px 10px}
 .badge.seg-occ{color:#60a5fa;background:rgba(37,99,235,.18);box-shadow:inset 0 0 0 1px rgba(59,130,246,.45)}
 .badge.seg-ext{color:#fb7185;background:rgba(251,113,133,.12);box-shadow:inset 0 0 0 1px rgba(251,113,133,.32)}
 td.selc,th.selc{width:44px;padding-left:14px}
-.ck{appearance:none;-webkit-appearance:none;width:19px;height:19px;border-radius:6px;border:1.5px solid var(--border2);background:rgba(150,214,170,.05);cursor:pointer;position:relative;transition:all .13s;vertical-align:middle;flex:none}
+.ck{appearance:none;-webkit-appearance:none;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border2);background:rgba(150,214,170,.05);cursor:pointer;position:relative;transition:transform .12s ease,border-color .13s,background .13s;vertical-align:middle;flex:none}
 .ck:hover{border-color:#4ade80}
+.ck:active{transform:scale(.86)}
 .ck:checked{background:linear-gradient(135deg,#1ed760,#4ade80);border-color:transparent}
-.ck:checked::after{content:'';position:absolute;left:6px;top:2.5px;width:4px;height:9px;border:solid #052e12;border-width:0 2.2px 2.2px 0;transform:rotate(45deg)}
+.ck:checked::after{content:'';position:absolute;left:9px;top:4px;width:5px;height:12px;border:solid #052e12;border-width:0 2.6px 2.6px 0;transform:rotate(45deg)}
 .selall{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none}
 .tmodal{position:fixed;inset:0;z-index:80;background:rgba(5,6,10,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px}
 .tmbox{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--border2);border-radius:18px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:22px 24px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
@@ -220,10 +225,13 @@ td.selc,th.selc{width:44px;padding-left:14px}
 .tmbox .tg .v{font-family:'Sora';font-weight:700;font-size:16px;margin-top:4px}
 .spark{margin-top:6px}
 .tmbox .tnote{font-size:11px;color:var(--dim);margin-top:12px;line-height:1.5}
-.wl-star{background:none;border:none;color:#fbbf24;font-size:15px;cursor:pointer;padding:0 4px;line-height:1;vertical-align:middle;opacity:.55;transition:opacity .12s}
+.wl-star{background:none;border:none;color:#fbbf24;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;vertical-align:middle;opacity:.55;transition:opacity .12s,transform .12s ease}
 .wl-star:hover{opacity:1}
+.wl-star:active{transform:scale(1.3)}
 .wl-star.on{opacity:1}
-.acard .wl-star{position:absolute;top:12px;right:12px;font-size:17px}
+.acard .wl-star{position:absolute;top:12px;right:12px;font-size:22px}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+.wl-star.pop{animation:pop .28s ease}
 .more-wrap{text-align:center;padding:16px 0 4px}
 .btn-more{
   padding:9px 22px;border-radius:11px;border:1px solid var(--border2);font-size:12.5px;font-weight:600;
@@ -378,7 +386,7 @@ const EN_MAP = {
   "Tes tracks et artistes épinglés, à suivre pour un rachat. Stocké dans ce navigateur.":"Your pinned tracks and artists to track for a buyout. Stored in this browser.",
   "Aucune track épinglée. Clique sur l'étoile ☆ d'une track pour la suivre ici.":"No pinned tracks yet. Hit the ☆ on any track to track it here.",
   "All tracks":"All tracks","All artists":"All artists","Tout sélectionner":"Select all","email dispo":"email available","Opportunités":"Opportunities","Score":"Score",
-  "Les tracks récentes qui performent le mieux en ce moment (vélocité de streams pondérée par la fraîcheur de sortie). Les meilleures cibles de rachat / distribution. Clique une track pour sa fiche.":"The recent tracks performing best right now (stream velocity weighted by release freshness). The best buyout / distribution targets. Click a track for its detail sheet.",
+  "Le top des tracks récentes qui sortent du lot (fort volume de streams par mois, pondéré par la fraîcheur). Les meilleures cibles de rachat. Clique une track pour sa fiche.":"The top recent standout tracks (high monthly streams, weighted by freshness). The best buyout targets. Click a track for its detail sheet.",
   "opportunités":"opportunities","Opportunité":"Opportunity","Très chaud":"Very hot","Chaud":"Hot","Prometteur":"Rising","À suivre":"Watch","Aucune opportunité sur la période.":"No opportunity in this range.",
   "Revenu /mois":"Revenue /mo","Évolution des streams":"Streams trend","en hausse":"rising","en baisse":"declining",
   "Courbe en cours de constitution : la veille hebdomadaire enregistre un point par semaine. Reviens dans quelques semaines pour voir la tendance.":"Curve being built: the weekly watch records one point per week. Come back in a few weeks to see the trend.",
@@ -571,7 +579,7 @@ function avatarHtml(g){
 }
 
 /* relation au label, 4 paliers par nb de sorties chez Lofi (vert>jaune>orange>rouge) */
-function seg(g){ return g.lofi>=30 ? 'top' : (g.lofi>=10 ? 'reg' : (g.lofi>0 ? 'occ' : 'ext')); }
+function seg(g){ return g.lofi>50 ? 'top' : (g.lofi>=25 ? 'reg' : (g.lofi>0 ? 'occ' : 'ext')); }
 function segBadge(g){
   const s = seg(g);
   if (s==='top') return '<span class="badge seg-top">★ '+T('top artiste')+'</span>';
@@ -687,7 +695,7 @@ function toggleWL(type,k,ev){
   if(i>=0) w[type].splice(i,1); else w[type].push(k);
   wlSet(w);
   const el=document.getElementById('c-watch'); if(el) el.textContent=w.t.length+w.a.length||'';
-  if(ev&&ev.currentTarget){ const on=w[type].includes(k); ev.currentTarget.classList.toggle('on',on); ev.currentTarget.textContent=on?'⭐':'☆'; }
+  if(ev&&ev.currentTarget){ const on=w[type].includes(k); ev.currentTarget.classList.toggle('on',on); ev.currentTarget.textContent=on?'⭐':'☆'; if(on){ ev.currentTarget.classList.remove('pop'); void ev.currentTarget.offsetWidth; ev.currentTarget.classList.add('pop'); } }
   if(S.view==='watch') render();
 }
 function wlStar(type,k){
@@ -822,9 +830,9 @@ function renderOpps(){
     </select>
     <select id="f-rel">
       <option value="all" ${S.rel==='all'?'selected':''}>${T('Relation label : tous')}</option>
-      <option value="top" ${S.rel==='top'?'selected':''}>Top artists (≥30)</option>
-      <option value="reg" ${S.rel==='reg'?'selected':''}>Regulars (10-29)</option>
-      <option value="occ" ${S.rel==='occ'?'selected':''}>${T('Occasionnels (1-9)')}</option>
+      <option value="top" ${S.rel==='top'?'selected':''}>Top artists (>50)</option>
+      <option value="reg" ${S.rel==='reg'?'selected':''}>Regulars (25-50)</option>
+      <option value="occ" ${S.rel==='occ'?'selected':''}>Occasional (1-24)</option>
       <option value="ext" ${S.rel==='ext'?'selected':''}>${T('Jamais chez Lofi')}</option>
     </select>
     ${aName?`<button class="chip on" id="f-clear-artist">${esc(aName)} ✕</button>`:''}
@@ -849,7 +857,7 @@ function renderOpps(){
       </tr></thead>
       <tbody>
       ${slice.map(r=>`
-        <tr class="${r[3]>=HOT?'hot':''} ${ag&&S.sel.has(r[6])?'hot':''}">
+        <tr data-basehot="${r[3]>=HOT?1:0}" class="${r[3]>=HOT||(ag&&S.sel.has(r[6]))?'hot':''}">
           ${ag?`<td class="selc"><input type="checkbox" class="ck sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>`:''}
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span> ${wlStar('t',r[6])}${r[7]?' <span class="badge new">'+T('détectée')+' '+r[7].slice(5)+'</span>':''}</td>
@@ -881,15 +889,25 @@ function renderOpps(){
     if (S.sort.k===k) S.sort.dir*=-1; else S.sort={k, dir:-1};
     renderOpps();
   }));
-  document.querySelectorAll('.sel-track').forEach(cb=>cb.addEventListener('change', ()=>{
-    const y=window.scrollY;
-    if (cb.checked) S.sel.add(cb.dataset.tid); else S.sel.delete(cb.dataset.tid);
-    renderOpps(); window.scrollTo(0,y);
-  }));
+  function updateSel(){
+    // mise à jour SANS re-render (pas de saut de page) : offre + surlignage + compteurs
+    const selM = rows.filter(r=>S.sel.has(r[6])).reduce((s,r)=>s+Math.max(perMonth(r),0),0);
+    const selN = rows.filter(r=>S.sel.has(r[6])).length;
+    const off = document.querySelector('.offer');
+    if (off) off.outerHTML = offerHtml(ag, selM, selN, rows.length);
+    document.querySelectorAll('.sel-track').forEach(cb=>{
+      const tr=cb.closest('tr'); const on=S.sel.has(cb.dataset.tid);
+      cb.checked=on; if(tr) tr.classList.toggle('hot', on || tr.dataset.basehot==='1');
+    });
+    const allOn = rows.length && rows.every(r=>S.sel.has(r[6]));
+    ['sel-all','sel-all-bar'].forEach(id=>{ const e=document.getElementById(id); if(e) e.checked=allOn; });
+  }
+  document.querySelectorAll('.sel-track').forEach(cb=>{
+    cb.addEventListener('change', ()=>{ if(cb.checked)S.sel.add(cb.dataset.tid); else S.sel.delete(cb.dataset.tid); updateSel(); });
+  });
   ['sel-all','sel-all-bar'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change', ()=>{
-    const y=window.scrollY;
     if (el.checked) rows.forEach(r=>S.sel.add(r[6])); else rows.forEach(r=>S.sel.delete(r[6]));
-    renderOpps(); window.scrollTo(0,y);
+    updateSel();
   }); });
   if (typeof attachCovers==='function') attachCovers();
 }
@@ -983,26 +1001,28 @@ function oppLevel(vel){
 }
 function renderHot(){
   const maxAge = S.hotAge||24;
+  const TOPN = 100;
   let rows = R.filter(r=>{ const m=monthsSince(r[2]); return r[3]>=1000 && m!==null && m<=maxAge && perMonth(r)>0; });
   rows.forEach(r=>r._sc=oppScore(r));
   rows.sort((a,b)=>b._sc-a._sc);
-  const slice = rows.slice(0, S.shownH);
+  const total = rows.length;
+  rows = rows.slice(0, TOPN);   // uniquement les meilleures
   V.innerHTML = `
   <div class="page-head"><div>
     <h2>${T('Opportunités')}</h2>
-    <p>${T("Les tracks récentes qui performent le mieux en ce moment (vélocité de streams pondérée par la fraîcheur de sortie). Les meilleures cibles de rachat / distribution. Clique une track pour sa fiche.")}</p>
+    <p>${T("Le top des tracks récentes qui sortent du lot (fort volume de streams par mois, pondéré par la fraîcheur). Les meilleures cibles de rachat. Clique une track pour sa fiche.")}</p>
   </div></div>
   <div class="toolbar">
     ${[12,24,36].map(d=>`<button class="chip ${maxAge===d?'on':''}" data-age="${d}">≤ ${d} ${T('mois')}</button>`).join('')}
     <span class="spacer"></span>
-    <span class="result-count">${fmtFull(rows.length)} ${T('opportunités')}</span>
+    <span class="result-count">Top ${rows.length} / ${fmtFull(total)} ${T('opportunités')}</span>
   </div>
   <div class="panel" style="padding:6px 14px 14px">
     <table>
-      <thead><tr><th>#</th><th></th><th></th><th>Track</th><th>${T('Artiste')}</th><th class="num">Streams</th><th class="num">${T('Streams/mois')}</th><th class="num">${T('Rachat')} ${S.palier}</th><th>${T('Date de sortie')}</th><th>${T('Opportunité')}</th></tr></thead>
+      <thead><tr><th>#</th><th></th><th></th><th>Track</th><th>${T('Artiste')}</th><th class="num">Streams</th><th class="num">${T('Streams/mois')}</th><th class="num">${T('Rachat')} ${S.palier}</th><th>${T('Statut')}</th><th>${T('Date de sortie')}</th><th>${T('Opportunité')}</th></tr></thead>
       <tbody>
-      ${slice.map((r,ix)=>{const lvl=oppLevel(perMonth(r)); return `
-        <tr>
+      ${rows.map((r,ix)=>{const lvl=oppLevel(perMonth(r)); return `
+        <tr data-basehot="${r[3]>=HOT?1:0}" class="${r[3]>=HOT?'hot':''}">
           <td style="color:var(--dim);font-weight:700">${ix+1}</td>
           <td>${wlStar('t',r[6])}</td>
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
@@ -1011,16 +1031,15 @@ function renderHot(){
           <td class="num">${fmt(r[3])}</td>
           <td class="num" style="color:var(--cyan);font-weight:600">${fmt(perMonth(r))}</td>
           <td class="num"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
+          <td><span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span></td>
           <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[2])}</td>
           <td><span class="badge ${lvl[1]==='pb-good'?'hot':(lvl[1]==='pb-mid'?'seg-occ':'other')}">${lvl[0]}</span></td>
         </tr>`;}).join('')}
       </tbody>
     </table>
     ${rows.length===0?'<div class="empty">'+T('Aucune opportunité sur la période.')+'</div>':''}
-    ${sentinel(rows.length-S.shownH)}
   </div>`;
-  document.querySelectorAll('.chip[data-age]').forEach(c=>c.addEventListener('click',()=>{ S.hotAge=+c.dataset.age; S.shownH=60; renderHot(); }));
-  attachInfinite(()=>{ const y=window.scrollY; S.shownH+=60; renderHot(); window.scrollTo(0,y); });
+  document.querySelectorAll('.chip[data-age]').forEach(c=>c.addEventListener('click',()=>{ S.hotAge=+c.dataset.age; renderHot(); }));
   if (typeof attachCovers==='function') attachCovers();
 }
 
