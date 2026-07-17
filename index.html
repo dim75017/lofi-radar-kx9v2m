@@ -179,6 +179,11 @@ select.ctl option{background:#141828;color:var(--text)}
 .ch-ava{border-radius:50%;position:relative;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none;overflow:hidden}
 .ch-ava img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
 .flg{width:16px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:5px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.seg{display:flex;flex-wrap:wrap;gap:9px;margin:2px 0 16px}
+.seg button{padding:11px 20px;border-radius:11px;border:1px solid var(--border);background:rgba(21,25,42,.65);color:var(--muted);font-family:inherit;font-weight:600;font-size:13.5px;cursor:pointer;transition:all .15s}
+.seg button:hover{border-color:rgba(139,124,246,.5);color:var(--text)}
+.seg button.on{background:linear-gradient(135deg,#8b7cf6,#6d5ce6);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(139,124,246,.35)}
+.seg button .cnt{opacity:.72;font-weight:500;margin-left:7px;font-size:12px}
 .dash-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-top:14px}
 .vtable .tthumb{width:86px;aspect-ratio:16/9;border-radius:7px;object-fit:cover;display:block;background:#0a0c14}
 .vtable .ttitle{font-weight:600;max-width:420px;line-height:1.4}
@@ -650,7 +655,8 @@ let DATA=null, SYNCED=null, route='dashboard';
 const VS={
   all:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60},
   trends:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60},
-  news:{q:'',genres:new Set(),cluster:'',sort:'added',mode:'grid',limit:60}
+  news:{q:'',genres:new Set(),cluster:'',sort:'added',mode:'grid',limit:60},
+  mix:{q:'',genres:new Set(),cluster:'',sort:'vpm',mode:'grid',limit:60,age:'all'}
 };
 const RS={q:'',genres:new Set(),pot:'',perso:'',val:'',sort:'scoreAdj',limit:80};
 const RM={src:'',genre:'',year:'',mode:'cal',cal:null};
@@ -777,9 +783,7 @@ async function boot(){
 /* ================= NAV / ROUTER ================= */
 const VIEWS=[
   {id:'dashboard',label:'Dashboard',emo:'📊',cnt:()=>''},
-  {id:'all',label:'All Videos',emo:'🎬',cnt:()=>DATA?fmtN(DATA.all.length):''},
-  {id:'trends',label:'Trends',emo:'🔥',cnt:()=>DATA?fmtN(DATA.trends.length):''},
-  {id:'news',label:'News',emo:'📰',cnt:()=>DATA?String(DATA.news.length):''},
+  {id:'mix',label:'Videos',emo:'🎬',cnt:()=>DATA?fmtN(mixRows().length):''},
   {id:'live',label:'Livestreams',emo:'📡',cnt:()=>DATA&&DATA.lives?String(DATA.lives.length):''},
   {id:'recos',label:'Recommendations',emo:'💡',cnt:()=>DATA?fmtN(DATA.recos.length):''},
   {id:'roadmap',label:'Roadmap',emo:'🗓️',cnt:()=>DATA?String(DATA.roadmap.length):''},
@@ -797,9 +801,8 @@ function render(){
   const t=document.getElementById('view-title'),s=document.getElementById('view-sub'),el=document.getElementById('view');
   closeDrawer();
   if(route==='dashboard'){t.innerHTML='Dashboard <span class="pill">LIVE</span>';s.textContent='Competitive intelligence across '+fmtInt(DATA.all.length)+' instrumental videos · updated daily by the scan';el.innerHTML=dashHTML();}
-  else if(route==='all'){t.textContent='All Videos';s.textContent='Full competitive audit · ≥1M views · long instrumental mixes · Lofi Girl excluded';el.innerHTML=videosHTML('all');}
-  else if(route==='trends'){t.innerHTML='Trends';s.textContent='Published <12 months · ≥500k views · sorted by velocity, with Lofi Girl adaptation notes';el.innerHTML=videosHTML('trends');}
-  else if(route==='news'){t.innerHTML='News <span class="pill">DAILY WATCH</span>';s.textContent='Fresh videos the YouTube algorithm just started pushing · deduplicated daily at 08:00';el.innerHTML=videosHTML('news');}
+  else if(route==='mix'){t.innerHTML='Videos <span class="pill">DAILY SCAN</span>';s.textContent='Full competitive audit, trends & fresh discoveries merged · filter by release date to see what\u2019s new';el.innerHTML=videosHTML('mix');}
+  else if(route==='all'||route==='trends'||route==='news'){route='mix';renderNav();render();return;}
   else if(route==='recos'){t.textContent='Recommendations';s.textContent=fmtInt(DATA.recos.length)+' original concepts ranked by potential · descriptions & SEO keywords ready to copy';el.innerHTML=recosHTML();}
   else if(route==='roadmap'){t.textContent='Roadmap';s.textContent='Release plan balanced by genre, character and season · synced with Monday';el.innerHTML=roadmapHTML();}
   else if(route==='live'){t.innerHTML='Livestreams <span class="pill">LIVE</span>';s.textContent='24/7 streams surfacing on the scan keywords · concurrent viewers tracked hourly';el.innerHTML=livesHTML();}
@@ -853,9 +856,9 @@ function dashHTML(){
     '<img loading="lazy" src="'+thumb(v.vid)+'" onerror="this.style.visibility=\'hidden\'">'+
     '<div style="min-width:0"><div class="mi-t">'+esc(v.title)+'</div><div class="mi-s">'+statHTML+'</div></div></div>';
   h+='<div class="dash-3">'+
-    '<div class="panel"><h3>🔥 Hot right now<span class="link" onclick="go(\'trends\')">View all →</span></h3><div class="psub">Fastest-growing videos published in the last 12 months</div><div class="mini-list">'+
+    '<div class="panel"><h3>🔥 Hot right now<span class="link" onclick="VS.mix.age=\'12m\';VS.mix.sort=\'vpm\';go(\'mix\')">View all →</span></h3><div class="psub">Fastest-growing videos published in the last 12 months</div><div class="mini-list">'+
       hot.map(v=>mini(v,'<b>'+fmtN(v.vpm)+'/mo</b><span>'+esc(v.channel)+'</span>','trends')).join('')+'</div></div>'+
-    '<div class="panel"><h3>📰 Latest discoveries<span class="link" onclick="go(\'news\')">View all →</span></h3><div class="psub">New videos the YouTube algorithm just started pushing · daily scan</div><div class="mini-list">'+
+    '<div class="panel"><h3>📰 Latest discoveries<span class="link" onclick="VS.mix.age=\'1m\';VS.mix.sort=\'added\';go(\'mix\')">View all →</span></h3><div class="psub">New videos the YouTube algorithm just started pushing · daily scan</div><div class="mini-list">'+
       (latest.length?latest.map(v=>mini(v,'<b>'+fmtN(v.views)+' views</b><span>'+fmtAge(v.ageM)+' old</span>','news')).join(''):'<div class="empty">No discoveries yet</div>')+'</div></div>'+
     '<div class="panel"><h3>🗓️ Coming up<span class="link" onclick="go(\'roadmap\')">Full roadmap →</span></h3><div class="psub">Next planned releases · synced with Monday & rotation proposals</div>'+
       coming.map(r=>{const d=new Date(r.date);return '<div class="rm-mini" style="--gc:'+gcolor(r.genre)+'"><div class="d">'+d.getDate()+' '+MONTHS[d.getMonth()]+'</div><div class="t">'+esc(r.title)+'</div>'+gtag(r.genre,1)+'</div>';}).join('')+'</div>'+
@@ -905,7 +908,7 @@ function kwListHTML(){
     '<div class="kw-item" data-kw="'+esc(k)+'" title="See the radar videos found through this query" onclick="kwGo(this.dataset.kw)">'+
     '<span class="kw-name">'+esc(k)+'</span><span class="kw-n'+(n?'':' zero')+'">'+n+'</span></div>').join('')+'</div>';
 }
-function kwGo(k){VS.all.q=k;VS.all.limit=60;go('all');}
+function kwGo(k){VS.mix.q=k;VS.mix.limit=60;VS.mix.age='all';go('mix');}
 
 
 /* ================= VIDEO VIEWS ================= */
@@ -918,21 +921,53 @@ const SORTS={
   subs:{lbl:'Channel size',fn:(a,b)=>(b.subs||0)-(a.subs||0)},
   added:{lbl:'Recently added',fn:(a,b)=>(b.added||0)-(a.added||0)}
 };
+let _mixCache=null,_mixT=0;
+function mixRows(){
+  if(_mixCache&&_mixT===SYNCED)return _mixCache;
+  const m=new Map();
+  const add=arr=>(arr||[]).forEach(v=>{
+    const k=v.vid||('t:'+v.title);
+    const cur=m.get(k);
+    if(!cur)m.set(k,Object.assign({},v));
+    else{for(const f in v){if(cur[f]==null||cur[f]==='')cur[f]=v[f];}}
+  });
+  add(DATA.all);add(DATA.trends);add(DATA.news);
+  _mixCache=[...m.values()];_mixT=SYNCED;
+  return _mixCache;
+}
+function ageMonths(v){
+  if(v.ageM!=null)return v.ageM;
+  if(v.pub)return (Date.now()-v.pub)/2629800000;
+  return null;
+}
+const AGES=[['1m','🆕 New · <1 month',1],['6m','🔥 Last 6 months',6],['12m','📈 Last 12 months',12],['all','🌍 All time',null]];
 function filterVids(kind){
-  const st=VS[kind];let rows=DATA[kind];
+  const st=VS[kind];let rows=(kind==='mix')?mixRows():DATA[kind];
+  if(kind==='mix'&&st.age!=='all'){
+    const lim=AGES.find(a=>a[0]===st.age)[2];
+    rows=rows.filter(v=>{const m=ageMonths(v);return m!=null&&m<=lim;});
+  }
   if(st.genres.size)rows=rows.filter(v=>st.genres.has(v.genre));
   if(st.cluster)rows=rows.filter(v=>v.cluster===st.cluster);
   if(st.q){const q=st.q.toLowerCase();rows=rows.filter(v=>(v.title+' '+v.channel+' '+(v.kw||'')+' '+(v.disc||'')).toLowerCase().includes(q));}
   return [...rows].sort(SORTS[st.sort].fn);
 }
+function setAge(a){VS.mix.age=a;VS.mix.limit=60;render();}
 function videosHTML(kind){
   const st=VS[kind];
-  const all=DATA[kind];
+  const all=(kind==='mix')?mixRows():DATA[kind];
   const rows=filterVids(kind);
+  let seg='';
+  if(kind==='mix'){
+    seg='<div class="seg">'+AGES.map(a=>{
+      const n=a[2]==null?all.length:all.filter(v=>{const m=ageMonths(v);return m!=null&&m<=a[2];}).length;
+      return '<button class="'+(st.age===a[0]?'on':'')+'" onclick="setAge(\''+a[0]+'\')">'+a[1]+'<span class="cnt">'+fmtInt(n)+'</span></button>';
+    }).join('')+'</div>';
+  }
   const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>all.filter(v=>v.genre===b).length-all.filter(v=>v.genre===a).length);
   const clusters=[...new Set(all.map(v=>v.cluster).filter(Boolean))].sort();
-  const sortKeys=kind==='news'?['added','vpm','views','newest','dur']:['vpm','views','newest','oldest','dur','subs'];
-  let h='<div class="toolbar">'+
+  const sortKeys=kind==='news'?['added','vpm','views','newest','dur']:(kind==='mix'?['vpm','views','newest','oldest','dur','subs','added']:['vpm','views','newest','oldest','dur','subs']);
+  let h=seg+'<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input id="q-'+kind+'" placeholder="Search titles, channels, keywords…" value="'+esc(st.q)+'" oninput="VS.'+kind+'.q=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')"><kbd>/</kbd></div>'+
     '<select class="ctl" onchange="VS.'+kind+'.cluster=this.value;rerenderList(\''+kind+'\')">'+
       '<option value="">All clusters</option>'+clusters.map(c=>'<option '+(st.cluster===c?'selected':'')+' value="'+esc(c)+'">'+esc(c)+'</option>').join('')+'</select>'+
@@ -982,7 +1017,7 @@ function listHTML(kind,rows){
   return h;
 }
 function vcardHTML(kind,v,i){
-  const extra=kind==='news'
+  const extra=(kind==='news'||(kind==='mix'&&(v.rank||v.added)))
     ? '<div class="vtags">'+(v.rank?'<span class="tag ghost">#'+v.rank+' search rank</span>':'')+(v.added?'<span class="tag ghost">added '+fmtDateFull(v.added)+'</span>':'')+'</div>'
     : '';
   return '<div class="vcard" onclick="openIdx(\''+kind+'\','+i+')">'+
@@ -1009,7 +1044,13 @@ function openVid(kind,key){
 function openDrawer(kind,v){
   const sec=(k,val,icon)=>val?'<div class="dw-sec"><div class="k">'+(icon||'')+' '+k+'</div><div class="v">'+esc(val)+'</div></div>':'';
   let extra='';
-  if(kind==='trends'){
+  if(kind==='mix'){
+    extra=sec('Why trending / notable',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg||v.angle,'💡')+sec('What to copy',v.copy,'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨')+
+      sec('Discovery keywords',v.disc,'🔎')+
+      (v.rank?sec('Best search rank','#'+Math.round(v.rank),'🏁'):'')+
+      (v.added?sec('First seen by the scan',fmtDateFull(v.added),'🗓️'):'')+
+      sec('Found via search keywords',v.kw,'🔎')+sec('Title pattern',v.pattern,'✏️');
+  }else if(kind==='trends'){
     extra=sec('Why trending',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg,'💡')+sec('What to copy',v.copy,'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨');
   }else if(kind==='news'){
     extra=sec('Why notable',v.why,'📌')+sec('Lofi Girl angle',v.angle,'💡')+sec('Discovery keywords',v.disc,'🔎')+
