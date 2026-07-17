@@ -221,7 +221,7 @@ td.covtd{width:82px;padding:6px 2px 6px 10px}
   <nav class="nav" id="nav">
     <div class="nav-label">Analyse</div>
     <button data-v="overview" class="active"><span class="emo">📡</span>Vue d'ensemble</button>
-    <button data-v="opps"><span class="emo">💎</span>Opportunités<span class="count" id="c-opps"></span></button>
+    <button data-v="opps"><span class="emo">💎</span>Tracks<span class="count" id="c-opps"></span></button>
     <button data-v="artists"><span class="emo">🎧</span>Artistes<span class="count" id="c-art"></span></button>
     <button data-v="new"><span class="emo">🆕</span>Sorties récentes<span class="count" id="c-new"></span></button>
     <div class="nav-label">Expansion</div>
@@ -447,7 +447,7 @@ function renderOpps(){
   <div class="page-head">
     <div>
       ${aName?'<button class="chip" onclick="goBack()" style="margin-bottom:10px">← Retour</button>':''}
-      <h2>Opportunités${aName?' — '+esc(aName):''}</h2>
+      <h2>Tracks${aName?' — '+esc(aName):''}</h2>
       <p>Toutes les tracks hors Lofi Records. Les lignes vertes dépassent 500 000 streams (priorités). Streams / mois = vélocité depuis la sortie.</p>
     </div>
   </div>
@@ -656,7 +656,7 @@ function renderDisco(){
     <div class="steps">
       <div class="step"><div class="n">1</div><b>Récolte</b><p>Sur les runs creux de la veille, le crawler récupère les « fans also like » de nos 500+ artistes et les ajoute à la file (plafonné, dédupliqué, hors artistes déjà suivis).</p></div>
       <div class="step"><div class="n">2</div><b>Scan</b><p>Chaque artiste découvert passe dans le pipeline existant : discographie complète, streams, labels. Coût élevé une seule fois.</p></div>
-      <div class="step"><div class="n">3</div><b>Veille</b><p>Il rejoint ensuite le rafraîchissement hebdomadaire, quasi gratuit. Ses tracks apparaissent dans Opportunités avec le badge « découverte ».</p></div>
+      <div class="step"><div class="n">3</div><b>Veille</b><p>Il rejoint ensuite le rafraîchissement hebdomadaire, quasi gratuit. Ses tracks apparaissent dans l'onglet Tracks avec le badge « découverte ».</p></div>
       <div class="step"><div class="n">4</div><b>Élargissement</b><p>Quand le lot de 200 est digéré, on monte le plafond et on ajoute les playlists éditoriales par genre (lofi, ambient, piano, jazz…) comme seconde source.</p></div>
     </div>
   </div>`:`
@@ -800,8 +800,13 @@ document.getElementById('c-opps').textContent = fmt(R.length);
 document.getElementById('c-art').textContent = withTracks.length;
 document.getElementById('c-new').textContent = R.filter(r=>daysAgo(r[2])<=90).length;
 document.getElementById('c-disco').textContent = AG.filter(g=>g.disco).length;
+function fmtTs(ts){
+  const m = (''+ts).match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
+  if (!m) return ts;
+  return m[3]+'/'+m[2]+'/'+m[1] + (m[4] ? ' à '+m[4] : '');
+}
 document.getElementById('sync-txt').innerHTML =
-  'Données du '+esc(D.t)+'<br>'+fmtFull(R.length)+' tracks · '+AG.filter(g=>g.done).length+' artistes scannés';
+  'Dernier scan le '+esc(fmtTs(D.ts||D.t))+'<br>'+fmtFull(R.length)+' tracks · '+AG.filter(g=>g.done).length+' artistes scannés';
 render();
 </script>
 </body>
