@@ -140,6 +140,17 @@ select.ctl.c-char{border-color:rgba(45,212,191,.4);background:rgba(45,212,191,.0
 select.ctl.c-char:hover{border-color:rgba(45,212,191,.7)}
 select.ctl.c-status{border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.07)}
 select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
+.xdd{position:relative;display:inline-flex}
+.xdd-btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.xdd-car{font-size:9px;opacity:.65;transition:transform .15s}
+.xdd.open .xdd-car{transform:rotate(180deg)}
+.xdd-list{position:absolute;top:calc(100% + 7px);left:0;min-width:100%;max-height:320px;overflow-y:auto;
+  background:#141828;border:1.5px solid var(--border2);border-radius:16px;padding:6px;z-index:80;
+  box-shadow:0 16px 40px rgba(0,0,0,.5);display:none}
+.xdd.open .xdd-list{display:block}
+.xdd-opt{padding:8px 13px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;white-space:nowrap}
+.xdd-opt:hover{background:rgba(139,124,246,.15)}
+.xdd-opt.sel{color:var(--acc2);background:var(--accSoft)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{
   display:inline-flex;align-items:center;gap:6px;padding:5.5px 11px;border-radius:20px;font-size:11.5px;font-weight:600;
@@ -708,8 +719,14 @@ function parseOurs(ws){
   }
   return out;
 }
+function splitElectroHouse(rows){
+  (rows||[]).forEach(v=>{
+    if(v.genre==='Electronic / house')v.genre=/house/i.test(v.title||'')?'House':'Electronic';
+  });
+  return rows;
+}
 function parseWorkbook(wb){
-  return {
+  const d={
     all:parseVideos(sheetByName(wb,'All Videos'),'all'),
     trends:parseVideos(sheetByName(wb,'Trends'),'trends'),
     news:parseVideos(sheetByName(wb,'News'),'news'),
@@ -721,6 +738,8 @@ function parseWorkbook(wb){
     liveHourly:parseHist(sheetByName(wb,'Live Hourly')),
     ours:parseOurs(sheetByName(wb,'Our Videos'))
   };
+  splitElectroHouse(d.all);splitElectroHouse(d.trends);splitElectroHouse(d.news);splitElectroHouse(d.ours);
+  return d;
 }
 /*PARSE_END*/
 </script>
@@ -771,6 +790,7 @@ const GENRE_COLORS=[
   [/^sleep$|sleep &|sommeil/i,'#7dd3fc'],
   [/nature/i,'#6ee7b7'],
   [/ambient/i,'#67e8f9'],
+  [/electro/i,'#38bdf8'],
   [/lofi|chillhop/i,'#a78bfa'],
 ];
 function gcolor(g){
@@ -786,7 +806,7 @@ const GENRE_EMOJI=[
   [/bgm|caf[eé]/i,'☕'],
   [/sommeil/i,'😴'],
   [/[eé]tude/i,'📚'],
-  [/house/i,'🏠'],
+  [/house/i,'🪩'],
   [/dark/i,'🌑'],
   [/christmas|noël|noel/i,'🎄'],
   [/halloween/i,'🎃'],
@@ -797,7 +817,7 @@ const GENRE_EMOJI=[
   [/synth|retro/i,'🌆'],
   [/electro/i,'🎛️'],
   [/nature/i,'🌿'],
-  [/ambient/i,'🌫️'],
+  [/ambient/i,'💤'],
   [/lofi|chillhop/i,'🎧'],
 ];
 function genreEmoji(g){
@@ -826,12 +846,28 @@ function personaEmoji(p){
   return '🎭';
 }
 const PERIOD_EMOJI={'3m':'🟢','6m':'🟡','12m':'🟠','all':'🔴'};
-function gtag(g,extra){
+function gtag(g,extra,emo){
   if(!g)return '';
   const c=gcolor(g);
-  return '<span class="tag" style="background:'+c+'1f;color:'+c+';border:1px solid '+c+'45">'+(extra?'':'<span class="dot" style="background:'+c+'"></span>')+esc(g)+'</span>';
+  const lead=extra?'':(emo?genreEmoji(g)+' ':'<span class="dot" style="background:'+c+'"></span>');
+  return '<span class="tag" style="background:'+c+'1f;color:'+c+';border:1px solid '+c+'45">'+lead+esc(g)+'</span>';
 }
 function ghosttag(t){return t?'<span class="tag ghost">'+esc(t)+'</span>':'';}
+/* ---- custom rounded dropdown (native <select> popups can't be styled) ---- */
+function jsq(s){return "'"+String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'";}
+let XDD_ID=0;
+function xddToggle(id,ev){
+  if(ev)ev.stopPropagation();
+  document.querySelectorAll('.xdd.open').forEach(x=>{if(x.id!==id)x.classList.remove('open');});
+  const el=document.getElementById(id);if(el)el.classList.toggle('open');
+}
+document.addEventListener('click',function(){document.querySelectorAll('.xdd.open').forEach(x=>x.classList.remove('open'));});
+function xdd(btnCls,btnHtml,opts){
+  const id='xdd'+(++XDD_ID);
+  return '<div class="xdd" id="'+id+'">'+
+    '<button type="button" class="ctl '+btnCls+' xdd-btn" onclick="xddToggle(\''+id+'\',event)">'+btnHtml+'<span class="xdd-car">▾</span></button>'+
+    '<div class="xdd-list">'+opts.map(o=>'<div class="xdd-opt'+(o.sel?' sel':'')+'" onclick="'+o.onclick.replace(/"/g,'&quot;')+';xddToggle(\''+id+'\')">'+o.label+'</div>').join('')+'</div></div>';
+}
 function median(arr){const a=arr.filter(x=>x!=null).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
 function histChart(pts,unit){
   const u=unit||'views';
@@ -942,7 +978,9 @@ function saveCache(d){
 }
 function loadCache(){
   try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const o=JSON.parse(raw);
-    o.d.recos.forEach(r=>{if(r.valid==null)r.valid='';});return o;}catch(e){return null;}
+    o.d.recos.forEach(r=>{if(r.valid==null)r.valid='';});
+    splitElectroHouse(o.d.all);splitElectroHouse(o.d.trends);splitElectroHouse(o.d.news);splitElectroHouse(o.d.ours);
+    return o;}catch(e){return null;}
 }
 async function refresh(){
   const btn=document.getElementById('btn-refresh');btn.classList.add('spinning');
@@ -1055,6 +1093,7 @@ async function boot(){
   if(cache&&(!snap||cache.t>=snap.t)){best=cache;src='cache';}
   else if(snap){best=snap;src='snap';}
   if(best){
+    splitElectroHouse(best.d.all);splitElectroHouse(best.d.trends);splitElectroHouse(best.d.news);splitElectroHouse(best.d.ours);
     DATA=best.d;SYNCED=best.t;
     document.getElementById('loader').classList.add('hide');
     setSync('load',(src==='snap'?'Daily snapshot · ':'Cached · ')+'trying live sync…');
@@ -1258,21 +1297,28 @@ function videosHTML(kind){
   const rows=filterVids(kind);
   let ageSel='';
   if(kind==='mix'){
-    ageSel='<select class="ctl c-period" onchange="setAge(this.value)">'+AGES.map(a=>{
+    const curAge=AGES.find(a=>a[0]===st.age)||AGES[0];
+    const curAgeLabel=(PERIOD_EMOJI[st.age]||'⚪')+' '+curAge[1].replace(/<[^>]*>/g,'');
+    const ageOpts=AGES.map(a=>{
       const n=a[2]==null?all.length:all.filter(v=>inAge(v,a[0])).length;
       const label=a[1].replace(/<[^>]*>/g,'');
-      return '<option '+(st.age===a[0]?'selected':'')+' value="'+a[0]+'">'+(PERIOD_EMOJI[a[0]]||'⚪')+' '+label+' · '+fmtInt(n)+'</option>';
-    }).join('')+'</select>';
+      return {label:(PERIOD_EMOJI[a[0]]||'⚪')+' '+label+' · '+fmtInt(n),sel:st.age===a[0],onclick:'setAge('+jsq(a[0])+')'};
+    });
+    ageSel=xdd('c-period',curAgeLabel,ageOpts);
   }
   const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>all.filter(v=>v.genre===b).length-all.filter(v=>v.genre===a).length);
   const sortKeys=kind==='news'?['added','vpm','views','newest','dur']:(kind==='mix'?['vpm','views','newest','oldest','dur','subs','added']:['vpm','views','newest','oldest','dur','subs']);
+  const genreOpts=[{label:'🎵 All genres',sel:!st.genre,onclick:'VS.'+kind+'.genre=\'\';VS.'+kind+'.limit=60;rerenderList('+jsq(kind)+')'}].concat(
+    genres.map(g=>({label:genreEmoji(g)+' '+esc(g)+' · '+all.filter(v=>v.genre===g).length,sel:st.genre===g,onclick:'VS.'+kind+'.genre='+jsq(g)+';VS.'+kind+'.limit=60;rerenderList('+jsq(kind)+')'}))
+  );
+  const genreLabel=st.genre?(genreEmoji(st.genre)+' '+esc(st.genre)):'🎵 All genres';
+  const sortOpts=sortKeys.map(k=>({label:(SORTS[k].emoji||'⚡')+' Sort · '+SORTS[k].lbl,sel:st.sort===k,onclick:'VS.'+kind+'.sort='+jsq(k)+';rerenderList('+jsq(kind)+')'}));
+  const sortLabel=(SORTS[st.sort].emoji||'⚡')+' Sort · '+SORTS[st.sort].lbl;
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input id="q-'+kind+'" placeholder="Search titles, channels, keywords…" value="'+esc(st.q)+'" oninput="VS.'+kind+'.q=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')"><kbd>/</kbd></div>'+
     ageSel+
-    '<select class="ctl c-genre" onchange="VS.'+kind+'.genre=this.value;VS.'+kind+'.limit=60;rerenderList(\''+kind+'\')">'+
-      '<option value="">🎵 All genres</option>'+genres.map(g=>'<option '+(st.genre===g?'selected':'')+' value="'+esc(g)+'">'+genreEmoji(g)+' '+esc(g)+' · '+all.filter(v=>v.genre===g).length+'</option>').join('')+'</select>'+
-    '<div class="tb-right"><select class="ctl c-sort" onchange="VS.'+kind+'.sort=this.value;rerenderList(\''+kind+'\')">'+
-      sortKeys.map(k=>'<option '+(st.sort===k?'selected':'')+' value="'+k+'">'+(SORTS[k].emoji||'⚡')+' Sort · '+SORTS[k].lbl+'</option>').join('')+'</select>'+
+    xdd('c-genre',genreLabel,genreOpts)+
+    '<div class="tb-right">'+xdd('c-sort',sortLabel,sortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(st.mode==='grid'?'on':'')+'" onclick="VS.'+kind+'.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(st.mode==='table'?'on':'')+'" onclick="VS.'+kind+'.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
@@ -1310,9 +1356,6 @@ function listHTML(kind,rows){
   return h;
 }
 function vcardHTML(kind,v,i){
-  const extra=(kind==='news'||(kind==='mix'&&(v.rank||v.added)))
-    ? '<div class="vtags">'+(v.rank?'<span class="tag ghost">#'+v.rank+' search rank</span>':'')+(v.added?'<span class="tag ghost">added '+fmtDateFull(v.added)+'</span>':'')+'</div>'
-    : '';
   return '<div class="vcard" onclick="openIdx(\''+kind+'\','+i+')">'+
     '<div class="thumbwrap">'+(v.vid?wlStar('v',v.vid):'')+'<img loading="lazy" src="'+thumb(v.vid)+'" onerror="this.src=\'https://i.ytimg.com/vi/'+(v.vid||'')+'/hqdefault.jpg\';this.onerror=null;">'+
       (v.vid?'<span class="like-flag" style="display:none" data-likes="'+v.vid+'"></span>':'')+
@@ -1320,7 +1363,7 @@ function vcardHTML(kind,v,i){
     '<div class="vbody">'+
       '<div class="vtitle">'+esc(v.title)+'</div>'+
       '<div class="vmeta"><a href="'+esc(v.chUrl||'#')+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a><span class="subs">· '+fmtN(v.subs)+' subs</span></div>'+
-      '<div class="vtags">'+gtag(v.genre)+'</div>'+extra+
+      '<div class="vtags">'+gtag(v.genre,0,true)+'</div>'+
       '<div class="vstats">'+
         '<div class="vstat hl"><b>'+fmtN(v.vpm)+'</b><span>views/mo</span></div>'+
         '<div class="vstat"><b>'+fmtN(v.views)+'</b><span>views</span></div>'+
@@ -1358,7 +1401,7 @@ function openDrawer(kind,v){
     (v.vid?'<div class="dw-embed"><iframe src="https://www.youtube.com/embed/'+v.vid+'?rel=0" title="YouTube player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>':'')+
     '<div class="dw-body">'+
       '<div class="dw-title"><a href="'+esc(v.url)+'" target="_blank">'+esc(v.title)+'</a></div>'+
-      '<div class="dw-sub">'+gtag(v.genre)+
+      '<div class="dw-sub">'+gtag(v.genre,0,true)+
         (v.chUrl?'<a class="tag ghost" href="'+esc(v.chUrl)+'" target="_blank">'+esc(v.channel)+' ↗</a>':ghosttag(v.channel))+
         '<span class="tag ghost">'+fmtN(v.subs)+' subs</span>'+likeTag(v.vid)+'</div>'+
       '<div class="dw-stats">'+
@@ -1497,18 +1540,33 @@ function recosHTML(){
   const rows=filterRecos();
   const genres=[...new Set(all.map(r=>r.genre||'(unset)'))].sort();
   const persos=[...new Set(all.map(r=>r.perso).filter(Boolean))].sort();
+  const genreOpts=[{label:'🎵 All genres',sel:!RS.genre,onclick:"RS.genre='';RS.limit=80;rerenderRecos()"}].concat(
+    genres.map(g=>({label:esc(g)+' · '+all.filter(r=>(r.genre||'(unset)')===g).length,sel:RS.genre===g,onclick:'RS.genre='+jsq(g)+';RS.limit=80;rerenderRecos()'})));
+  const genreLabel=RS.genre?esc(RS.genre):'🎵 All genres';
+  const potLbls=(typeof LANG!=='undefined'&&LANG==='fr')?{S:'S — Rente potentielle',A:'A — Fort',B:'B — Solide',C:'C — Niche / à tester'}:{S:'S — Steady income',A:'A — Strong',B:'B — Solid',C:'C — Niche / to test'};
+  const potOpts=[{label:'⚪ All potential',sel:!RS.pot,onclick:"RS.pot='';rerenderRecos()"}].concat(
+    ['S','A','B','C'].map(p=>({label:tierEmoji(p)+' '+potLbls[p],sel:RS.pot===p,onclick:'RS.pot='+jsq(p)+';rerenderRecos()'})));
+  const potLabel=RS.pot?(tierEmoji(RS.pot)+' '+potLbls[RS.pot]):'⚪ All potential';
+  const charOpts=[{label:'🎭 All characters',sel:!RS.perso,onclick:"RS.perso='';rerenderRecos()"}].concat(
+    persos.map(p=>({label:personaEmoji(p)+' '+esc(p),sel:RS.perso===p,onclick:'RS.perso='+jsq(p)+';rerenderRecos()'})));
+  const charLabel=RS.perso?(personaEmoji(RS.perso)+' '+esc(RS.perso)):'🎭 All characters';
+  const statusOpts=[
+    {label:'✅ Validated',sel:RS.val==='x',onclick:"RS.val='x';rerenderRecos()"},
+    {label:'⏳ Pending review',sel:RS.val==='pending',onclick:"RS.val='pending';rerenderRecos()"},
+    {label:'❌ Refused',sel:RS.val==='refused',onclick:"RS.val='refused';rerenderRecos()"}
+  ];
+  const statusLabel=RS.val==='x'?'✅ Validated':RS.val==='pending'?'⏳ Pending review':RS.val==='refused'?'❌ Refused':'🗂️ All status';
+  const rsSortKeys=[['scoreAdj','⚡','Adjusted score'],['score','🎯','Score'],['conf','🔍','Confidence'],['n','🔢','N°']];
+  const sortOpts=rsSortKeys.map(s=>({label:s[1]+' Sort · '+s[2],sel:RS.sort===s[0],onclick:'RS.sort='+jsq(s[0])+';rerenderRecos()'}));
+  const sortRow=rsSortKeys.find(s=>s[0]===RS.sort)||rsSortKeys[0];
+  const sortLabel=sortRow[1]+' Sort · '+sortRow[2];
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input placeholder="Search concepts, titles, niches…" value="'+esc(RS.q)+'" oninput="RS.q=this.value;RS.limit=80;rerenderRecos()"><kbd>/</kbd></div>'+
-    '<select class="ctl c-genre" onchange="RS.genre=this.value;RS.limit=80;rerenderRecos()">'+
-      '<option value="">🎵 All genres</option>'+genres.map(g=>'<option '+(RS.genre===g?'selected':'')+' value="'+esc(g)+'">'+genreEmoji(g)+' '+esc(g)+' · '+all.filter(r=>(r.genre||'(unset)')===g).length+'</option>').join('')+'</select>'+
-    '<select class="ctl c-tier" onchange="RS.pot=this.value;rerenderRecos()">'+
-      '<option value="">⚪ All potential</option>'+['S','A','B','C'].map(p=>'<option '+(RS.pot===p?'selected':'')+' value="'+p+'">'+tierEmoji(p)+' '+((typeof LANG!=='undefined'&&LANG==='fr')?{S:'S — Rente potentielle',A:'A — Fort',B:'B — Solide',C:'C — Niche / à tester'}:{S:'S — Steady income',A:'A — Strong',B:'B — Solid',C:'C — Niche / to test'})[p]+'</option>').join('')+'</select>'+
-    '<select class="ctl c-char" onchange="RS.perso=this.value;rerenderRecos()">'+
-      '<option value="">🎭 All characters</option>'+persos.map(p=>'<option '+(RS.perso===p?'selected':'')+' value="'+esc(p)+'">'+personaEmoji(p)+' '+esc(p)+'</option>').join('')+'</select>'+
-    '<div class="tb-right"><select class="ctl c-status" onchange="RS.val=this.value;rerenderRecos()">'+
-      '<option '+(RS.val==='x'?'selected':'')+' value="x">✅ Validated</option><option '+(RS.val==='pending'?'selected':'')+' value="pending">⏳ Pending review</option><option '+(RS.val==='refused'?'selected':'')+' value="refused">❌ Refused</option></select>'+
-    '<select class="ctl c-sort" onchange="RS.sort=this.value;rerenderRecos()">'+
-      '<option value="scoreAdj">⚡ Sort · Adjusted score</option><option '+(RS.sort==='score'?'selected':'')+' value="score">🎯 Sort · Score</option><option '+(RS.sort==='conf'?'selected':'')+' value="conf">🔍 Sort · Confidence</option><option '+(RS.sort==='n'?'selected':'')+' value="n">🔢 Sort · N°</option></select>'+
+    xdd('c-genre',genreLabel,genreOpts)+
+    xdd('c-tier',potLabel,potOpts)+
+    xdd('c-char',charLabel,charOpts)+
+    '<div class="tb-right">'+xdd('c-status',statusLabel,statusOpts)+
+    xdd('c-sort',sortLabel,sortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(RS.mode!=='table'?'on':'')+'" onclick="RS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(RS.mode==='table'?'on':'')+'" onclick="RS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
@@ -1642,19 +1700,16 @@ function copyTxt(btn,i,field){
 function roadmapHTML(){
   let rows=DATA.roadmap.filter(r=>r.date);
   const genres=[...new Set(DATA.roadmap.map(r=>r.genre).filter(Boolean))].sort();
-  if(RM.src)rows=rows.filter(r=>r.src===RM.src);
   if(RM.genre)rows=rows.filter(r=>r.genre===RM.genre);
   rows.sort((a,b)=>a.date-b.date);
+  const rmGenreOpts=[{label:'🎵 All genres',sel:!RM.genre,onclick:"RM.genre='';render()"}].concat(
+    genres.map(g=>({label:esc(g),sel:RM.genre===g,onclick:'RM.genre='+jsq(g)+';render()'})));
+  const rmGenreLabel=RM.genre?esc(RM.genre):'🎵 All genres';
   let h='<div class="toolbar">'+
-    '<select class="ctl" onchange="RM.src=this.value;render()">'+
-      '<option value="">All sources</option>'+['Existant (Monday)','Nouveau mix (à produire)','Proposition rotation (à valider)'].map(s=>'<option '+(RM.src===s?'selected':'')+' value="'+esc(s)+'">'+esc(s)+'</option>').join('')+'</select>'+
-    '<select class="ctl c-genre" onchange="RM.genre=this.value;render()">'+
-      '<option value="">🎵 All genres</option>'+genres.map(g=>'<option '+(RM.genre===g?'selected':'')+' value="'+esc(g)+'">'+genreEmoji(g)+' '+esc(g)+'</option>').join('')+'</select>'+
+    xdd('c-genre',rmGenreLabel,rmGenreOpts)+
     '<div class="tb-right"><div class="viewtoggle">'+
       '<button class="'+(RM.mode!=='cal'?'on':'')+'" onclick="RM.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button>'+
-      '<button class="'+(RM.mode==='cal'?'on':'')+'" onclick="RM.mode=\'cal\';render()" title="Calendar">'+ICONS.roadmap+'</button></div>'+
-    '<div class="result-count"><b>'+rows.length+'</b> releases · '+
-      '<span style="color:var(--muted)">grey Monday</span> · <span style="color:var(--green)">green to produce</span> · <span style="color:var(--amber)">yellow to validate</span></div></div>'+
+      '<button class="'+(RM.mode==='cal'?'on':'')+'" onclick="RM.mode=\'cal\';render()" title="Calendar">'+ICONS.roadmap+'</button></div></div>'+
   '</div>';
   window._rm_rows=rows;
   h+=(RM.mode==='cal')?calHTML(rows):roadmapTableHTML(rows);
@@ -2318,8 +2373,10 @@ function anaHTML(){
     kpi('Channel velocity',fmtN(rows[0]?rows[0].chMed:null),'median views/mo across our releases','#38bdf8')+
     (rows[0]&&rows[0].ctrMed!=null?kpi('Median CTR',rows[0].ctrMed.toFixed(1)+'%','impressions click-through · YouTube Studio, 365 days','#e879f9'):'')+
   '</div>';
-  h+='<div class="toolbar"><select class="ctl c-sort" onchange="AS.sort=this.value;render()">'+
-    '<option value="date">🆕 Sort · Newest first</option><option '+(sf==='pctAsc'?'selected':'')+' value="pctAsc">📉 Sort · Worst percentile first</option><option '+(sf==='pctDesc'?'selected':'')+' value="pctDesc">📈 Sort · Best percentile first</option><option '+(sf==='views'?'selected':'')+' value="views">👀 Sort · Most views</option></select>'+
+  const asSortKeys=[['date','🆕','Newest first'],['pctAsc','📉','Worst percentile first'],['pctDesc','📈','Best percentile first'],['views','👀','Most views']];
+  const asSortOpts=asSortKeys.map(s=>({label:s[1]+' Sort · '+s[2],sel:sf===s[0],onclick:'AS.sort='+jsq(s[0])+';render()'}));
+  const asSortRow=asSortKeys.find(s=>s[0]===sf)||asSortKeys[0];
+  h+='<div class="toolbar">'+xdd('c-sort',asSortRow[1]+' Sort · '+asSortRow[2],asSortOpts)+
     '<div class="tb-right"><div class="viewtoggle">'+
       '<button class="'+(AS.mode!=='table'?'on':'')+'" onclick="AS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(AS.mode==='table'?'on':'')+'" onclick="AS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
@@ -2431,10 +2488,12 @@ function filterLives(){
 function livesHTML(){
   const rows=filterLives();const all=DATA.lives||[];
   if(!all.length)return '<div class="empty">No livestream data yet — the 📡 Live Streams tab of the Sheet is empty or missing. It fills up on the next ChatGPT scan.</div>';
+  const lsSortKeys=[['now','🔴','Viewers now'],['peak','🚀','Peak viewers'],['started','🆕','Recently started'],['channel','👥','Channel']];
+  const lsSortOpts=lsSortKeys.map(s=>({label:s[1]+' Sort · '+s[2],sel:LS.sort===s[0],onclick:'LS.sort='+jsq(s[0])+';rerenderLives()'}));
+  const lsSortRow=lsSortKeys.find(s=>s[0]===LS.sort)||lsSortKeys[0];
   let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input placeholder="Search streams, channels, keywords…" value="'+esc(LS.q)+'" oninput="LS.q=this.value;LS.limit=60;rerenderLives()"><kbd>/</kbd></div>'+
-    '<div class="tb-right"><select class="ctl c-sort" onchange="LS.sort=this.value;rerenderLives()">'+
-      '<option value="now">🔴 Sort · Viewers now</option><option '+(LS.sort==='peak'?'selected':'')+' value="peak">🚀 Sort · Peak viewers</option><option '+(LS.sort==='started'?'selected':'')+' value="started">🆕 Sort · Recently started</option><option '+(LS.sort==='channel'?'selected':'')+' value="channel">👥 Sort · Channel</option></select>'+
+    '<div class="tb-right">'+xdd('c-sort',lsSortRow[1]+' Sort · '+lsSortRow[2],lsSortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(LS.mode==='grid'?'on':'')+'" onclick="LS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(LS.mode==='table'?'on':'')+'" onclick="LS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
@@ -2445,15 +2504,14 @@ function livesHTML(){
 }
 function liveCardHTML(v,i){
   const now=liveNow(v.vid),peak24=livePeak24h(v.vid),peakAll=livePeak(v.vid);
-  const kws=(v.disc||'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,2);
+  const chRec=chanByName(v.channel),chSubs=chRec?chRec.subs:null;
   return '<div class="vcard" onclick="openLiveIdx('+i+')">'+
     '<div class="thumbwrap">'+wlStar('l',v.vid)+'<img loading="lazy" src="'+thumb(v.vid)+'" onerror="if(!this._f){this._f=1;this.src=\'https://i.ytimg.com/vi/'+v.vid+'/hqdefault.jpg\'}else this.style.visibility=\'hidden\'">'+
       '<span class="vpm-flag" style="background:rgba(220,38,38,.94);color:#fff"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff1a1a;box-shadow:0 0 0 0.8px rgba(255,255,255,.9);margin-right:2px"></span> '+fmtN(now)+' watching</span>'+
       '<span class="like-flag" style="display:none" data-likes="'+v.vid+'"></span>'+'</div>'+
     '<div class="vbody">'+
       '<div class="vtitle">'+esc(v.title)+'</div>'+
-      '<div class="vmeta"><a href="'+esc(v.url)+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a></div>'+
-      '<div class="vtags">'+kws.map(ghosttag).join('')+'</div>'+
+      '<div class="vmeta"><a href="'+esc(v.url)+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a>'+(chSubs!=null?'<span class="subs">· '+fmtN(chSubs)+' subs</span>':'')+'</div>'+
       '<div class="vstats">'+
         '<div class="vstat hl"><b>'+fmtN(peak24)+'</b><span>peak 24h</span></div>'+
         '<div class="vstat"><b>'+fmtN(peakAll)+'</b><span>peak all-time</span></div>'+
@@ -2561,23 +2619,17 @@ function chanHTML(){
       : '<div class="empty">Loading the channel audit Sheet… <span class="spin-inline"></span></div>';
   }
   const all=CHAN.channels,rows=filterChans();
-  const totalSubs=all.reduce((s,c)=>s+(c.subs||0),0);
-  const active=all.filter(c=>/actif/i.test(c.status)).length;
-  const medYr=median(all.map(c=>c.viewsYr));
-  const kpi=(lbl,val,sub,c)=>'<div class="kpi" style="--kc:'+c+'"><div class="k-lbl">'+lbl+'</div><div class="k-val">'+val+'</div><div class="k-sub">'+sub+'</div></div>';
-  let h='<div class="kpis">'+
-    kpi('Channels tracked',fmtInt(all.length),'competitive audit, updated by the scan','#8b7cf6')+
-    kpi('Combined subscribers',fmtN(totalSubs),'across all tracked channels','#f472b6')+
-    kpi('Median views / year',fmtN(medYr),'the bar a serious channel clears','#fbbf24')+
-    kpi('Active channels',fmtInt(active),'uploaded recently per audit status','#34d399')+
-  '</div>';
   const niches=[...new Set(all.map(c=>c.niche||'(unset)'))].sort((a,b)=>all.filter(c=>(c.niche||'(unset)')===b).length-all.filter(c=>(c.niche||'(unset)')===a).length);
-  h+='<div class="toolbar">'+
+  const nicheOpts=[{label:'🎯 All niches',sel:!CS.niche,onclick:"CS.niche='';CS.limit=150;rerenderChans()"}].concat(
+    niches.map(n=>({label:genreEmoji(n)+' '+esc(n)+' · '+all.filter(x=>(x.niche||'(unset)')===n).length,sel:CS.niche===n,onclick:'CS.niche='+jsq(n)+';CS.limit=150;rerenderChans()'})));
+  const nicheLabel=CS.niche?(genreEmoji(CS.niche)+' '+esc(CS.niche)):'🎯 All niches';
+  const csSortKeys=[['subs','👥','Subscribers'],['viewsYr','👀','Views / year'],['avg10','📊','Avg last 10'],['upMo','⬆️','Uploads / month'],['lastUp','🆕','Last upload'],['name','🔤','Name']];
+  const csSortOpts=csSortKeys.map(s=>({label:s[1]+' Sort · '+s[2],sel:CS.sort===s[0],onclick:'CS.sort='+jsq(s[0])+';rerenderChans()'}));
+  const csSortRow=csSortKeys.find(s=>s[0]===CS.sort)||csSortKeys[0];
+  let h='<div class="toolbar">'+
     '<div class="search">'+ICONS.search+'<input placeholder="Search channels, niches, countries…" value="'+esc(CS.q)+'" oninput="CS.q=this.value;CS.limit=150;rerenderChans()"><kbd>/</kbd></div>'+
-    '<select class="ctl c-genre" onchange="CS.niche=this.value;CS.limit=150;rerenderChans()">'+
-      '<option value="">🎯 All niches</option>'+niches.map(n=>'<option '+(CS.niche===n?'selected':'')+' value="'+esc(n)+'">'+genreEmoji(n)+' '+esc(n)+' · '+all.filter(x=>(x.niche||'(unset)')===n).length+'</option>').join('')+'</select>'+
-    '<div class="tb-right"><select class="ctl c-sort" onchange="CS.sort=this.value;rerenderChans()">'+
-      '<option value="subs">👥 Sort · Subscribers</option><option '+(CS.sort==='viewsYr'?'selected':'')+' value="viewsYr">👀 Sort · Views / year</option><option '+(CS.sort==='avg10'?'selected':'')+' value="avg10">📊 Sort · Avg last 10</option><option '+(CS.sort==='upMo'?'selected':'')+' value="upMo">⬆️ Sort · Uploads / month</option><option '+(CS.sort==='lastUp'?'selected':'')+' value="lastUp">🆕 Sort · Last upload</option><option '+(CS.sort==='name'?'selected':'')+' value="name">🔤 Sort · Name</option></select>'+
+    xdd('c-genre',nicheLabel,nicheOpts)+
+    '<div class="tb-right">'+xdd('c-sort',csSortRow[1]+' Sort · '+csSortRow[2],csSortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(CS.mode==='grid'?'on':'')+'" onclick="CS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
       '<button class="'+(CS.mode!=='grid'?'on':'')+'" onclick="CS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
@@ -2590,7 +2642,7 @@ function chanCardHTML(c,i){
   return '<div class="vcard" onclick="openChanIdx('+i+')">'+
     '<div class="thumbwrap" style="height:auto;aspect-ratio:auto;padding:24px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;background:linear-gradient(160deg,rgba(139,124,246,.12),rgba(139,124,246,.02))">'+
       wlStar('c',normUrl(c.url))+chAva(c,68)+
-      '<div style="text-align:center;max-width:100%"><div class="ttitle" style="white-space:normal">'+esc(c.name)+(c.ours?' <span class="tag" style="background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55">OURS</span>':'')+'</div></div>'+
+      '<div style="text-align:center;max-width:100%"><div class="ttitle" style="white-space:normal">'+esc(c.name)+'</div></div>'+
     '</div>'+
     '<div class="vbody">'+
       '<div class="vtags">'+gtag(c.niche)+(c.country?'<span class="tag ghost">'+flagOf(c.country)+' '+esc(c.country)+'</span>':'')+'</div>'+
@@ -2610,7 +2662,7 @@ function chanListHTML(rows){
   }else{
     h='<table class="vtable"><thead><tr><th>Channel</th><th>Niche</th><th>Country</th><th>Subs</th><th>Subs per month</th><th>Total views</th><th>Views per year</th><th>Avg last 10</th><th>Uploads per month</th><th>Last upload</th></tr></thead><tbody>'+
       page.map((c,i)=>'<tr class="row" onclick="openChanIdx('+i+')">'+
-        '<td><div style="display:flex;align-items:center;gap:12px">'+chAva(c,64)+'<span class="ttitle">'+esc(c.name)+(c.ours?' <span class="tag" style="background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55;margin-left:6px">OURS</span>':'')+' '+'</span>'+wlStar('c',normUrl(c.url)).replace('class="wl-star','style="margin-left:8px" class="wl-star inline')+'</div></td>'+
+        '<td><div style="display:flex;align-items:center;gap:12px">'+chAva(c,64)+'<span class="ttitle">'+esc(c.name)+'</span>'+wlStar('c',normUrl(c.url)).replace('class="wl-star','style="margin-left:8px" class="wl-star inline')+'</div></td>'+
         '<td>'+gtag(c.niche)+'</td>'+
         '<td style="white-space:nowrap">'+flagOf(c.country)+' '+esc(c.country||'—')+'</td>'+
         '<td class="num vpmcell">'+fmtN(c.subs)+'</td>'+
@@ -2822,7 +2874,7 @@ const FR_LIT=[
 ['📋 All releases','📋 Toutes les sorties'],[' releases<',' sorties<'],[' release<',' sortie<'],['>Today<','>Aujourd’hui<'],
 ['📈 View history','📈 Historique des vues'],['📡 Concurrent viewers','📡 Spectateurs simultanés'],['🔬 Diagnosis','🔬 Diagnostic'],['💡 Linked recommendation','💡 Recommandation liée'],['⚖️ Cohort','⚖️ Cohorte'],['📚 Catalog','📚 Catalogue'],['📈 Subscribers','📈 Abonnés'],['📈 Total views','📈 Vues totales'],['🔥 Why trending / notable','🔥 Pourquoi ça tourne'],['🔥 Why trending','🔥 Pourquoi en tendance'],['📌 Why notable','📌 Pourquoi notable'],['💡 Lofi Girl suggestion','💡 Suggestion Lofi Girl'],['💡 Lofi Girl angle','💡 Angle Lofi Girl'],['🎯 What to copy','🎯 À copier'],['🎼 Musical direction','🎼 Direction musicale'],['🎨 Visual direction','🎨 Direction visuelle'],['🔎 Discovery keywords','🔎 Mots-clés de découverte'],['🏁 Best search rank','🏁 Meilleur rang de recherche'],['🗓️ First seen by the scan','🗓️ Première détection'],['🔎 Found via search keywords','🔎 Trouvée via ces recherches'],['✏️ Title pattern','✏️ Structure du titre'],['🎬 Concept','🎬 Concept'],['🖼️ Thumbnail scene','🖼️ Scène de miniature'],['🎼 Music style','🎼 Style musical'],['🔁 Cadence','🔁 Cadence'],['🍂 Seasonal note','🍂 Note saisonnière'],
 ['✓ Validated · click to undo','✓ Validée · cliquer pour annuler'],['✓ Validate','✓ Valider'],['💾 Save to Sheet','💾 Enregistrer dans le Sheet'],['Your note — ChatGPT reads it at the next scan to recalibrate…','Ta note — ChatGPT la lit au prochain scan pour recalibrer…'],
-['>✅ Validated</option>','>✅ Validées</option>'],['>📝 With Dim note</option>','>📝 Avec note Dim</option>'],['>✅ Validated or noted</option>','>✅ Validées ou notées</option>'],['>⏳ Pending review</option>','>⏳ À trier</option>'],['>🎯 All niches</option>','>🎯 Toutes les niches</option>'],
+['>✅ Validated</div>','>✅ Validées</div>'],['>📝 With Dim note</option>','>📝 Avec note Dim</option>'],['>✅ Validated or noted</option>','>✅ Validées ou notées</option>'],['>⏳ Pending review</div>','>⏳ À trier</div>'],['>🎯 All niches</div>','>🎯 Toutes les niches</div>'],
 ['Nothing matches — try clearing filters.','Aucun résultat, essaie de retirer des filtres.'],['Nothing matches — try clearing the search.','Aucun résultat, essaie de vider la recherche.'],
 ['Tracking just started — the curve appears from the 2nd scan. 📡','Suivi tout juste lancé, la courbe apparaît dès le 2e scan. 📡'],[' scans · ',' scans · '],['/day measured','/jour mesuré'],['concurrent viewers · ','spectateurs simultanés · '],['>latest<','>dernier<'],
 ['found on the scan keywords','trouvés sur les mots-clés du scan'],['of our streams surfacing in results','de nos streams dans les résultats'],
