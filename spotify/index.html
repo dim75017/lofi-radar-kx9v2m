@@ -211,8 +211,6 @@ th:hover{color:var(--muted)}
 th .arr{color:var(--acc2);font-size:10px}
 td{padding:8.5px 10px;border-bottom:1px solid rgba(150,214,170,.05);vertical-align:middle;text-align:center}
 tr:hover td{background:rgba(150,214,170,.03)}
-tr.hot td{background:rgba(30,215,96,.055)}
-tr.hot:hover td{background:rgba(30,215,96,.09)}
 td .tk{font-weight:600;color:var(--text)}
 td .tk:hover{color:var(--acc2)}
 td .ar{color:var(--muted);cursor:pointer}
@@ -235,6 +233,7 @@ td.covtd{width:82px;padding:6px 2px 6px 10px}
 .badge.seg-reg{color:#a78bfa;background:rgba(167,139,250,.14);box-shadow:inset 0 0 0 1px rgba(167,139,250,.4)}
 .badge.seg-occ{color:#60a5fa;background:rgba(37,99,235,.18);box-shadow:inset 0 0 0 1px rgba(59,130,246,.45)}
 .badge.seg-ext{color:#fb7185;background:rgba(251,113,133,.12);box-shadow:inset 0 0 0 1px rgba(251,113,133,.32)}
+.badge.undet{color:var(--dim);background:rgba(93,100,133,.16);box-shadow:inset 0 0 0 1px rgba(93,100,133,.35)}
 td.selc,th.selc{width:44px;padding-left:14px}
 .ck{appearance:none;-webkit-appearance:none;width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border2);background:rgba(150,214,170,.05);cursor:pointer;position:relative;transition:transform .12s ease,border-color .13s,background .13s;vertical-align:middle;flex:none}
 .ck:hover{border-color:#4ade80}
@@ -439,16 +438,21 @@ const EN_MAP = {
   "Veille":"Watch","Il rejoint ensuite le rafraîchissement hebdomadaire, quasi gratuit. Ses tracks apparaissent dans l'onglet Tracks avec le badge « découverte ».":"It then joins the weekly refresh, nearly free. Its tracks appear in the Tracks tab with the “discovery” badge.",
   "Élargissement":"Expansion","Quand le lot de 200 est digéré, on monte le plafond et on ajoute les playlists éditoriales par genre (lofi, ambient, piano, jazz…) comme seconde source.":"Once the batch of 200 is digested, we raise the cap and add editorial playlists by genre (lofi, ambient, piano, jazz…) as a second source.",
   "Origine":"Origin","scanné":"scanned","en file":"queued",
-  "scan en cours":"scan in progress",
+  "Scan incomplet, pause sécurité Spotify":"Scan incomplete, Spotify safety pause",
   "Recensement des playlists éditoriales Spotify et indépendantes sur nos genres, alimenté par le scanner de mots-clés. Suivi des followers et du fit pour repérer ce qui marche.":"Census of Spotify editorial and independent playlists in our genres, powered by the keyword scanner. Follower and fit tracking to spot what works.",
   "Mots-clés scannés":"Keywords scanned","Compteur déclaré, pas encore exporté automatiquement par le scanner":"Declared count, not yet automatically exported by the scanner","déclaré":"declared",
-  "Playlists découvertes":"Playlists discovered","Fiches détaillées":"Detailed profiles","Followers relevés":"Followers recorded",
+  "Playlists découvertes":"Playlists discovered","Fiches détaillées":"Detailed profiles",
+  "Followers visibles":"Visible followers","Non affichés par Spotify":"Not shown by Spotify","Non affiché par Spotify":"Not shown by Spotify",
+  "Spotify ne montre pas le compteur de followers pour cette playlist":"Spotify does not show the follower count for this playlist",
   "toutes tailles confondues":"all sizes combined","du total":"of total","playlists à fort potentiel":"high-potential playlists",
   "Followers cumulés":"Total followers","playlists avec followers visibles":"playlists with visible followers",
-  "Éditoriales":"Editorial","Indépendantes":"Independent","Éditoriale":"Editorial","Indépendante":"Independent",
+  "Qualifiées (≥10k)":"Qualified (≥10k)","Toutes les playlists":"All playlists",
+  "Éditoriales":"Editorial","Indépendantes":"Independent","Éditoriale":"Editorial","Indépendante":"Independent","Non déterminé":"Undetermined",
   "Fiche détaillée uniquement":"Detailed profile only",
   "Tri : followers":"Sort: followers","Tri : nb tracks":"Sort: track count","Tri : fit score":"Sort: fit score","Tri : vue récemment":"Sort: recently viewed",
-  "Rechercher playlist, curateur, genre…":"Search playlist, curator, genre…","Curateur":"Curator","Vu le":"Last seen","Mots-clés":"Keywords",
+  "Rechercher playlist, curateur, genre…":"Search playlist, curator, genre…","Curateur":"Curator","Mots-clés":"Keywords",
+  "Création estimée":"Estimated creation","Dernière observation":"Last observation","Lien":"Link","Ouvrir":"Open",
+  "Non estimée":"Not estimated","Estimation":"Estimate","Estimation, pas une date certaine":"Estimate, not a firm date","confiance":"confidence",
   "Détail pas encore récupéré":"Detail not yet retrieved","en attente":"pending",
   "Aucune playlist ne correspond à ces filtres.":"No playlist matches these filters.","Aucune donnée playlists chargée pour le moment.":"No playlist data loaded yet.",
   "Dernier scan le":"Last scan:","artistes scannés":"artists scanned",
@@ -600,7 +604,7 @@ const S = {
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', shownA:60, aseg:'all',
   newDays:90, shownN:100,
-  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80,
+  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified',
 };
 
 /* ---------- navigation ---------- */
@@ -1278,22 +1282,39 @@ function sentinel(remaining){
   return remaining>0 ? `<div id="scroll-sentinel" class="empty" style="padding:18px">${T('Chargement…')} (${fmtFull(remaining)} ${T('restantes')})</div>` : '';
 }
 
+/* colonnes PLrows (v2) : id,name,owner,curatorCat,followers,notes,tracks,first_seen,last_seen,lang,genre,use_case,fit,kw,estDate,estConf,enriched,big10k */
 function plFiltered(){
   const q = S.plq.trim().toLowerCase();
   let rows = PLrows.filter(r=>{
+    if (S.plview==='qualified' && !r[17]) return false;
     if (S.plcur!=='all' && r[3]!==S.plcur) return false;
-    if (S.plonly && !r[13]) return false;
-    if (q && !((r[1]||'').toLowerCase().includes(q) || (r[2]||'').toLowerCase().includes(q) || (r[9]||'').toLowerCase().includes(q))) return false;
+    if (S.plonly && !r[16]) return false;
+    if (q && !((r[1]||'').toLowerCase().includes(q) || (r[2]||'').toLowerCase().includes(q) || (r[10]||'').toLowerCase().includes(q))) return false;
     return true;
   });
   const sorters = {
     followers: (a,b)=>b[4]-a[4],
-    tracks: (a,b)=>b[5]-a[5],
-    fit: (a,b)=>b[11]-a[11],
-    recent: (a,b)=> (a[7]<b[7]?1:(a[7]>b[7]?-1:0)),
+    tracks: (a,b)=>b[6]-a[6],
+    fit: (a,b)=>b[12]-a[12],
+    recent: (a,b)=> (a[8]<b[8]?1:(a[8]>b[8]?-1:0)),
   };
   rows = rows.slice().sort(sorters[S.plsort] || sorters.followers);
   return rows;
+}
+function plCuratorBadge(cat){
+  if (cat==='editorial') return `<span class="badge lofi" style="margin-left:6px">${T('Éditoriale')}</span>`;
+  if (cat==='independent') return `<span class="badge self" style="margin-left:6px">${T('Indépendante')}</span>`;
+  return `<span class="badge undet" style="margin-left:6px">${T('Non déterminé')}</span>`;
+}
+function plFollowersCell(r){
+  if (r[5]==='ok') return fmt(r[4]);
+  if (r[5]==='no_visible_followers') return `<span class="kwtag" title="${T('Spotify ne montre pas le compteur de followers pour cette playlist')}">${T('Non affiché par Spotify')}</span>`;
+  return '—';
+}
+function plEstDateCell(r){
+  if (!r[14]) return `<span style="color:var(--dim)">${T('Non estimée')}</span>`;
+  const confTxt = r[15] ? ' ('+T('confiance')+' '+esc(r[15])+')' : '';
+  return `<span title="${T('Estimation, pas une date certaine')}${confTxt}">${T('Estimation')} ${fmtDate(r[14])}</span>`;
 }
 
 function renderPlaylists(){
@@ -1308,7 +1329,7 @@ function renderPlaylists(){
   V.innerHTML = `
   <div class="page-head">
     <div>
-      <h2>Playlists <span class="badge new" style="vertical-align:middle">${T('scan en cours')}</span></h2>
+      <h2>Playlists <span class="badge new" style="vertical-align:middle">${T('Scan incomplet, pause sécurité Spotify')}</span></h2>
       <p>${T("Recensement des playlists éditoriales Spotify et indépendantes sur nos genres, alimenté par le scanner de mots-clés. Suivi des followers et du fit pour repérer ce qui marche.")}</p>
     </div>
   </div>
@@ -1317,7 +1338,8 @@ function renderPlaylists(){
     <div class="fitem">${T('Mots-clés scannés')} <b>${PLmeta.kw_scanned}/${PLmeta.kw_total}</b> (${kwPct}%)${PLmeta.kw_declared?' <span class="kwtag" title="'+T('Compteur déclaré, pas encore exporté automatiquement par le scanner')+'">'+T('déclaré')+'</span>':''}</div>
     <div class="fitem">${T('Playlists découvertes')} <b>${fmtFull(PLmeta.playlists_discovered)}</b></div>
     <div class="fitem">${T('Fiches détaillées')} <b>${fmtFull(PLmeta.playlists_enriched)}</b></div>
-    <div class="fitem">${T('Followers relevés')} <b>${fmtFull(PLmeta.followers_visible)}</b></div>
+    <div class="fitem">${T('Followers visibles')} <b>${fmtFull(PLmeta.followers_visible)}</b></div>
+    <div class="fitem">${T('Non affichés par Spotify')} <b>${fmtFull(PLmeta.followers_non_displayed)}</b></div>
   </div>
   <div class="kpis">
     ${kpi(T('Playlists découvertes'), fmtFull(PLmeta.playlists_discovered), T('toutes tailles confondues'))}
@@ -1326,9 +1348,13 @@ function renderPlaylists(){
     ${kpi(T('Followers cumulés'), fmt(PLmeta.followers_sum), fmtFull(PLmeta.followers_visible)+' '+T('playlists avec followers visibles'))}
   </div>
   <div class="toolbar">
+    <button class="chip ${S.plview==='qualified'?'on':''}" data-plview="qualified">${T('Qualifiées (≥10k)')} (${fmtFull(PLmeta.playlists_10k_plus)})</button>
+    <button class="chip ${S.plview==='all'?'on':''}" data-plview="all">${T('Toutes les playlists')} (${fmtFull(PLmeta.playlists_discovered)})</button>
+  </div>
+  <div class="toolbar">
     <button class="chip ${S.plcur==='all'?'on':''}" data-plcur="all">${T('Tous')}</button>
-    <button class="chip ${S.plcur==='Editorial Spotify'?'on':''}" data-plcur="Editorial Spotify">${T('Éditoriales')}</button>
-    <button class="chip ${S.plcur==='Independent'?'on':''}" data-plcur="Independent">${T('Indépendantes')}</button>
+    <button class="chip ${S.plcur==='editorial'?'on':''}" data-plcur="editorial">${T('Éditoriales')}</button>
+    <button class="chip ${S.plcur==='independent'?'on':''}" data-plcur="independent">${T('Indépendantes')}</button>
     <label class="selall" style="margin-left:4px"><input type="checkbox" class="ck" id="pl-only" ${S.plonly?'checked':''}> ${T('Fiche détaillée uniquement')}</label>
     <select id="pl-sort">
       <option value="followers" ${S.plsort==='followers'?'selected':''}>${T('Tri : followers')}</option>
@@ -1349,22 +1375,24 @@ function renderPlaylists(){
         <th class="num">Tracks</th>
         <th>Genre</th>
         <th>Usage</th>
-        <th class="num">Fit</th>
-        <th>${T('Vu le')}</th>
+        <th>${T('Création estimée')}</th>
+        <th>${T('Dernière observation')}</th>
         <th>${T('Mots-clés')}</th>
+        <th>${T('Lien')}</th>
       </tr></thead>
       <tbody>
       ${slice.map(r=>`
         <tr>
-          <td><a href="https://open.spotify.com/playlist/${r[0]}" target="_blank" rel="noopener"><span class="tk">${esc(r[1])}</span></a>${r[13]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</td>
-          <td>${esc(r[2])} <span class="badge ${r[3]==='Editorial Spotify'?'lofi':'self'}" style="margin-left:6px">${r[3]==='Editorial Spotify'?T('Éditoriale'):T('Indépendante')}</span></td>
-          <td class="num" title="${fmtFull(r[4])}">${r[13]?fmt(r[4]):'—'}</td>
-          <td class="num">${r[13]?(r[5]||'?'):'—'}</td>
-          <td>${esc(r[9]||'?')}</td>
+          <td><span class="tk">${esc(r[1])}</span>${r[16]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</td>
+          <td>${esc(r[2])} ${plCuratorBadge(r[3])}</td>
+          <td class="num" title="${fmtFull(r[4])}">${plFollowersCell(r)}</td>
+          <td class="num">${r[16]?(r[6]||'?'):'—'}</td>
           <td>${esc(r[10]||'?')}</td>
-          <td class="num">${r[11]||'?'}</td>
-          <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[7])}</td>
-          <td>${(r[12]?r[12].split('|'):[]).map(k=>'<span class="kwtag">'+esc(k)+'</span>').join('')}</td>
+          <td>${esc(r[11]||'?')}</td>
+          <td style="white-space:nowrap">${plEstDateCell(r)}</td>
+          <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[8])}</td>
+          <td>${(r[13]?r[13].split('|'):[]).map(k=>'<span class="kwtag">'+esc(k)+'</span>').join('')}</td>
+          <td><a href="https://open.spotify.com/playlist/${r[0]}" target="_blank" rel="noopener">${T('Ouvrir')} ↗</a></td>
         </tr>`).join('')}
       </tbody>
     </table>
@@ -1373,6 +1401,7 @@ function renderPlaylists(){
   </div>`;
 
   document.getElementById('pl-q').addEventListener('input', e=>{ S.plq=e.target.value; S.shownPL=80; keepScroll(renderPlaylists); keepFocus('pl-q'); });
+  document.querySelectorAll('.chip[data-plview]').forEach(c=>c.addEventListener('click', ()=>{ S.plview=c.dataset.plview; S.shownPL=80; keepScroll(renderPlaylists); }));
   document.querySelectorAll('.chip[data-plcur]').forEach(c=>c.addEventListener('click', ()=>{ S.plcur=c.dataset.plcur; S.shownPL=80; keepScroll(renderPlaylists); }));
   document.getElementById('pl-only').addEventListener('change', e=>{ S.plonly=e.target.checked; S.shownPL=80; keepScroll(renderPlaylists); });
   document.getElementById('pl-sort').addEventListener('change', e=>{ S.plsort=e.target.value; keepScroll(renderPlaylists); });
