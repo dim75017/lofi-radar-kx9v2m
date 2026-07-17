@@ -1778,6 +1778,109 @@ function anaDiags(o){
   }
   return d;
 }
+/* ---- Deep packaging audit: thumbnail colors + title/keyword patterns ---- */
+const THUMB_CACHE={};
+function analyzeThumb(vid){
+  if(THUMB_CACHE[vid])return THUMB_CACHE[vid];
+  const p=new Promise(resolve=>{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    const done=(v)=>resolve(v);
+    img.onload=()=>{
+      try{
+        const W=48,H=27;
+        const c=document.createElement('canvas');c.width=W;c.height=H;
+        const ctx=c.getContext('2d');
+        ctx.drawImage(img,0,0,W,H);
+        const data=ctx.getImageData(0,0,W,H).data;
+        let sumL=0,sumR=0,sumG=0,sumB=0,n=0;const lums=[];
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i],g=data[i+1],b=data[i+2];
+          const l=0.2126*r+0.7152*g+0.0722*b;
+          sumL+=l;sumR+=r;sumG+=g;sumB+=b;lums.push(l);n++;
+        }
+        const brightness=sumL/n;
+        const variance=lums.reduce((s,l)=>s+(l-brightness)*(l-brightness),0)/n;
+        done({ok:true,brightness,contrast:Math.sqrt(variance),warmth:(sumR-sumB)/n,r:sumR/n,g:sumG/n,b:sumB/n});
+      }catch(e){done({ok:false});}
+    };
+    img.onerror=()=>done({ok:false});
+    img.src=thumb(vid);
+  });
+  THUMB_CACHE[vid]=p;
+  return p;
+}
+const POWER_WORDS=['sleep','deep','focus','relax','calm','cozy','healing','study','meditation','peaceful','soothing','ambience','ambient','rain','night','morning','stress','anxiety','productivity','warm','dream'];
+function titleSignals(title){
+  const t=(title||'').toLowerCase();
+  return {
+    hasDuration:/\d+\s*(h|hr|hour|heures?)\b/.test(t),
+    hasNumber:/\d/.test(t),
+    hasEmoji:/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(title||''),
+    wordCount:(title||'').trim().split(/\s+/).filter(Boolean).length,
+    hasSeparator:/[|:]/.test(title||''),
+    powerWords:POWER_WORDS.filter(w=>t.includes(w))
+  };
+}
+async function buildDeepAudit(o){
+  const out={title:[],thumb:[],kw:[],coh:0};
+  const coh=mixRows().filter(x=>genreKey(x.genre)===o.gk&&x.vpm!=null).sort((a,b)=>b.vpm-a.vpm).slice(0,6);
+  out.coh=coh.length;
+  if(!coh.length)return out;
+  const [ourThumb,...cohThumbs]=await Promise.all([analyzeThumb(o.vid),...coh.map(c=>analyzeThumb(c.vid))]);
+  const okCoh=cohThumbs.filter(c=>c.ok);
+  const ourSig=titleSignals(o.title);
+  const cohSigs=coh.map(c=>titleSignals(c.title));
+  const pctOf=fn=>cohSigs.length?Math.round(cohSigs.filter(fn).length/cohSigs.length*100):null;
+  const durPct=pctOf(s=>s.hasDuration);
+  if(durPct!=null&&durPct>=60&&!ourSig.hasDuration)
+    out.title.push('Le titre n’indique pas de durée (ex. "10 Hours") alors que '+durPct+'% des meilleurs titres '+o.gk+' en affichent une — ça rassure sur la session sommeil/focus et aide le CTR.');
+  const pwPct=pctOf(s=>s.powerWords.length>0);
+  if(pwPct!=null&&pwPct>=60&&!ourSig.powerWords.length)
+    out.title.push('Aucun mot émotionnel/bénéfice (sleep, focus, relax, healing…) dans le titre, alors que '+pwPct+'% des meilleurs titres du genre en utilisent un.');
+  const sepPct=pctOf(s=>s.hasSeparator);
+  if(sepPct!=null&&sepPct>=60&&!ourSig.hasSeparator)
+    out.title.push('Titre en une seule phrase alors que '+sepPct+'% des meilleurs titres du genre utilisent un séparateur ( | ou : ) pour juxtaposer accroche + bénéfice.');
+  const avgWords=cohSigs.length?Math.round(cohSigs.reduce((s,x)=>s+x.wordCount,0)/cohSigs.length):null;
+  if(avgWords!=null&&Math.abs(ourSig.wordCount-avgWords)>=4)
+    out.title.push('Titre '+(ourSig.wordCount<avgWords?'plus court':'plus long')+' ('+ourSig.wordCount+' mots) que la moyenne des meilleurs titres du genre ('+avgWords+' mots).');
+  const emojiPct=pctOf(s=>s.hasEmoji);
+  if(emojiPct!=null&&emojiPct>=50&&!ourSig.hasEmoji)
+    out.title.push('Pas d’emoji dans le titre, alors que '+emojiPct+'% des meilleurs titres du genre en utilisent au moins un pour se détacher dans le fil.');
+  if(ourThumb.ok&&okCoh.length>=2){
+    const avgB=okCoh.reduce((s,c)=>s+c.brightness,0)/okCoh.length;
+    const avgC=okCoh.reduce((s,c)=>s+c.contrast,0)/okCoh.length;
+    const avgW=okCoh.reduce((s,c)=>s+c.warmth,0)/okCoh.length;
+    if(ourThumb.brightness<avgB*0.6)
+      out.thumb.push('Miniature nettement plus sombre ('+Math.round(ourThumb.brightness)+'/255) que la moyenne des meilleures miniatures du genre ('+Math.round(avgB)+'/255) — risque de mal ressortir dans le fil, surtout en dark mode. Essaie un point lumineux net (lune, bougie, lampe) qui contraste avec le fond.');
+    else if(ourThumb.brightness>avgB*1.6)
+      out.thumb.push('Miniature beaucoup plus claire que la moyenne des meilleures miniatures du genre ('+Math.round(ourThumb.brightness)+' vs '+Math.round(avgB)+'/255) — vérifie qu’elle ne soit pas plate/cramée en petit format mobile.');
+    if(ourThumb.contrast<avgC*0.65)
+      out.thumb.push('Contraste faible ('+Math.round(ourThumb.contrast)+' vs '+Math.round(avgC)+' en moyenne pour les meilleures miniatures du genre) — le sujet principal risque de ne pas se détacher assez en vignette 120px. Renforce l’opposition sombre/clair autour du sujet.');
+    if(Math.abs(avgW)>10&&Math.sign(ourThumb.warmth)!==Math.sign(avgW))
+      out.thumb.push('Palette '+(ourThumb.warmth<0?'froide (bleu/nuit)':'chaude (orange/doré)')+' alors que les meilleures miniatures du genre sont plutôt '+(avgW<0?'froides':'chaudes')+' — pas rédhibitoire, mais à tester en priorité si le CTR est faible.');
+    if(!out.thumb.length)out.thumb.push('Miniature dans la moyenne (luminosité, contraste, teinte) des meilleures du genre — la composition n’est probablement pas le frein principal.');
+  }else if(!ourThumb.ok){
+    out.thumb.push('Analyse colorimétrique impossible pour cette miniature (image indisponible) — vérification visuelle manuelle recommandée vs les miniatures les plus vues du genre.');
+  }
+  if(o.reco){
+    const kwCount=(o.reco.kw||'').split(',').map(s=>s.trim()).filter(Boolean).length;
+    if(!o.reco.kw)out.kw.push('Aucun mot-clé SEO renseigné pour cette sortie — impossible de vérifier le ciblage de recherche au lancement.');
+    else if(kwCount<5)out.kw.push('Seulement '+kwCount+' mot(s)-clé(s) SEO renseigné(s), en dessous des 8–12 recommandés pour couvrir les variantes de recherche ("for sleep", "for study", "mix"…).');
+    else out.kw.push(kwCount+' mots-clés SEO renseignés — couverture correcte, vérifie qu’ils apparaissent bien dans le titre et les 2 premières lignes de description.');
+    if(!o.reco.desc)out.kw.push('Pas de description longue trackée pour cette vidéo — une description détaillée (150+ mots, mots-clés répétés naturellement) aide le référencement et l’affichage en «vidéos similaires».');
+  }else{
+    out.kw.push('Pas de recommandation liée à cette sortie — impossible de vérifier les mots-clés/description utilisés au lancement.');
+  }
+  return out;
+}
+function deepAuditHTML(a){
+  const sec=(icon,title,items)=>!items.length?'':'<div class="dw-sec"><div class="k">'+icon+' '+title+'</div><div class="v">'+items.map(x=>'• '+x).join('<br><br>')+'</div></div>';
+  if(!a.coh)return '<div class="dw-sec"><div class="k">🔬 Deep packaging audit</div><div class="v">Pas assez de vidéos comparables dans ce genre pour un audit fiable.</div></div>';
+  return sec('🎨','Thumbnail — composition & couleur',a.thumb)+
+    sec('✍️','Titre',a.title)+
+    sec('🔎','Description & mots-clés',a.kw);
+}
 function vBadge(v){
   return v==='over'?'<span class="verdict v-over">Overperforming</span>':
     v==='inline'?'<span class="verdict v-inline">In line</span>':
@@ -1852,11 +1955,16 @@ function openAnaIdx(i){
       sec('Diagnosis',(o.diags||[]).map(d=>'• '+esc(d)).join('<br>'),'🔬')+
       (o.reco?sec('Linked recommendation','#'+Math.round(o.reco.n)+' · '+esc(o.reco.title)+(o.reco.pot?' · predicted '+esc(o.reco.pot):'')+(o.reco.scoreAdj!=null?' · score '+Math.round(o.reco.scoreAdj):''),'💡'):'')+
       sec('Cohort','Compared against '+fmtInt(o.cohN)+' '+esc(o.gk)+' videos on the radar'+(o.cohMed!=null?' · median '+fmtN(o.cohMed)+' views/mo':''),'⚖️')+
+      '<div id="deepaudit" class="dw-sec"><div class="k">🔬 Audit approfondi (miniature, titre, SEO)</div><div class="v">Analyse en cours <span class="spin-inline"></span></div></div>'+
     '</div>';
   document.getElementById('drawer').classList.add('show');
   document.getElementById('backdrop').classList.add('show');
   document.getElementById('drawer').scrollTop=0;
   fillLikes();i18nDrawer();
+  buildDeepAudit(o).then(a=>{
+    const el=document.getElementById('deepaudit');
+    if(el)el.outerHTML=deepAuditHTML(a);
+  });
 }
 
 /* ================= LIVESTREAMS ================= */
