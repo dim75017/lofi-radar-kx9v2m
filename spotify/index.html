@@ -108,8 +108,9 @@ input,select{font-family:inherit;color:var(--text)}
 .top-row .rank{width:26px;text-align:center;font-family:'Sora';font-weight:700;font-size:14px;color:var(--dim);flex:none}
 .av-sm{width:46px;height:46px;border-radius:50%;position:relative;overflow:hidden;display:grid;place-items:center;font-family:'Sora';font-weight:700;font-size:16px;color:#052e12;background:linear-gradient(135deg,#4ade80,#67e8f9);flex:none}
 .top-row .ti{flex:1;min-width:0}
-.top-row .nm{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-row .sub{font-size:11.5px;color:var(--muted);margin:2.5px 0 6px}
+.top-row .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.top-row .nm .nmtxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.top-row .sub{font-size:11.5px;color:var(--muted);margin:4px 0 6px}
 .top-row .vals{text-align:right;flex:none}
 .top-row .v1{font-family:'Sora';font-weight:800;font-size:16.5px}
 .top-row .v2{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.9px;margin-top:1px}
@@ -137,6 +138,8 @@ input,select{font-family:inherit;color:var(--text)}
 .chip{padding:7.5px 13px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);transition:all .14s}
 .chip:hover{color:var(--text);border-color:var(--border2)}
 .chip.on{color:#052e12;background:linear-gradient(90deg,#1ed760,#4ade80);border-color:transparent}
+.btn-back{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:11px;background:linear-gradient(90deg,#1ed760,#4ade80);color:#052e12;font-size:13.5px;font-weight:700;margin-bottom:14px;box-shadow:0 4px 16px rgba(30,215,96,.3);transition:all .15s}
+.btn-back:hover{transform:translateX(-2px);box-shadow:0 6px 20px rgba(30,215,96,.42)}
 .toolbar .spacer{flex:1}
 .result-count{font-size:12px;color:var(--dim);font-weight:600}
 
@@ -301,28 +304,40 @@ const EN_MAP = {
   "Suivi des followers":"Follower tracking","Relevé régulier du nombre de followers de chaque playlist : courbes d'évolution, croissance hebdo, détection de celles qui explosent.":"Regular readings of each playlist's follower count: evolution curves, weekly growth, detection of the ones taking off.",
   "Comparaison édito vs indé, genres qui montent, formats qui marchent. De quoi s'inspirer pour nos propres playlists et le positionnement du label.":"Editorial vs indie comparison, rising genres, formats that work. Inspiration for our own playlists and the label's positioning.",
   "Synergie découverte":"Discovery synergy","Les artistes présents dans les playlists qui performent alimenteront la file de découverte, en plus des \"fans also like\".":"Artists appearing in high-performing playlists will feed the discovery queue, on top of “fans also like”.",
-  "Dernier scan le":"Last scan:","artistes scannés":"artists scanned"
+  "Dernier scan le":"Last scan:","artistes scannés":"artists scanned",
+  "Revenu mensuel est.":"Est. monthly revenue","catalogue hors Lofi":"catalog outside Lofi","cumulé":"lifetime",
+  "Revenus estimés à":"Revenue estimated at","all-in Spotify, fourchette":"all-in Spotify, range","source Duetti / Loud & Clear 2025-26":"source Duetti / Loud & Clear 2025-26",
+  "Revenu est.":"Est. revenue","mois":"mo","mo":"mo","lifetime":"lifetime"
 };
 const T = s => LANG === 'fr' ? s : (EN_MAP[s] !== undefined ? EN_MAP[s] : s);
 const HOT = 500000;                       // seuil de mise en évidence
+const RATE = 0.0035;                      // $/stream Spotify all-in (Duetti/Loud&Clear 2025-26, fourchette 0.003-0.005)
 const TODAY = new Date(D.t + 'T00:00:00');
+function money(n){
+  if (n==null||n<0) return '?';
+  if (n>=1e6) return '$'+(n/1e6).toFixed(n>=1e7?0:1)+'M';
+  if (n>=1e3) return '$'+Math.round(n/1e3)+'k';
+  return '$'+Math.round(n);
+}
 
 /* ---------- préparation ---------- */
 // artists: [nom, nbLofi, flag, done, disco, origine, seedSrc]
 // rows:    [ai, track, date, streams, statut(0 self/1 autre), label, id, firstSeen]
 const A = D.artists, R = D.rows;
 const AG = A.map((a,i)=>({i, name:a[0], lofi:a[1], flag:a[2], done:a[3], disco:a[4],
-  origin:a[5], seedSrc:a[6], id:a[7]||'', img:a[8]||'', n:0, self:0, streams:0, hot:0, last:'', top:null}));
+  origin:a[5], seedSrc:a[6], id:a[7]||'', img:a[8]||'', email:a[9]||'', link:a[10]||'', n:0, self:0, streams:0, mstreams:0, hot:0, last:'', top:null}));
 for (const r of R){
   const g = AG[r[0]];
   g.n++; if (r[4]===0) g.self++;
   if (r[3]>0) g.streams += r[3];
+  const pm = perMonth(r); if (pm>0) g.mstreams += pm;
   if (r[3]>=HOT) g.hot++;
   if (r[2] > g.last) g.last = r[2];
   if (!g.top || r[3] > g.top[3]) g.top = r;
 }
 const withTracks = AG.filter(g=>g.n>0);
 const totStreams = withTracks.reduce((s,g)=>s+g.streams,0);
+const totMonthlyRev = withTracks.reduce((s,g)=>s+g.mstreams,0)*RATE;
 const nHot = R.reduce((s,r)=>s+(r[3]>=HOT?1:0),0);
 const nSelf = R.reduce((s,r)=>s+(r[4]===0?1:0),0);
 
@@ -358,28 +373,29 @@ const S = {
 };
 
 /* ---------- navigation ---------- */
+function syncHash(){ try{ history.replaceState(null,'','#'+S.view); }catch(e){} }
 document.getElementById('nav').addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x===b));
   S.view = b.dataset.v; S.shown = 100; S.shownA = 60; S.shownN = 100;
-  render(); window.scrollTo(0,0);
+  syncHash(); render(); window.scrollTo(0,0);
 });
 function goArtist(i){
   S.back = {view:S.view, y:window.scrollY};
   S.view='opps'; S.artist=i; S.q=''; S.statut='all'; S.min=0; S.period='all'; S.shown=100;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v==='opps'));
-  render(); window.scrollTo(0,0);
+  syncHash(); render(); window.scrollTo(0,0);
 }
 function goTab(v){
   S.view = v;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v===v));
-  render(); window.scrollTo(0,0);
+  syncHash(); render(); window.scrollTo(0,0);
 }
 function goBack(){
   const b = S.back; S.back = null; S.artist = -1; S.shown = 100;
   S.view = b ? b.view : 'opps';
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v===S.view));
-  render(); window.scrollTo(0, b ? b.y : 0);
+  syncHash(); render(); window.scrollTo(0, b ? b.y : 0);
 }
 
 /* ---------- filtres opportunités ---------- */
@@ -454,10 +470,12 @@ function renderOverview(){
     ${kpi(T('Artistes scannés'), done, nReg+' '+T('réguliers')+' · '+nOcc+' '+T('occasionnels')+' · '+nExt+' '+T('hors label'))}
     ${kpi(T('Tracks hors Lofi'), fmtFull(R.length), T('catalogue analysé'))}
     ${kpi(T('Streams cumulés'), fmt(totStreams), T('hors catalogue Lofi'), true)}
+    ${kpi(T('Revenu mensuel est.'), money(totMonthlyRev), T('catalogue hors Lofi')+' · '+money(totStreams*RATE)+' '+T('cumulé'), true)}
     ${kpi('Tracks ≥ 500k', fmtFull(nHot), T('priorités rachat'), true)}
     ${kpi('Self-released', pSelf+' %', fmtFull(nSelf)+' '+T('tracks en indé'))}
     ${kpi(T('Sorties 90 j'), fmtFull(recent), disco?'+ '+disco+' '+T('artistes découverte'):T('veille nouveautés'))}
   </div>
+  <div style="font-size:11px;color:var(--dim);margin:-10px 0 20px 2px">${T('Revenus estimés à')} ${RATE}$/stream (${T('all-in Spotify, fourchette')} 0,003-0,005$ ; ${T('source Duetti / Loud & Clear 2025-26')}).</div>
   <div class="grid2">
     <div class="panel">
       <h3>${T('Top artistes par streams hors Lofi')} <span class="hint">${T('clic = détail des tracks')}</span></h3>
@@ -466,8 +484,8 @@ function renderOverview(){
           <span class="rank">${ix+1}</span>
           <div class="av-sm">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div>
           <div class="ti">
-            <div class="nm">${esc(g.name)} ${segBadge(g)}</div>
-            <div class="sub">${g.n} ${T('tracks hors Lofi')} · <span style="color:var(--green)">${g.self} ${T('indé')}</span> · <span style="color:var(--amber)">${g.n-g.self} ${T('label')}</span>${g.hot?` · <span style="color:var(--acc2)">${g.hot} ≥ 500k</span>`:''} · ${T('dernière sortie')} ${g.last||'?'}</div>
+            <div class="nm"><span class="nmtxt">${esc(g.name)}</span> ${segBadge(g)}</div>
+            <div class="sub">${g.n} ${T('tracks hors Lofi')} · <span style="color:var(--green)">${g.self} ${T('indé')}</span> · <span style="color:var(--amber)">${g.n-g.self} ${T('label')}</span>${g.hot?` · <span style="color:var(--acc2)">${g.hot} ≥ 500k</span>`:''} · <span style="color:var(--cyan)">≈ ${money(g.mstreams*RATE)}/${T('mois')}</span> · ${T('dernière sortie')} ${g.last||'?'}</div>
             <div class="mini-split" style="max-width:250px;margin:0"><div style="width:${p}%;background:#4ade80"></div><div style="width:${100-p}%;background:#b45309"></div></div>
           </div>
           <div class="vals"><div class="v1">${fmt(g.streams)}</div><div class="v2">${T('streams')}</div></div>
@@ -507,7 +525,7 @@ function renderOpps(){
   V.innerHTML = `
   <div class="page-head">
     <div>
-      ${aName?'<button class="chip" onclick="goBack()" style="margin-bottom:10px">'+T('← Retour')+'</button>':''}
+      ${aName?'<button class="btn-back" onclick="goBack()">'+T('← Retour')+'</button>':''}
       <h2>Tracks${aName?' — '+esc(aName):''}</h2>
       <p>${T("Toutes les tracks hors Lofi Records. Les lignes vertes dépassent 500 000 streams (priorités). Streams / mois = vélocité depuis la sortie.")}</p>
     </div>
@@ -548,6 +566,7 @@ function renderOpps(){
         <th data-k="0">${T('Artiste')} ${sortArrow(0)}</th>
         <th data-k="3" class="num">Streams ${sortArrow(3)}</th>
         <th data-k="7" class="num">${T('Streams/mois')} ${sortArrow(7)}</th>
+        <th class="num">${T('Revenu est.')}</th>
         <th data-k="2">${T('Sortie')} ${sortArrow(2)}</th>
         <th>${T('Statut')}</th>
         <th>Copyright</th>
@@ -560,6 +579,7 @@ function renderOpps(){
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
           <td class="num" title="${fmtFull(r[3])}">${r[3]>=HOT?'<span class="badge hot">'+fmt(r[3])+'</span>':fmt(r[3])}</td>
           <td class="num">${fmt(perMonth(r))}</td>
+          <td class="num" title="${T('lifetime')} ${money(r[3]*RATE)}" style="color:var(--cyan)">${perMonth(r)>0?money(perMonth(r)*RATE)+'/'+T('mo'):money(r[3]*RATE)}</td>
           <td>${r[2]||'?'}</td>
           <td><span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span></td>
           <td><span class="lb" title="${esc(r[5])}">${esc(r[5])}</span></td>
@@ -639,10 +659,14 @@ function renderArtists(){
           <div style="width:${100-p}%;background:#b45309"></div>
         </div>
         <div class="foot">
-          <span>${p}% ${T('indé')}</span>
+          <span style="color:var(--cyan);font-weight:600">≈ ${money(g.mstreams*RATE)}/${T('mois')}</span>
+          <span>· ${p}% ${T('indé')}</span>
           <span>· ${T('dernière sortie')} ${g.last||'?'}</span>
-          ${g.top?`<span>· top « ${esc(g.top[1].slice(0,26))} » ${fmt(g.top[3])}</span>`:''}
         </div>
+        ${g.email||g.link?`<div class="foot" style="margin-top:6px" onclick="event.stopPropagation()">
+          ${g.email?`<a href="mailto:${esc(g.email)}" title="${esc(g.email)}" style="color:var(--cyan)">✉ ${esc(g.email.length>30?g.email.slice(0,28)+'…':g.email)}</a>`:''}
+          ${g.link?`<a href="${esc(g.link)}" target="_blank" rel="noopener" style="color:var(--violet)">${g.link.includes('instagram')?'📷 Instagram':'🔗 Site'}</a>`:''}
+        </div>`:''}
       </div>`;}).join('')}
   </div>
   ${sentinel(list.length-S.shownA)}`;
@@ -887,6 +911,12 @@ document.getElementById('lang-btn').addEventListener('click', ()=>{
   try{ localStorage.setItem('sr_lang', LANG); }catch(e){}
   applyLang();
 });
+/* restauration de la vue après F5 (hash d'URL) */
+const initV = location.hash.slice(1);
+if (['overview','opps','artists','new','disco','playlists'].includes(initV)){
+  S.view = initV;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v===initV));
+}
 applyLang();
 </script>
 </body>
