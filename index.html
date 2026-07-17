@@ -313,6 +313,7 @@ select.ctl option{background:#141828;color:var(--text)}
 .rtile .rt-title{font-weight:700;font-size:13.5px;line-height:1.45;flex:1}
 .rtile .rt-tags{display:flex;gap:5px;flex-wrap:wrap}
 .rtile .rt-desc{font-size:11.8px;color:var(--muted);line-height:1.55}
+.rtile .rt-scene{font-size:11px;color:var(--dim);line-height:1.5;font-style:italic}
 .rt-actions{display:flex;gap:8px;align-items:center;margin-top:auto;flex-wrap:wrap}
 .rcbig{flex:none;height:40px;padding:0 15px;border-radius:11px;background:rgba(150,163,214,.07);border:1.5px solid var(--border2);color:var(--muted);cursor:pointer;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:7px;font-family:inherit}
 .rcbig.has{color:var(--amber);border-color:rgba(251,191,36,.5);background:rgba(251,191,36,.08)}
@@ -1460,6 +1461,7 @@ function recoCardHTML(r,i){
       '<div class="rt-head">'+tier+'<div class="rt-title">'+esc(r.title)+'</div></div>'+
       '<div class="rt-tags">'+gtag(r.genre)+ghosttag(r.perso)+ghosttag(r.niche)+(r.dur?ghosttag(r.dur):'')+'</div>'+
       (r.concept?'<div class="rt-desc">'+esc(String(r.concept).slice(0,130))+(String(r.concept).length>130?'…':'')+'</div>':'')+
+      (r.scene?'<div class="rt-scene">🖼️ '+esc(String(r.scene).slice(0,100))+(String(r.scene).length>100?'…':'')+'</div>':'')+
       (note?'<div class="rt-note">💬 '+esc(note.slice(0,60))+(note.length>60?'…':'')+'</div>':'')+
     '</div>';
 }
