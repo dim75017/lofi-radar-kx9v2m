@@ -1198,7 +1198,7 @@ function renderArtists(){
         const p = g.n ? Math.round(g.self/g.n*100) : 0;
         return `
         <tr onclick="goArtist(${g.i})" style="cursor:pointer">
-          <td class="covtd"><div class="av-sm">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div></td>
+          <td class="covtd">${artistCoverHtml(g)}</td>
           <td>${esc(g.name)} ${wlStar('a',g.name)} ${segBadge(g)}</td>
           <td class="num">${fmt(g.streams)}</td>
           <td class="num">${g.n}</td>
@@ -1220,11 +1220,13 @@ function renderArtists(){
     </div>
   </div>
   <div class="toolbar">
-    <button class="chip ${S.aseg==='all'?'on':''}" data-seg="all">${T('Tous')}</button>
-    <button class="chip ${S.aseg==='top'?'on':''}" data-seg="top"><span class="fdot" style="background:#fb923c"></span>Top artists</button>
-    <button class="chip ${S.aseg==='reg'?'on':''}" data-seg="reg"><span class="fdot" style="background:#a78bfa"></span>Regulars</button>
-    <button class="chip ${S.aseg==='occ'?'on':''}" data-seg="occ"><span class="fdot" style="background:#60a5fa"></span>${T('Occasionnels')}</button>
-    <button class="chip ${S.aseg==='ext'?'on':''}" data-seg="ext"><span class="fdot" style="background:#fb7185"></span>${T('Jamais')}</button>
+    <select id="a-seg">
+      <option value="all" ${S.aseg==='all'?'selected':''}>🌍 ${T('Tous')}</option>
+      <option value="top" ${S.aseg==='top'?'selected':''}>🏆 Top artists</option>
+      <option value="reg" ${S.aseg==='reg'?'selected':''}>🔁 Regulars</option>
+      <option value="occ" ${S.aseg==='occ'?'selected':''}>🎲 ${T('Occasionnels')}</option>
+      <option value="ext" ${S.aseg==='ext'?'selected':''}>🚫 ${T('Jamais')}</option>
+    </select>
     <select id="a-sort">
       <option value="streams" ${S.asort==='streams'?'selected':''}>${T('Tri : streams hors Lofi')}</option>
       <option value="hot" ${S.asort==='hot'?'selected':''}>${T('Tri : tracks ≥ 500k')}</option>
@@ -1243,7 +1245,7 @@ function renderArtists(){
 
   document.querySelectorAll('.viewtoggle button[data-amode]').forEach(b=>b.addEventListener('click', ()=>{ S.amode=b.dataset.amode; keepScroll(renderArtists); }));
   document.getElementById('a-q').addEventListener('input', e=>{ S.aq=e.target.value; S.shownA=60; keepScroll(renderArtists); keepFocus('a-q'); });
-  document.querySelectorAll('.chip[data-seg]').forEach(c=>c.addEventListener('click', ()=>{ S.aseg=c.dataset.seg; S.shownA=60; keepScroll(renderArtists); }));
+  document.getElementById('a-seg').addEventListener('change', e=>{ S.aseg=e.target.value; S.shownA=60; keepScroll(renderArtists); });
   document.getElementById('a-sort').addEventListener('change', e=>{ S.asort=e.target.value; keepScroll(renderArtists); });
   attachInfinite(()=>{ const y=window.scrollY; S.shownA+=60; renderArtists(); window.scrollTo(0,y); });
   if (typeof attachCovers==='function') attachCovers();
