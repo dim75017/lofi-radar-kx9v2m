@@ -272,10 +272,41 @@ td.selc,th.selc{width:44px;padding-left:14px}
 .step p{font-size:12px;color:var(--muted);line-height:1.55}
 
 @media(max-width:860px){
-  #sidebar{position:static;width:auto;flex-direction:row;align-items:center;padding:12px;overflow-x:auto}
-  .nav{flex-direction:row}
-  #main{margin-left:0;padding:18px 14px 40px}
-  .bar-row{grid-template-columns:110px 1fr 70px}
+  #sidebar{position:sticky;top:0;width:auto;flex-direction:row;align-items:center;gap:3px;padding:9px 10px;overflow-x:auto;z-index:50}
+  #sidebar::-webkit-scrollbar{height:0}
+  .logo{padding:0 10px 0 2px;flex:none}
+  .logo small{display:none}
+  .logo .mark{width:32px;height:32px}
+  .logo h1{font-size:15px}
+  .nav{flex-direction:row;gap:2px;flex:1 1 auto}
+  .nav-label{display:none}
+  .nav button{padding:8px 11px;white-space:nowrap}
+  .nav .count{display:none}
+  .side-foot{display:none}
+  #main{margin-left:0;padding:16px 12px 60px;max-width:100%}
+  .lang-switch{top:auto;bottom:14px;right:14px;box-shadow:0 6px 22px rgba(0,0,0,.55)}
+  .page-head h2{font-size:19px}
+  .page-head p{font-size:12.5px}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+  .kpi{padding:13px 14px}
+  .kpi .val{font-size:20px}
+  .grid2{grid-template-columns:1fr}
+  .panel{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px}
+  table{min-width:660px}
+  .acards{grid-template-columns:1fr}
+  .cov{width:52px;height:52px}
+  td.covtd{width:62px;padding:5px 2px 5px 8px}
+  .top-row{gap:10px;padding:10px 4px}
+  .top-row .nm{flex-wrap:wrap;gap:8px}
+  .top-row .nm .badge{margin-left:0}
+  .av-sm{width:40px;height:40px}
+  .toolbar input[type=text]{min-width:0;flex:1 1 140px}
+  .toolbar select{flex:1 1 auto}
+  .tmodal{padding:10px}
+  .tmbox{padding:18px 15px;max-height:92vh}
+  .offer{padding:15px 15px}
+  .offer .ogrid{grid-template-columns:repeat(2,1fr)}
+  .ck{width:24px;height:24px}
 }
 </style>
 </head>
