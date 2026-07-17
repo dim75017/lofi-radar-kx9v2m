@@ -425,6 +425,13 @@ select.ctl option{background:#141828;color:var(--text)}
 .dw-stat.hl b{color:var(--acc2)}
 .dw-sec{margin-bottom:15px}
 .hist-svg{width:100%;height:150px;display:block;background:rgba(150,163,214,.04);border:1px solid var(--border);border-radius:10px}
+.hist-wrap{position:relative}
+.hist-wrap .hist-guide{position:absolute;top:6px;bottom:6px;width:1px;background:rgba(167,139,250,.4);pointer-events:none;opacity:0}
+.hist-wrap .hist-dot{position:absolute;width:9px;height:9px;border-radius:50%;background:#a78bfa;border:2px solid #0e1120;transform:translate(-50%,-50%);pointer-events:none;opacity:0;box-shadow:0 0 10px rgba(167,139,250,.8)}
+.hist-wrap .hist-tip{position:absolute;background:rgba(10,12,20,.95);border:1px solid var(--border2);border-radius:9px;padding:6px 10px;font-size:11.5px;line-height:1.45;pointer-events:none;opacity:0;white-space:nowrap;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.hist-wrap .hist-tip b{color:#a78bfa;font-family:'Sora';font-size:12.5px}
+.hist-wrap .hist-tip span{color:var(--dim);font-size:10.5px}
+.hist-wrap.hov .hist-guide,.hist-wrap.hov .hist-dot,.hist-wrap.hov .hist-tip{opacity:1}
 .hist-meta{font-size:12px;color:var(--muted);margin-bottom:8px}
 .hist-meta b{color:var(--acc2)}
 .hist-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
@@ -455,6 +462,38 @@ select.ctl option{background:#141828;color:var(--text)}
   #main{margin-left:64px;padding:0 16px 40px}
   :root{--sidebar:64px}
 }
+
+/* ---------- Mobile ---------- */
+#burger{display:none;position:fixed;top:12px;left:12px;z-index:60;width:42px;height:42px;border-radius:12px;background:rgba(14,17,32,.92);border:1px solid var(--border2);backdrop-filter:blur(10px);color:var(--text);font-size:19px;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+#side-veil{display:none}
+@media(max-width:640px){
+  :root{--sidebar:0px}
+  #burger{display:flex}
+  #side-veil{position:fixed;inset:0;z-index:44;background:rgba(4,5,9,.6);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s}
+  #side-veil.show{display:block;opacity:1;pointer-events:auto}
+  #sidebar{width:240px;padding:22px 14px 16px;transform:translateX(-100%);transition:transform .22s ease;z-index:45}
+  #sidebar.open{transform:translateX(0);box-shadow:20px 0 60px rgba(0,0,0,.55)}
+  .logo h1,.nav .count,.nav span.lbl,.side-foot .sync-txt,.sheet-link{display:revert}
+  #main{margin-left:0;padding:0 12px 90px}
+  .topbar{padding:16px 0 12px;padding-left:52px;flex-wrap:wrap;gap:8px}
+  .topbar h2{font-size:19px}
+  .topbar .sub{font-size:11.5px}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+  .vgrid{grid-template-columns:1fr;gap:13px}
+  .toolbar{gap:7px}
+  .toolbar .search{width:100%}
+  .toolbar .search input{width:100%}
+  .vtable{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+  #drawer{width:100vw;max-height:94vh;top:auto;bottom:0;left:0;transform:translateY(8%);border-radius:18px 18px 0 0}
+  #drawer.show{transform:translateY(0)}
+  .dw-body{padding:16px 16px 30px}
+  .dw-stats{grid-template-columns:repeat(2,1fr)}
+  .year-cal{grid-template-columns:1fr}
+  #sched-modal{width:96vw}
+  .seg button{padding:10px 14px;font-size:12.5px}
+  .rhead{flex-wrap:wrap}
+  button,.chip,.wl-star{min-height:32px}
+}
 </style>
 </head>
 <body>
@@ -464,6 +503,8 @@ select.ctl option{background:#141828;color:var(--text)}
   <p id="loader-msg">Syncing with the Opportunity Map…</p>
 </div></div>
 
+<button id="burger" onclick="document.getElementById('sidebar').classList.toggle('open');document.getElementById('side-veil').classList.toggle('show')">☰</button>
+<div id="side-veil" onclick="document.getElementById('sidebar').classList.remove('open');this.classList.remove('show')"></div>
 <aside id="sidebar">
   <div class="logo">
     <div class="mark"></div>
@@ -710,24 +751,68 @@ function histChart(pts,unit){
   const W=560,H=150,P=10;
   const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
   const x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs);
-  const y0=Math.min.apply(null,ys),y1=Math.max.apply(null,ys);
+  const y0=0,y1=Math.max(Math.max.apply(null,ys),1);
   const X=t=>P+(W-2*P)*(x1===x0?0.5:(t-x0)/(x1-x0));
-  const Y=v=>H-P-(H-2*P)*(y1===y0?0.5:(v-y0)/(y1-y0));
+  const Y=v=>H-P-(H-2*P)*((v-y0)/(y1-y0));
   const line=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
   const area=line+' L'+X(x1).toFixed(1)+' '+(H-P)+' L'+X(x0).toFixed(1)+' '+(H-P)+' Z';
   const days=Math.max((x1-x0)/86400000,0.5);
   const perDay=(pts[pts.length-1][1]-pts[0][1])/days;
   const meta=u==='viewers'
-    ? 'Peak <b>'+fmtN(y1)+'</b> · latest <b>'+fmtN(pts[pts.length-1][1])+'</b> concurrent viewers · '+pts.length+' scans'
+    ? 'Peak <b>'+fmtN(Math.max.apply(null,ys))+'</b> · latest <b>'+fmtN(pts[pts.length-1][1])+'</b> concurrent viewers · '+pts.length+' scans'
     : '<b>+'+fmtN(perDay)+'</b> '+u+'/day measured · '+pts.length+' scans · '+fmtDateFull(x0)+' → '+fmtDateFull(x1);
+  const hid='h'+(++HIST_SEQ);
+  HIST_REG[hid]={pts,unit:u,W,H,P,x0,x1,y1};
   return '<div class="hist-meta">'+meta+'</div>'+
+    '<div class="hist-wrap" data-hid="'+hid+'">'+
     '<svg class="hist-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+
     '<path d="'+area+'" fill="rgba(139,124,246,.14)"/>'+
     '<path d="'+line+'" fill="none" stroke="#a78bfa" stroke-width="2"/>'+
-    pts.map(p=>'<circle cx="'+X(p[0]).toFixed(1)+'" cy="'+Y(p[1]).toFixed(1)+'" r="'+(u==='viewers'?3.4:2.6)+'" fill="#a78bfa"><title>'+(u==='viewers'?fmtDT(p[0]):fmtDateFull(p[0]))+' · '+fmtInt(p[1])+' '+u+'</title></circle>').join('')+
+    pts.map(p=>'<circle cx="'+X(p[0]).toFixed(1)+'" cy="'+Y(p[1]).toFixed(1)+'" r="'+(u==='viewers'?3.4:2.6)+'" fill="#a78bfa"/>').join('')+
     '</svg>'+
-    '<div class="hist-axis"><span>'+fmtN(y0)+'</span><span>'+fmtN(y1)+'</span></div>';
+    '<div class="hist-guide"></div><div class="hist-dot"></div><div class="hist-tip"></div>'+
+    '</div>'+
+    '<div class="hist-axis"><span>0</span><span>'+fmtN(y1)+'</span></div>';
 }
+let HIST_SEQ=0;const HIST_REG={};
+document.addEventListener('mousemove',e=>{
+  const w=e.target.closest?e.target.closest('.hist-wrap'):null;
+  document.querySelectorAll('.hist-wrap.hov').forEach(x=>{if(x!==w)x.classList.remove('hov');});
+  if(!w)return;
+  const o=HIST_REG[w.dataset.hid];if(!o)return;
+  const r=w.getBoundingClientRect();
+  const fx=(e.clientX-r.left)/r.width;                       // 0..1 across
+  const t=o.x0+(o.x1-o.x0)*Math.min(1,Math.max(0,(fx*o.W-o.P)/(o.W-2*o.P)));
+  let best=o.pts[0];for(const p of o.pts)if(Math.abs(p[0]-t)<Math.abs(best[0]-t))best=p;
+  const px=(o.P+(o.W-2*o.P)*(o.x1===o.x0?0.5:(best[0]-o.x0)/(o.x1-o.x0)))/o.W*r.width;
+  const py=(o.H-o.P-(o.H-2*o.P)*(best[1]/o.y1))/o.H*r.height;
+  w.classList.add('hov');
+  const tip=w.querySelector('.hist-tip'),gd=w.querySelector('.hist-guide'),dt=w.querySelector('.hist-dot');
+  tip.innerHTML='<b>'+fmtInt(best[1])+'</b> '+esc(o.unit)+'<br><span>'+(o.unit==='viewers'?fmtDT(best[0]):fmtDateFull(best[0]))+'</span>';
+  gd.style.left=px+'px';dt.style.left=px+'px';dt.style.top=py+'px';
+  const tw=tip.offsetWidth;
+  tip.style.left=Math.min(Math.max(px-tw/2,4),r.width-tw-4)+'px';
+  tip.style.top=(py<46?py+14:py-tip.offsetHeight-12)+'px';
+});
+/* ---- micro-interactions : pop sur chaque clic ---- */
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest&&e.target.closest('button,select,.chip,.wl-star,.rtier');
+  if(!b||!b.animate)return;
+  b.animate(
+    [{transform:'scale(1)',filter:'brightness(1)'},
+     {transform:'scale(.93)',filter:'brightness(1.28)',offset:.35},
+     {transform:'scale(1.015)',offset:.72},
+     {transform:'scale(1)',filter:'brightness(1)'}],
+    {duration:280,easing:'cubic-bezier(.3,.9,.4,1)'});
+},{passive:true});
+/* fermer la sidebar mobile après navigation */
+document.addEventListener('click',e=>{
+  if(window.innerWidth>640)return;
+  if(e.target.closest&&e.target.closest('#sidebar .nav button')){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('side-veil').classList.remove('show');
+  }
+});
 function timeAgo(ms){
   const s=(Date.now()-ms)/1000;
   if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';
@@ -822,7 +907,7 @@ function parseChanWb(wb){
   const X=(window.CHX&&window.CHX.d)||{};
   chans.forEach(c=>{
     const key=((c.url.match(/(@[\w.-]+)/)||c.url.match(/channel\/(UC[\w-]{22})/)||[])[1]||'').toLowerCase();
-    const x=X[key];
+    const x=X[key]||X[key.replace(/^@/,'')]||X['@'+key];
     if(x){
       if(x.av)c.av=x.av;
       if(c.views==null&&x.v!=null)c.views=x.v;
@@ -2037,7 +2122,7 @@ function liveCardHTML(v,i){
     '<div class="vbody">'+
       '<div class="vtitle">'+esc(v.title)+'</div>'+
       '<div class="vmeta"><a href="'+esc(v.url)+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a></div>'+
-      '<div class="vtags">'+(isOurs(v.channel)?'<span class="tag" style="background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55">OURS</span>':'')+aiBadge(chanByUrl(v.url))+kws.map(ghosttag).join('')+'</div>'+
+      '<div class="vtags">'+aiBadge(chanByUrl(v.url))+kws.map(ghosttag).join('')+'</div>'+
       '<div class="vstats">'+
         '<div class="vstat hl"><b>'+fmtN(peak24)+'</b><span>peak 24h</span></div>'+
         '<div class="vstat"><b>'+fmtN(peakAll)+'</b><span>peak all-time</span></div>'+
@@ -2058,7 +2143,7 @@ function liveListHTML(rows){
       const now=liveNow(v.vid),peak=livePeak(v.vid);
       return '<tr class="row" onclick="openLiveIdx('+i+')">'+
       '<td><img class="tthumb" loading="lazy" src="'+thumb(v.vid)+'" onerror="if(!this._f){this._f=1;this.src=\'https://i.ytimg.com/vi/'+v.vid+'/hqdefault.jpg\'}else this.style.visibility=\'hidden\'"></td>'+
-      '<td class="ttitle">'+(isOurs(v.channel)?'<span class="tag" style="background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55;margin-right:7px">OURS</span>':'')+esc(v.title)+'</td>'+
+      '<td class="ttitle">'+esc(v.title)+'</td>'+
       '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(v.channel)+'</td>'+
       '<td class="num vpmcell">'+fmtN(now)+'</td><td class="num">'+fmtN(peak)+'</td>'+
       '<td class="num">'+fmtDate(v.started)+'</td>'+
@@ -2241,16 +2326,28 @@ function wlStar(t,k){
 function aiRisk(c){
   if(!c)return 0;
   let s=0;
-  if(c.ageY!=null&&c.ageY<2)s+=2;else if(c.ageY!=null&&c.ageY<3.5)s+=1;
-  if(c.upMo!=null&&c.upMo>=15)s+=2;else if(c.upMo!=null&&c.upMo>=8)s+=1;
-  if(c.nvid!=null&&c.ageY>0.2&&c.nvid/c.ageY>250)s+=1;
-  if(c.viewsYr!=null&&c.ageY!=null&&c.ageY<2&&c.viewsYr>20000000)s+=1;
+  const age=c.ageY,up=c.upMo,nv=c.nvid;
+  // Cadence industrielle : le signal le plus fort, quel que soit l'âge
+  if(up!=null){ if(up>=30)s+=4; else if(up>=20)s+=3; else if(up>=12)s+=2; else if(up>=8)s+=1; }
+  // Jeune chaîne
+  if(age!=null){ if(age<1)s+=2; else if(age<2.5)s+=1; }
+  // Volume total incompatible avec une prod humaine
+  if(nv!=null&&age>0.2){ const r=nv/age; if(r>500)s+=3; else if(r>300)s+=2; else if(r>180)s+=1; }
+  // Croissance explosive sur chaîne jeune
+  if(age!=null&&age<2&&c.viewsYr>20000000)s+=1;
+  if(age!=null&&age<1.5&&c.subsMo>25000)s+=1;
+  // Ferme à contenu : publie beaucoup mais chaque vidéo fait très peu vs la base d'abonnés
+  if(up!=null&&up>=10&&c.avg10!=null&&c.subs>50000&&c.avg10<c.subs*0.008)s+=1;
+  // Nom de chaîne qui vend la mèche
+  if(/\bA\.?I\.?\b|suno|udio|generated/i.test(c.name||''))s+=3;
+  // Chaîne établie de longue date avec cadence humaine : bénéfice du doute
+  if(age!=null&&age>=8&&(up==null||up<10)&&(nv==null||age<=0.2||nv/age<200))s-=2;
   return s;
 }
 function aiBadge(c){
   const s=aiRisk(c);
-  if(s>=4)return '<span class="tag" style="background:#f8717122;color:#f87171;border:1px solid #f8717155" title="Very young channel with industrial output cadence — AI music/visual pipeline likely">🤖 AI likely</span>';
-  if(s>=2)return '<span class="tag" style="background:#fbbf2422;color:#fbbf24;border:1px solid #fbbf2455" title="Output pace and channel age suggest possible AI-assisted music/visuals">🤖 AI possible</span>';
+  if(s>=5)return '<span class="tag" style="background:#f8717122;color:#f87171;border:1px solid #f8717155" title="Industrial output cadence / volume — AI music-visual pipeline almost certain">🤖 AI likely</span>';
+  if(s>=3)return '<span class="tag" style="background:#fbbf2422;color:#fbbf24;border:1px solid #fbbf2455" title="Output pace, volume and growth suggest AI-assisted music/visuals">🤖 AI possible</span>';
   return '';
 }
 function chanByUrl(u){
