@@ -1994,12 +1994,79 @@ async function buildDeepAudit(o){
   }
   return out;
 }
-function deepAuditHTML(a){
+/* ---- Proposition d'optimisation concrète, prête à copier ---- */
+const OPTIM_REG={};
+function benefitFor(t){
+  if(/sleep/.test(t))return 'for deep sleep';
+  if(/study|focus/.test(t))return 'for study & focus';
+  if(/relax/.test(t))return 'to relax';
+  if(/meditat/.test(t))return 'for meditation';
+  if(/heal/.test(t))return 'for healing & calm';
+  return null;
+}
+function buildOptimProposal(o){
+  const S=window.SEO||{};const m=S[o.vid];
+  if(!m||!m.kw)return null;
+  const norm=t=>String(t).toLowerCase().trim();
+  const cohSeo=Object.values(S).filter(x=>x.who==='coh'&&x.gk===o.gk&&x.kw&&x.kw.length);
+  if(cohSeo.length<3)return null;
+  const freq={};cohSeo.forEach(c=>new Set(c.kw.map(norm)).forEach(t=>freq[t]=(freq[t]||0)+1));
+  const half=Math.ceil(cohSeo.length/2);
+  const mySet=new Set(m.kw.map(norm));
+  const brandRx=/lofi girl|lofigirl|chilledcow|chilled cow|lofi boy/;
+  const missing=Object.entries(freq).filter(([t,n])=>n>=half&&!mySet.has(t)&&!brandRx.test(t)).sort((a,b)=>b[1]-a[1]).map(([t])=>t);
+  // liste proposée : marque + nos tags avec traction + tags manquants fréquents, plafond 480 caractères (limite YouTube 500)
+  const brand=m.kw.filter(t=>brandRx.test(norm(t)));
+  const withTraction=m.kw.filter(t=>!brandRx.test(norm(t))&&freq[norm(t)]>=1);
+  const noTraction=m.kw.filter(t=>!brandRx.test(norm(t))&&!freq[norm(t)]);
+  let tags=[...brand,...missing,...withTraction];
+  // compléter avec nos tags sans traction s'il reste de la place
+  for(const t of noTraction){if(tags.join(', ').length+t.length+2<=480)tags.push(t);}
+  while(tags.join(', ').length>480)tags.pop();
+  const dedup=[];const seen=new Set();
+  tags.forEach(t=>{if(!seen.has(norm(t))){seen.add(norm(t));dedup.push(t);}});
+  // suggestion de titre
+  const sig=titleSignals(o.title);
+  const cohSigs=cohSeo.map(c=>titleSignals(c.hook||''));
+  let titleSug=null;
+  const mainKw=missing[0]||null;
+  const ben=missing.map(benefitFor).find(Boolean);
+  if(ben&&!POWER_WORDS.some(w=>o.title.toLowerCase().includes(w))) titleSug=o.title+' | '+ben;
+  else if(mainKw&&!sig.hasSeparator) titleSug=o.title+' | '+mainKw;
+  // hook de description
+  let hookSug=null;
+  if(missing.length){
+    const kws=missing.slice(0,2).join(' · ');
+    hookSug=(o.title.replace(/[|:].*$/,'').trim())+' — '+kws+(ben?' '+ben:'')+'. '+(m.hook?'(remplace le début actuel : «'+m.hook.slice(0,60)+'…»)':'');
+  }
+  const p={tags:dedup,tagsStr:dedup.join(', '),titleSug,hookSug,missTop:missing.slice(0,8),needTs:!m.ts};
+  OPTIM_REG[o.vid]=p;
+  return p;
+}
+function copyOptim(vid,what,btn){
+  const p=OPTIM_REG[vid];if(!p)return;
+  const txt=what==='tags'?p.tagsStr:what==='title'?p.titleSug:p.hookSug;
+  navigator.clipboard.writeText(txt||'').then(()=>{const o=btn.textContent;btn.textContent='✓ Copié';setTimeout(()=>btn.textContent=o,1400);});
+}
+function optimHTML(o,p){
+  if(!p)return '';
+  let h='<div class="dw-sec" style="border:1px solid rgba(139,124,246,.35);border-radius:12px;padding:14px;background:rgba(139,124,246,.06)">';
+  h+='<div class="k">🛠️ Proposition d’optimisation (prête à coller dans Studio)</div><div class="v">';
+  h+='<b style="color:var(--acc2)">Tags proposés ('+p.tags.length+', '+p.tagsStr.length+'/500 caractères)</b> — marque + nos tags qui performent + tags des tops du genre :<br><span style="font-size:12px;color:var(--muted)">'+esc(p.tagsStr)+'</span><br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'tags\',this)">⧉ Copier les tags</button>';
+  if(p.titleSug)h+='<br><br><b style="color:var(--acc2)">Titre suggéré</b> (ajoute le bénéfice recherché) :<br>'+esc(p.titleSug)+'<br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'title\',this)">⧉ Copier le titre</button>';
+  if(p.hookSug)h+='<br><br><b style="color:var(--acc2)">Début de description suggéré</b> (les 125 premiers caractères comptent le plus) :<br>'+esc(p.hookSug)+'<br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'hook\',this)">⧉ Copier le hook</button>';
+  if(p.needTs)h+='<br><br><b style="color:var(--amber)">⏱ Ajouter la tracklist avec timestamps</b> — génère des «key moments» dans la recherche Google/YouTube.';
+  h+='</div></div>';
+  return h;
+}
+function deepAuditHTML(a,o){
   const sec=(icon,title,items)=>!items.length?'':'<div class="dw-sec"><div class="k">'+icon+' '+title+'</div><div class="v">'+items.map(x=>'• '+x).join('<br><br>')+'</div></div>';
   if(!a.coh)return '<div class="dw-sec"><div class="k">🔬 Deep packaging audit</div><div class="v">Pas assez de vidéos comparables dans ce genre pour un audit fiable.</div></div>';
+  const p=o?buildOptimProposal(o):null;
   return sec('🎨','Thumbnail — composition & couleur',a.thumb)+
     sec('✍️','Titre',a.title)+
-    sec('🔎','Description & mots-clés',a.kw);
+    sec('🔎','Description & mots-clés',a.kw)+
+    (p?optimHTML(o,p):'');
 }
 function vBadge(v){
   return v==='over'?'<span class="verdict v-over">Overperforming</span>':
@@ -2083,7 +2150,7 @@ function openAnaIdx(i){
   fillLikes();i18nDrawer();
   buildDeepAudit(o).then(a=>{
     const el=document.getElementById('deepaudit');
-    if(el)el.outerHTML=deepAuditHTML(a);
+    if(el)el.outerHTML=deepAuditHTML(a,o);
   });
 }
 
