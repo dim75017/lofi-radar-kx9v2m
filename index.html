@@ -182,6 +182,7 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
   box-shadow:0 16px 40px rgba(0,0,0,.5);display:none}
 .xdd.open .xdd-list{display:block}
 .xdd-opt{padding:8px 13px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.xdd-btn.c-period + .xdd-list .xdd-opt{white-space:nowrap;overflow-wrap:normal}
 .xdd-opt:hover{background:rgba(139,124,246,.15)}
 .xdd-opt.sel{color:var(--acc2);background:var(--accSoft)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -1563,8 +1564,7 @@ function videosHTML(kind){
     '<div class="tb-right">'+xdd('c-sort',sortLabel,sortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(st.mode==='grid'?'on':'')+'" onclick="VS.'+kind+'.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
-      '<button class="'+(st.mode==='table'?'on':'')+'" onclick="VS.'+kind+'.mode=\'table\';render()" title="List">'+ICONS.rows+'</button></div>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> videos</div></div>'+
+      '<button class="'+(st.mode==='table'?'on':'')+'" onclick="VS.'+kind+'.mode=\'table\';render()" title="List">'+ICONS.rows+'</button></div></div>'+
   '</div>';
   h+='<div id="list-'+kind+'">'+listHTML(kind,rows)+'</div>';
   return h;
@@ -1573,8 +1573,7 @@ function rerenderList(kind){
   const rows=filterVids(kind);
   const el=document.getElementById('list-'+kind);
   if(el)el.innerHTML=listHTML(kind,rows);
-  const rc=document.querySelector('.result-count');if(rc)rc.innerHTML='<b>'+fmtInt(rows.length)+'</b> videos';
-  i18nZone(el);if(rc)i18nZone(rc);armAutoLoad();fillLikes();
+  i18nZone(el);armAutoLoad();fillLikes();
 }
 function listHTML(kind,rows){
   const st=VS[kind];
@@ -2833,8 +2832,7 @@ function livesHTML(){
     '<div class="tb-right">'+xdd('c-sort',lsSortRow[1]+' Sort · '+lsSortRow[2],lsSortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(LS.mode==='grid'?'on':'')+'" onclick="LS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
-      '<button class="'+(LS.mode==='table'?'on':'')+'" onclick="LS.mode=\'table\';render()" title="List">'+ICONS.rows+'</button></div>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> streams</div></div>'+
+      '<button class="'+(LS.mode==='table'?'on':'')+'" onclick="LS.mode=\'table\';render()" title="List">'+ICONS.rows+'</button></div></div>'+
   '</div>';
   h+='<div id="live-list">'+liveListHTML(rows)+'</div>';
   return h;
@@ -2882,8 +2880,7 @@ function rerenderLives(){
   const rows=filterLives();
   const el=document.getElementById('live-list');
   if(el)el.innerHTML=liveListHTML(rows);
-  const rc=document.querySelector('.result-count');if(rc)rc.innerHTML='<b>'+fmtInt(rows.length)+'</b> streams';
-  i18nZone(el);if(rc)i18nZone(rc);armAutoLoad();fillLikes();
+  i18nZone(el);armAutoLoad();fillLikes();
 }
 function openLiveIdx(i){const v=(window._page_live||[])[i];if(v)openLiveDrawer(v);}
 function openLiveDrawer(v){
@@ -2982,8 +2979,7 @@ function chanHTML(){
     '<div class="tb-right">'+xdd('c-sort',csSortRow[1]+' Sort · '+csSortRow[2],csSortOpts)+
     '<div class="viewtoggle">'+
       '<button class="'+(CS.mode==='grid'?'on':'')+'" onclick="CS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
-      '<button class="'+(CS.mode!=='grid'?'on':'')+'" onclick="CS.mode=\'table\';render()" title="List">'+ICONS.rows+'</button></div>'+
-    '<div class="result-count"><b>'+fmtInt(rows.length)+'</b> channels</div></div>'+
+      '<button class="'+(CS.mode!=='grid'?'on':'')+'" onclick="CS.mode=\'table\';render()" title="List">'+ICONS.rows+'</button></div></div>'+
   '</div>';
   h+='<div id="chan-list">'+chanListHTML(rows)+'</div>';
   return h;
@@ -3028,8 +3024,7 @@ function rerenderChans(){
   const rows=filterChans();
   const el=document.getElementById('chan-list');
   if(el)el.innerHTML=chanListHTML(rows);
-  const rc=document.querySelector('.result-count');if(rc)rc.innerHTML='<b>'+fmtInt(rows.length)+'</b> channels';
-  i18nZone(el);if(rc)i18nZone(rc);armAutoLoad();
+  i18nZone(el);armAutoLoad();
 }
 function openChanIdx(i){const c=(window._page_chan||[])[i];if(c)openChanDrawer(c);}
 function openDashLive(i){const v=(window._dash_lives||[])[i];if(v)openLiveDrawer(v);}
