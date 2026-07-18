@@ -550,6 +550,21 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .hist-meta b{color:var(--acc2)}
 .hist-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:4px}
 .hist-empty{font-size:12px;color:var(--dim);padding:8px 0;line-height:1.5}
+.vha-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
+.vha-head .k{margin-bottom:0}
+.vha-note{font-size:10.5px;color:var(--dim);line-height:1.35;text-align:right}
+.vha-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:11px}
+.vha-card{min-width:0;padding:10px 11px;border:1px solid var(--border);border-radius:11px;background:rgba(150,163,214,.045)}
+.vha-card span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.75px;text-transform:uppercase;color:var(--dim);margin-bottom:5px}
+.vha-card b{display:block;font-family:'Sora';font-size:15px;color:var(--acc2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vha-card small{display:block;margin-top:4px;font-size:10.5px;color:var(--muted);line-height:1.35}
+.vha-card em{display:block;margin-top:4px;font-size:10px;font-style:normal;color:var(--dim);line-height:1.3}
+.vha-card.up em{color:var(--green)}.vha-card.down em{color:var(--red)}.vha-card.flat em{color:var(--amber)}
+.vha-card.na{opacity:.72}.vha-card.na b{color:var(--dim)}
+.vha-controls{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:2px 0 9px}
+.vha-controls button{border:1px solid var(--border);border-radius:8px;background:rgba(150,163,214,.045);color:var(--muted);padding:5px 8px;font:700 10.5px/1 'Inter',sans-serif;cursor:pointer}
+.vha-controls button.on{background:rgba(139,124,246,.18);border-color:rgba(167,139,250,.5);color:#ddd8ff}
+.vha-controls button:hover{border-color:rgba(167,139,250,.45);color:var(--text)}
 .dw-sec .k{font-size:10.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--acc2);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:7px}
 .dw-sec .v{font-size:13px;line-height:1.65;color:#cdd2e9;white-space:pre-wrap;overflow-wrap:anywhere}
 .dw-open{display:inline-flex;align-items:center;gap:8px;margin-top:6px;padding:9px 18px;border-radius:11px;background:linear-gradient(90deg,#8b7cf6,#7c6cf0);color:#fff;font-weight:600;font-size:13px;box-shadow:0 6px 22px -6px rgba(139,124,246,.6);transition:transform .13s}
@@ -640,6 +655,8 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
   #drawer.show{transform:translateY(0)}
   .dw-body{padding:16px 16px 30px}
   .dw-stats{grid-template-columns:repeat(2,1fr)}
+  .vha-grid{grid-template-columns:1fr}
+  .vha-head{align-items:flex-start}
   .hist-wrap .hist-tip{white-space:normal;max-width:calc(100% - 12px)}
   .year-cal{grid-template-columns:1fr}
   #sched-modal{width:96vw}
@@ -1076,6 +1093,85 @@ function xdd(btnCls,btnHtml,opts){
     '<div class="xdd-list">'+opts.map(o=>'<div class="xdd-opt'+(o.sel?' sel':'')+'" onclick="'+o.onclick.replace(/"/g,'&quot;')+';xddToggle(\''+id+'\')">'+o.label+'</div>').join('')+'</div></div>';
 }
 function median(arr){const a=arr.filter(x=>x!=null).sort((x,y)=>x-y);if(!a.length)return null;const m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;}
+const VIDEO_HIST_WINDOWS={h24:86400000,d7:7*86400000,d30:30*86400000,all:null};
+let VIDEO_HIST_PERIOD='d7';
+function videoHistCopy(){
+  const fr=typeof LANG!=='undefined'&&LANG==='fr';
+  return fr?{
+    title:'📊 Performance du scan',note:'Données réelles, sans extrapolation',
+    h24:'24 dernières heures',d7:'7 derniers jours',d30:'30 derniers jours',all:'Tout',
+    gained:'vues gagnées',building:'Historique en cours',previous:'vs période précédente',
+    measured:'mesuré sur ',hours:' h',days:' j',perHour:'/h',perDay:'/j',
+    chart:'Historique des vues'
+  }:{
+    title:'📊 Scan performance',note:'Measured data · no extrapolation',
+    h24:'Last 24 hours',d7:'Last 7 days',d30:'Last 30 days',all:'All history',
+    gained:'views gained',building:'History building up',previous:'vs previous period',
+    measured:'measured over ',hours:' h',days:' d',perHour:'/h',perDay:'/day',
+    chart:'View history'
+  };
+}
+function cleanVideoHist(pts){
+  return (pts||[]).filter(p=>Array.isArray(p)&&isFinite(p[0])&&isFinite(p[1])).map(p=>[+p[0],+p[1]]).sort((a,b)=>a[0]-b[0]);
+}
+function histPointAtOrBefore(pts,t){
+  let found=null;
+  for(const p of pts){if(p[0]>t)break;found=p;}
+  return found;
+}
+function videoHistMetric(pts,windowMs){
+  const a=cleanVideoHist(pts);if(a.length<2)return null;
+  const end=a[a.length-1],target=end[0]-windowMs;
+  const base=histPointAtOrBefore(a,target);
+  const maxGap=Math.min(windowMs*.15,36*3600000);
+  if(!base||target-base[0]>maxGap)return null;
+  const covered=end[0]-base[0],delta=end[1]-base[1];
+  if(covered<windowMs*.85||delta<0)return null;
+  const older=histPointAtOrBefore(a,end[0]-2*windowMs);
+  let previous=null;
+  if(older&&base[0]-(end[0]-2*windowMs)<=maxGap){
+    const d=base[1]-older[1];if(d>=0)previous=d;
+  }
+  const pct=previous!=null&&previous>0?(delta-previous)/previous*100:null;
+  return {delta,covered,previous,pct,scans:a.filter(p=>p[0]>=base[0]).length};
+}
+function videoHistSlice(pts,key){
+  const a=cleanVideoHist(pts),ms=VIDEO_HIST_WINDOWS[key];
+  if(!a.length||!ms)return a;
+  const start=a[a.length-1][0]-ms;
+  const before=histPointAtOrBefore(a,start);
+  const out=a.filter(p=>p[0]>=start);
+  if(before&&(!out.length||out[0][0]!==before[0]))out.unshift(before);
+  return out;
+}
+function videoHistMetricCard(key,pts){
+  const c=videoHistCopy(),m=videoHistMetric(pts,VIDEO_HIST_WINDOWS[key]);
+  if(!m)return '<div class="vha-card na"><span>'+esc(c[key])+'</span><b>—</b><small>'+esc(c.building)+'</small><em>'+esc(c.note)+'</em></div>';
+  const units=key==='h24'?c.perHour:c.perDay;
+  const rate=m.delta/(key==='h24'?m.covered/3600000:m.covered/86400000);
+  let trend='';let klass='';
+  if(m.pct!=null){
+    const sign=m.pct>0?'+':'';trend=sign+Math.round(m.pct)+'% '+c.previous;
+    klass=m.pct>4?'up':m.pct<-4?'down':'flat';
+  }else trend=c.measured+(key==='h24'?Math.round(m.covered/3600000)+c.hours:Math.round(m.covered/86400000)+c.days);
+  return '<div class="vha-card '+klass+'"><span>'+esc(c[key])+'</span><b>+'+fmtN(m.delta)+'</b><small>'+esc(c.gained)+' · '+fmtN(rate)+esc(units)+'</small><em>'+esc(trend)+'</em></div>';
+}
+function videoHistoryAnalytics(pts){
+  const c=videoHistCopy(),all=cleanVideoHist(pts),key=VIDEO_HIST_WINDOWS.hasOwnProperty(VIDEO_HIST_PERIOD)?VIDEO_HIST_PERIOD:'d7';
+  const active=videoHistSlice(all,key);
+  const span=active.length>1?active[active.length-1][0]-active[0][0]:0;
+  const spanText=span>=86400000?Math.round(span/86400000)+c.days:Math.round(span/3600000)+c.hours;
+  return '<div class="vha-head"><div class="k">'+esc(c.title)+'</div><div class="vha-note">'+esc(c.note)+(all.length?'<br>'+all.length+' scans · '+esc(c.measured)+spanText:'')+'</div></div>'+
+    '<div class="vha-grid">'+videoHistMetricCard('h24',all)+videoHistMetricCard('d7',all)+videoHistMetricCard('d30',all)+'</div>'+
+    '<div class="vha-controls">'+['h24','d7','d30','all'].map(k=>'<button class="'+(key===k?'on':'')+'" onclick="setVideoHistoryPeriod(\''+k+'\')">'+esc(c[k])+'</button>').join('')+'</div>'+
+    histChart(active,'views');
+}
+function setVideoHistoryPeriod(key){
+  if(!VIDEO_HIST_WINDOWS.hasOwnProperty(key))return;
+  VIDEO_HIST_PERIOD=key;
+  const current=window._openVideoDrawer;
+  if(current)openDrawer(current.kind,current.v,true);
+}
 function histChart(pts,unit){
   const u=unit||'views';
   if(!pts||pts.length===0)return '<div class="hist-empty">Tracking just started — the curve appears from the 2nd scan. 📡</div>';
@@ -1618,7 +1714,9 @@ function openIdx(kind,i){const v=(window['_page_'+kind]||[])[i];if(v)openDrawer(
 function openVid(kind,key){
   const v=DATA[kind].find(x=>x.vid===key||x.title===key);if(v)openDrawer(kind,v);
 }
-function openDrawer(kind,v){
+function openDrawer(kind,v,keepHistoryPeriod){
+  if(!keepHistoryPeriod)VIDEO_HIST_PERIOD='d7';
+  window._openVideoDrawer={kind,v};
   const sec=(k,val,icon)=>val?'<div class="dw-sec"><div class="k">'+(icon||'')+' '+k+'</div><div class="v">'+esc(val)+'</div></div>':'';
   let extra='';
   if(kind==='mix'){
@@ -1651,7 +1749,7 @@ function openDrawer(kind,v){
         '<div class="dw-stat"><b>'+fmtDur(v.durH)+'</b><span>duration</span></div>'+
         '<div class="dw-stat"><b>'+fmtAge(v.ageM)+'</b><span>age</span></div>'+
       '</div>'+
-      '<div class="dw-sec"><div class="k">📈 View history</div>'+histChart(DATA.hist&&v.vid?DATA.hist[v.vid]:null)+'</div>'+
+      '<div class="dw-sec">'+videoHistoryAnalytics(DATA.hist&&v.vid?DATA.hist[v.vid]:null)+'</div>'+
       extra+
     '</div>';
   document.getElementById('drawer').classList.add('show');
@@ -1664,6 +1762,7 @@ function closeDrawer(){
   dw.classList.remove('show');
   document.getElementById('backdrop').classList.remove('show');
   window._drawerRecoN=null;window._drawerReopen=null;
+  window._openVideoDrawer=null;
   setTimeout(()=>{if(!dw.classList.contains('show'))dw.innerHTML='';},220);
 }
 const IO=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){IO.unobserve(e.target);e.target.click();}})},{rootMargin:'600px'});
