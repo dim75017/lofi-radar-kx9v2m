@@ -13,6 +13,7 @@
 <script src="Lofi_Radar_studio.js"></script>
 <script src="Lofi_Radar_chx.js"></script>
 <script src="Lofi_Radar_subs2.js"></script>
+<script src="Lofi_Radar_cmt.js"></script>
 <script src="Lofi_Radar_seo.js"></script>
 <style>
 :root{
@@ -420,16 +421,16 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .cal-viewtoggle{display:flex;gap:4px;background:rgba(150,163,214,.06);border:1px solid var(--border);border-radius:14px;padding:3px}
 .cal-viewtoggle button{font-family:inherit;font-size:13px;font-weight:700;padding:9.5px 17px;border-radius:11px;color:var(--dim);cursor:pointer;letter-spacing:.3px}
 .cal-viewtoggle button.on{background:var(--acc);color:#fff;box-shadow:0 4px 14px rgba(139,124,246,.4)}
-.year-cal{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-@media(max-width:1300px){.year-cal{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.year-cal{grid-template-columns:repeat(2,1fr)}}
-.year-month{border:1px solid var(--border);border-radius:12px;background:rgba(15,18,30,.55);padding:14px 16px;min-width:0}
-.year-month-h{font-family:'Sora';font-size:14px;font-weight:700;margin-bottom:12px;text-align:center}
-.year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:0}
-.year-dow{font-size:10px;color:var(--dim);text-align:center;font-weight:700;opacity:.7;margin-bottom:3px}
-.year-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);border-radius:50%;position:relative;min-width:0}
+.year-cal{display:grid;grid-template-columns:repeat(4,minmax(150px,calc((100vh - 255px)/3)));gap:12px;justify-content:center}
+@media(max-width:1100px){.year-cal{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){.year-cal{grid-template-columns:repeat(2,1fr)}}
+.year-month{border:1px solid var(--border);border-radius:12px;background:rgba(15,18,30,.55);padding:9px 11px;min-width:0}
+.year-month-h{font-family:'Sora';font-size:clamp(10px,1.35vh,14px);font-weight:700;margin-bottom:5px;text-align:center}
+.year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;min-width:0}
+.year-dow{font-size:clamp(7px,1vh,10px);color:var(--dim);text-align:center;font-weight:700;opacity:.7;margin-bottom:1px}
+.year-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(8px,1.2vh,12px);color:var(--muted);border-radius:50%;position:relative;min-width:0}
 .year-cell.out{opacity:.2}
-.year-cell.has-event{cursor:pointer;color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 3px rgba(0,0,0,.6);transition:transform .12s}
+.year-cell.has-event{cursor:pointer;color:#fff;font-weight:800;font-size:clamp(9px,1.3vh,13px);text-shadow:0 1px 3px rgba(0,0,0,.6);transition:transform .12s}
 .year-cell.has-event:hover{transform:scale(1.25);z-index:3}
 .year-cell.today{box-shadow:inset 0 0 0 1.5px rgba(139,124,246,.6);border-radius:50%}
 
@@ -1181,7 +1182,7 @@ function render(){
   else if(route==='live'){t.innerHTML='Livestreams <span class="pill">HOURLY SCAN</span>';el.innerHTML=livesHTML();}
   else if(route==='chan'){t.innerHTML='Channels <span class="pill">WEEKLY SCAN</span>';el.innerHTML=chanHTML();}
   else if(route==='kw'){t.textContent='Keywords';el.innerHTML=kwHTML();}
-  i18nView();armAutoLoad();fillLikes();
+  i18nView();armAutoLoad();fillLikes();if(route==='ana')fillAnaLikes();
 }
 
 /* ================= DASHBOARD ================= */
@@ -2092,9 +2093,12 @@ function anaRows(){
   const ctrMed=median(out.map(x=>x.st?x.st.ctr:null));
   const awpMed=median(out.map(x=>x.st?x.st.awp:null));
   const awtMed=median(out.map(x=>x.st?x.st.awtMs:null));
+  const medViews=median(out.map(x=>x.views));
+  const CM=window.CMT||{};
+  const medCmt=median(out.map(x=>CM[x.vid]!=null?CM[x.vid]:null));
   const scored=out.filter(x=>x.vpm!=null);
   out.forEach(o=>{
-    o.chMed=chMed;o.ctrMed=ctrMed;o.awpMed=awpMed;o.awtMed=awtMed;
+    o.chMed=chMed;o.ctrMed=ctrMed;o.awpMed=awpMed;o.awtMed=awtMed;o.medViews=medViews;o.medCmt=medCmt;
     o.pctCh=(o.vpm!=null&&scored.length>1)?Math.round(scored.filter(x=>x.vpm<o.vpm).length/(scored.length-1)*100):null;
     o.diags=anaDiags(o);
   });
@@ -2372,7 +2376,19 @@ function vsMed(v,med){
   if(v==null||med==null||!med)return 'var(--text)';
   return v>=med*1.15?'#34d399':(v<=med*0.85?'#f87171':'#fbbf24');
 }
+function statTip(val,med){
+  if(val==null||med==null||!med)return '';
+  const fr=typeof LANG!=='undefined'&&LANG==='fr';
+  const diff=Math.round((val/med-1)*100);
+  const lbl=fr?'Médiane chaîne : ':'Channel median: ';
+  const rel=diff>0?(fr?'+'+diff+'% au-dessus de la médiane':'+'+diff+'% above median'):diff<0?(fr?diff+'% sous la médiane':diff+'% below median'):(fr?'dans la médiane':'at median');
+  return ' title="'+lbl+fmtN(med)+' · '+rel+'"';
+}
+function anaStat(val,med,lbl,hl,extraAttr){
+  return '<div class="vstat'+(hl?' hl':'')+'"><b style="color:'+vsMed(val,med)+'"'+statTip(val,med)+(extraAttr||'')+'>'+fmtN(val)+'</b><span>'+lbl+'</span></div>';
+}
 function anaCardHTML(o,i){
+  const cmt=(window.CMT&&window.CMT[o.vid]!=null)?window.CMT[o.vid]:null;
   return '<div class="vcard" onclick="openAnaIdx('+i+')">'+
     '<div class="thumbwrap"><img loading="lazy" src="'+thumb(o.vid)+'" onerror="this.style.visibility=\'hidden\'"></div>'+
     '<div class="vbody">'+
@@ -2380,9 +2396,31 @@ function anaCardHTML(o,i){
       '<div class="vtags">'+gtag(o.genre)+(o.durH!=null?ghosttag(fmtDur(o.durH)):'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:8px;margin:2px 0 10px"><div class="pbar"><i style="width:'+(o.pctCh==null?0:o.pctCh)+'%;background:'+pcol(o.pctCh)+'"></i></div></div>'+
       '<div class="vstats">'+
-        '<div class="vstat hl"><b style="color:'+pcol(o.pctCh)+'">'+fmtN(o.views)+'</b><span>views</span></div>'+
-        '<div class="vstat"><b style="color:'+vsMed(o.vpm,o.chMed)+'">'+fmtN(o.vpm)+'</b><span>views/mo</span></div>'+
+        anaStat(o.views,o.medViews,'views',true)+
+        anaStat(o.vpm,o.chMed,'views/mo')+
+        '<div class="vstat"><b data-alikes="'+o.vid+'">…</b><span>likes</span></div>'+
+        anaStat(cmt,o.medCmt,'comments')+
+        (o.st&&o.st.awtMs!=null?'<div class="vstat"><b style="color:'+vsMed(o.st.awtMs,o.awtMed)+'"'+statTip(o.st.awtMs,o.awtMed).replace(fmtN(o.awtMed),fmtWatch(o.awtMed))+'>'+fmtWatch(o.st.awtMs)+'</b><span>avg view</span></div>':'')+
       '</div></div></div>';
+}
+function fillAnaLikes(){
+  const rows=window._page_ana||[];if(!rows.length)return;
+  const els={};document.querySelectorAll('[data-alikes]').forEach(el=>{els[el.getAttribute('data-alikes')]=el;el.removeAttribute('data-alikes');});
+  if(!Object.keys(els).length)return;
+  let pending=0;const got={};
+  rows.forEach(o=>{pending++;fetchLikes(o.vid,n=>{got[o.vid]=n;if(--pending===0)done();});});
+  function done(){
+    const vals=Object.values(got).filter(x=>x!=null).sort((a,b)=>a-b);
+    const med=vals.length?vals[Math.floor(vals.length/2)]:null;
+    for(const vid in els){
+      const el=els[vid],n=got[vid];
+      if(n==null){el.textContent='—';continue;}
+      el.textContent=fmtN(n);
+      el.style.color=vsMed(n,med);
+      const tip=statTip(n,med);
+      if(tip)el.setAttribute('title',tip.slice(8,-1).replace(/&quot;/g,'"'));
+    }
+  }
 }
 function anaHTML(){
   const rows=[...anaRows()];
