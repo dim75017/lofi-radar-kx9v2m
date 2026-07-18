@@ -604,9 +604,8 @@ td.selc,th.selc{width:44px;padding-left:14px}
   </div>
   <nav class="nav" id="nav">
     <div class="nav-label" data-fr="Analyse">Analyse</div>
-    <button data-v="overview" class="active" data-fr="Vue d'ensemble"><span class="emo">📊</span>Vue d'ensemble</button>
     <button data-v="radar" data-fr="Pépites & filons"><span class="emo">💎</span>Pépites & filons<span class="count" id="c-radar"></span></button>
-    <button data-v="opps" data-fr="Toutes les pistes"><span class="emo">🎶</span>Toutes les pistes<span class="count" id="c-opps"></span></button>
+    <button data-v="opps" class="active" data-fr="Toutes les pistes"><span class="emo">🎶</span>Toutes les pistes<span class="count" id="c-opps"></span></button>
     <button data-v="artists" data-fr="Tous les artistes"><span class="emo">🎸</span>Tous les artistes<span class="count" id="c-art"></span></button>
     <button data-v="playlists" data-fr="Toutes les playlists"><span class="emo">📻</span>Toutes les playlists<span class="count" id="c-pl"></span></button>
     <button data-v="labels" data-fr="Tous les labels"><span class="emo">🏷️</span>Tous les labels<span class="count" id="c-lb"></span></button>
@@ -1264,10 +1263,14 @@ function arGateBadge(label,value){
   const bad=['Élevé','Vocal'].includes(value), good=['Faible','Instrumental'].includes(value);
   return `<span class="badge ${bad?'other':(good?'self':'new')}">${esc(label)} · ${esc(value)}</span>`;
 }
+function arKnownContact(name){
+  const match=AG.find(artist=>artist.name.toLowerCase()===String(name||'').toLowerCase() && artist.email);
+  return match ? match.email : null;
+}
 
 /* ---------- état ---------- */
 const S = {
-  view:'overview', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false, metricMode:'streams',
+  view:'opps', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false, metricMode:'streams',
   q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all', genres:new Set(), airisk:'hide_high',
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(), aairisk:'hide_high',
@@ -1890,16 +1893,17 @@ function renderRadar(){
       <button class="chip ${S.radarFilter==='review'?'on':''}" data-radar-filter="review">${T('Prêt à contacter')} (${fmtFull(ready.length)})</button>
       <span class="spacer"></span><span class="result-count">${esc(state)}</span>
     </div>
-    <div class="panel" style="padding:6px 14px 14px"><table><thead><tr><th>#</th><th>${T('Artiste')}</th><th>${T('Signal de découverte')}</th><th class="num">${T('Auditeurs mensuels')}</th><th>${T('Réseau Fans Also Like')}</th><th>Gates</th><th>${T('Étape suivante')}</th></tr></thead><tbody>
-      ${rows.map((candidate,index)=>`<tr>
+    <div class="panel" style="padding:6px 14px 14px"><table><thead><tr><th>#</th><th>${T('Artiste')}</th><th>${T('Signal de découverte')}</th><th class="num">${T('Auditeurs mensuels')}</th><th>${T('Réseau Fans Also Like')}</th><th>Gates</th><th>${T('Contact')}</th><th>${T('Étape suivante')}</th></tr></thead><tbody>
+      ${rows.map((candidate,index)=>{const contact=arKnownContact(candidate.name);return `<tr>
         <td class="num">${index+1}</td>
         <td><a class="ar" href="${artistSearch(candidate.name)}" target="_blank" rel="noopener">${esc(candidate.name)}</a></td>
         <td><span class="badge ${candidate.score>=70?'self':'new'}">${candidate.score}/100</span><div class="genre-sub">${candidate.qualifies?'pré-sélection ≥50k':'audience à confirmer'}</div></td>
         <td class="num">${fmtFull(candidate.listeners)}</td>
         <td>${candidate.sources} source${candidate.sources>1?'s':''}${candidate.rank?` · rang ${candidate.rank}`:''}</td>
         <td><div style="display:flex;gap:4px;flex-wrap:wrap">${arGateBadge('Genre',candidate.classification.genre)}${arGateBadge('Inst.',candidate.classification.instrumental)}${arGateBadge('IA',candidate.classification.ai)}${arGateBadge('Droits',candidate.classification.rights)}</div></td>
-        <td>${candidate.review?`<button class="chip on" onclick="openArMessage('${esc(candidate.uuid)}')">Préparer message</button>`:`<span class="genre-sub">${T('Écoute + genre / IA / droits')}</span>`}</td>
-      </tr>`).join('')}
+        <td>${contact?`<a href="mailto:${esc(contact)}" class="ar">${esc(contact)}</a>`:'<span class="genre-sub">À enrichir</span>'}</td>
+        <td>${candidate.qualifies?`<button class="chip ${candidate.review?'on':''}" onclick="openArMessage('${esc(candidate.uuid)}')">Préparer message</button>`:`<span class="genre-sub">${T('Écoute + genre / IA / droits')}</span>`}</td>
+      </tr>`;}).join('')}
     </tbody></table>${rows.length===0?`<div class="empty">${T('Données insuffisantes')}</div>`:''}</div>
     <div class="analytics-section" style="margin-top:16px"><h4>${T('Filons confirmés')}</h4>${clusters.length?`<div class="contributors">${clusters.map(cluster=>`<div class="contributor"><span class="cn">${esc(cluster.genre)}</span><span class="cv">${cluster.artists} artistes · ${cluster.tracks} tracks</span></div>`).join('')}</div>`:`<div class="analytics-note">${T('Aucun filon confirmé')} · ${T('Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.')}</div>`}</div>`;
   document.querySelectorAll('[data-radar-filter]').forEach(button=>button.addEventListener('click',()=>{S.radarFilter=button.dataset.radarFilter;renderRadar();}));
@@ -2963,9 +2967,11 @@ document.getElementById('lang-switch').addEventListener('click', ()=>{
 });
 /* restauration de la vue après F5 (hash d'URL) */
 const initV = location.hash.slice(1);
-if (['overview','radar','opps','artists','watch','playlists','labels'].includes(initV)){
+if (['radar','opps','artists','watch','playlists','labels'].includes(initV)){
   S.view = initV;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v===initV));
+}else if(initV==='overview'){
+  history.replaceState(null,'',location.pathname+location.search+'#opps');
 }
 applyLang();
 </script>
