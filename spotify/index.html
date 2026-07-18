@@ -735,11 +735,11 @@ const S = {
   view:'overview', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false,
   q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all',
   sort:{k:3, dir:-1}, shown:100,
-  aq:'', asort:'streams', shownA:60, aseg:'all',
+  aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all',
   newDays:90, shownN:100,
   plq:'', plcur:'all', plsort:'followers', pldir:-1, plonly:false, shownPL:80, plview:'qualified', plmode:'table',
   amode:'table', omode:'table',
-  lbq:'', lbsort:'revenue', shownLB:80, lbmode:'table', labelKey:null, lbModalArtist:null,
+  lbq:'', lbsort:'revenue', lbdir:-1, shownLB:80, lbmode:'table', labelKey:null, lbModalArtist:null,
 };
 
 /* ---------- navigation ---------- */
@@ -790,6 +790,8 @@ function filteredRows(){
     else if (k===10){ x=streams30(a).val; y=streams30(b).val; }
     else if (k===11){ x=revTotal(a); y=revTotal(b); }
     else if (k===12){ x=rev30(a); y=rev30(b); }
+    else if (k===13){ x=advance(Math.max(perMonth(a),0)); y=advance(Math.max(perMonth(b),0)); }
+    else if (k===5){ x=(a[5]||'').toLowerCase(); y=(b[5]||'').toLowerCase(); }
     else { x=a[k]; y=b[k]; }
     const c = x<y ? -1 : (x>y ? 1 : 0);
     return c*dir;
@@ -1238,16 +1240,16 @@ function renderOpps(){
       <thead><tr>
         ${ag?`<th class="selc"><input type="checkbox" class="ck" id="sel-all" title="${T('Tout sélectionner')}" ${rows.length&&rows.every(r=>S.sel.has(r[6]))?'checked':''}></th>`:''}
         <th></th>
-        <th data-k="1">Track</th>
+        <th data-k="1">Track ${sortArrow(1)}</th>
         <th data-k="0">${T('Artiste')} ${sortArrow(0)}</th>
         <th data-k="3" class="num">${T('Streams total')}</th>
         <th data-k="11" class="num">${T('Revenu total')} ${sortArrow(11)}</th>
         <th data-k="10" class="num">${T('Streams 30j')} ${sortArrow(10)}</th>
         <th data-k="12" class="num">${T('Revenu 30j')} ${sortArrow(12)}</th>
-        <th class="num">${T('Rachat')} ${S.palier}</th>
+        <th data-k="13" class="num">${T('Rachat')} ${S.palier} ${sortArrow(13)}</th>
         <th data-k="2">${T('Sortie')} ${sortArrow(2)}</th>
-        <th>${T('Statut')}</th>
-        <th>Copyright</th>
+        <th data-k="4">${T('Statut')} ${sortArrow(4)}</th>
+        <th data-k="5">Copyright ${sortArrow(5)}</th>
       </tr></thead>
       <tbody>
       ${slice.map(r=>{ const s30=streams30(r); return `
@@ -1348,7 +1350,7 @@ function renderOpps(){
   attachInfinite(()=>{ const y=window.scrollY; S.shown+=200; renderOpps(); window.scrollTo(0,y); });
   document.querySelectorAll('th[data-k]').forEach(h=>h.addEventListener('click', ()=>{
     const k=+h.dataset.k;
-    if (S.sort.k===k) S.sort.dir*=-1; else S.sort={k, dir:-1};
+    if (S.sort.k===k) S.sort.dir*=-1; else S.sort={k, dir:[0,1,5].includes(k)?1:-1};
     keepScroll(renderOpps);
   }));
   function updateSel(){
@@ -1375,14 +1377,25 @@ function renderOpps(){
 }
 function keepFocus(id){ const el=document.getElementById(id); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length);} }
 function keepScroll(fn){ const y=window.scrollY; fn(); window.scrollTo(0,y); }
+function artistSortArrow(k){ return S.asort===k ? `<span class="arr">${S.adir===-1?'▼':'▲'}</span>` : ''; }
 
 function renderArtists(){
   const q = S.aq.trim().toLowerCase();
   let list = withTracks.filter(g=>(!q || g.name.toLowerCase().includes(q)) && (S.aseg==='all' || seg(g)===S.aseg));
-  if (S.asort==='streams') list.sort((a,b)=>b.streams-a.streams);
-  else if (S.asort==='hot') list.sort((a,b)=>b.hot-a.hot);
-  else if (S.asort==='n') list.sort((a,b)=>b.n-a.n);
-  else if (S.asort==='last') list.sort((a,b)=>(b.last||'').localeCompare(a.last||''));
+  const aSorters = {
+    name:(a,b)=>a.name.localeCompare(b.name),
+    status:(a,b)=>({ext:0,occ:1,reg:2,top:3}[seg(a)]-({ext:0,occ:1,reg:2,top:3}[seg(b)])),
+    streams:(a,b)=>a.streams-b.streams,
+    revenue:(a,b)=>a.streams-b.streams,
+    streams30:(a,b)=>a.streams30-b.streams30,
+    revenue30:(a,b)=>a.streams30-b.streams30,
+    n:(a,b)=>a.n-b.n,
+    hot:(a,b)=>a.hot-b.hot,
+    self:(a,b)=>(a.n?a.self/a.n:0)-(b.n?b.self/b.n:0),
+    last:(a,b)=>(a.last||'').localeCompare(b.last||''),
+  };
+  const aSorter = aSorters[S.asort] || aSorters.streams;
+  list = list.slice().sort((a,b)=>S.adir*aSorter(a,b));
   const slice = list.slice(0,S.shownA);
   const gridView = `
   <div class="acards">
@@ -1408,16 +1421,16 @@ function renderArtists(){
     <table>
       <thead><tr>
         <th></th>
-        <th>${T('Artiste')}</th>
-        <th>${T('Statut')}</th>
-        <th class="num">${T('Streams total')}</th>
-        <th class="num">${T('Revenu total')}</th>
-        <th class="num">${T('Streams 30j')}</th>
-        <th class="num">${T('Revenu 30j')}</th>
-        <th class="num">tracks</th>
-        <th class="num">≥ 500k</th>
-        <th class="num">${T('indé')}</th>
-        <th>${T('dernière sortie')}</th>
+        <th data-asort="name">${T('Artiste')} ${artistSortArrow('name')}</th>
+        <th data-asort="status">${T('Statut')} ${artistSortArrow('status')}</th>
+        <th data-asort="streams" class="num">${T('Streams total')} ${artistSortArrow('streams')}</th>
+        <th data-asort="revenue" class="num">${T('Revenu total')} ${artistSortArrow('revenue')}</th>
+        <th data-asort="streams30" class="num">${T('Streams 30j')} ${artistSortArrow('streams30')}</th>
+        <th data-asort="revenue30" class="num">${T('Revenu 30j')} ${artistSortArrow('revenue30')}</th>
+        <th data-asort="n" class="num">tracks ${artistSortArrow('n')}</th>
+        <th data-asort="hot" class="num">≥ 500k ${artistSortArrow('hot')}</th>
+        <th data-asort="self" class="num">${T('indé')} ${artistSortArrow('self')}</th>
+        <th data-asort="last">${T('dernière sortie')} ${artistSortArrow('last')}</th>
       </tr></thead>
       <tbody>
       ${slice.map(g=>{
@@ -1457,12 +1470,6 @@ function renderArtists(){
       <option value="occ" ${S.aseg==='occ'?'selected':''}>🎲 ${T('Occasionnels')}</option>
       <option value="ext" ${S.aseg==='ext'?'selected':''}>🚫 ${T('Jamais')}</option>
     </select>
-    <select id="a-sort">
-      <option value="streams" ${S.asort==='streams'?'selected':''}>${T('Tri : streams hors Lofi')}</option>
-      <option value="hot" ${S.asort==='hot'?'selected':''}>${T('Tri : tracks ≥ 500k')}</option>
-      <option value="n" ${S.asort==='n'?'selected':''}>${T('Tri : nb de tracks')}</option>
-      <option value="last" ${S.asort==='last'?'selected':''}>${T('Tri : sortie la plus récente')}</option>
-    </select>
     <span class="spacer"></span>
     <span class="result-count">${list.length} ${T('artistes')}</span>
     <div class="viewtoggle">
@@ -1475,7 +1482,12 @@ function renderArtists(){
   document.querySelectorAll('.viewtoggle button[data-amode]').forEach(b=>b.addEventListener('click', ()=>{ S.amode=b.dataset.amode; keepScroll(renderArtists); }));
   document.getElementById('a-q').addEventListener('input', e=>{ S.aq=e.target.value; S.shownA=60; keepScroll(renderArtists); keepFocus('a-q'); });
   document.getElementById('a-seg').addEventListener('change', e=>{ S.aseg=e.target.value; S.shownA=60; keepScroll(renderArtists); });
-  document.getElementById('a-sort').addEventListener('change', e=>{ S.asort=e.target.value; keepScroll(renderArtists); });
+  document.querySelectorAll('th[data-asort]').forEach(h=>h.addEventListener('click', ()=>{
+    const key=h.dataset.asort;
+    if (S.asort===key) S.adir*=-1;
+    else { S.asort=key; S.adir=key==='name'?1:-1; }
+    keepScroll(renderArtists);
+  }));
   attachInfinite(()=>{ const y=window.scrollY; S.shownA+=60; renderArtists(); window.scrollTo(0,y); });
   if (typeof attachCovers==='function') attachCovers();
 }
@@ -1832,14 +1844,19 @@ function lbFiltered(){
   const q = S.lbq.trim().toLowerCase();
   let rows = LBrows.filter(r=>!q || r[1].toLowerCase().includes(q));
   const sorters = {
-    revenue: (a,b)=>b[4]-a[4],
-    streams: (a,b)=>b[3]-a[3],
-    tracks: (a,b)=>b[2]-a[2],
-    since: (a,b)=>(a[5]||'9999').localeCompare(b[5]||'9999'),
-    streams30: (a,b)=>labelStreams30(b[0])-labelStreams30(a[0]),
+    name: (a,b)=>(a[1]||'').localeCompare(b[1]||''),
+    revenue: (a,b)=>a[4]-b[4],
+    streams: (a,b)=>a[3]-b[3],
+    tracks: (a,b)=>a[2]-b[2],
+    since: (a,b)=>(a[5]||'').localeCompare(b[5]||''),
+    streams30: (a,b)=>labelStreams30(a[0])-labelStreams30(b[0]),
+    revenue30: (a,b)=>labelStreams30(a[0])-labelStreams30(b[0]),
+    artists: (a,b)=>(a[6]||0)-(b[6]||0),
   };
-  return rows.slice().sort(sorters[S.lbsort] || sorters.revenue);
+  const sorter = sorters[S.lbsort] || sorters.revenue;
+  return rows.slice().sort((a,b)=>S.lbdir*sorter(a,b));
 }
+function labelSortArrow(k){ return S.lbsort===k ? `<span class="arr">${S.lbdir===-1?'▼':'▲'}</span>` : ''; }
 /* ---------- Fiche label en pop-up (tracks groupées par artiste + simulateur) ---------- */
 /* extraction du label côté client : même logique que gen_labels_data.py */
 const LB_LICENSE_RE = /(?:under\s+(?:an?\s+)?|on\s+)?exclusive\s+licen[cs]e\s+(?:to|with|from)\s+(.+?)(?:\s*[;.]|$)/i;
@@ -1979,14 +1996,14 @@ function renderLabels(){
     <table>
       <thead><tr>
         <th></th>
-        <th>${T('Label')}</th>
-        <th class="num">Tracks</th>
-        <th class="num">${T('Streams total')}</th>
-        <th class="num">${T('Revenu total')}</th>
-        <th class="num">${T('Streams 30j')}</th>
-        <th class="num">${T('Revenu 30j')}</th>
-        <th>${T('Connu depuis')}</th>
-        <th class="num">${T('Artistes')}</th>
+        <th data-lbsort="name">${T('Label')} ${labelSortArrow('name')}</th>
+        <th data-lbsort="tracks" class="num">Tracks ${labelSortArrow('tracks')}</th>
+        <th data-lbsort="streams" class="num">${T('Streams total')} ${labelSortArrow('streams')}</th>
+        <th data-lbsort="revenue" class="num">${T('Revenu total')} ${labelSortArrow('revenue')}</th>
+        <th data-lbsort="streams30" class="num">${T('Streams 30j')} ${labelSortArrow('streams30')}</th>
+        <th data-lbsort="revenue30" class="num">${T('Revenu 30j')} ${labelSortArrow('revenue30')}</th>
+        <th data-lbsort="since">${T('Connu depuis')} ${labelSortArrow('since')}</th>
+        <th data-lbsort="artists" class="num">${T('Artistes')} ${labelSortArrow('artists')}</th>
       </tr></thead>
       <tbody>
       ${slice.map(r=>`
@@ -2035,13 +2052,6 @@ function renderLabels(){
   </div>
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="lb-q" placeholder="${T('Rechercher un label…')}" value="${esc(S.lbq)}"></div>
-    <select id="lb-sort">
-      <option value="revenue" ${S.lbsort==='revenue'?'selected':''}>${T('Tri : revenu estimé')}</option>
-      <option value="streams" ${S.lbsort==='streams'?'selected':''}>${T('Tri : streams')}</option>
-      <option value="streams30" ${S.lbsort==='streams30'?'selected':''}>${T('Tri : streams 30j')}</option>
-      <option value="tracks" ${S.lbsort==='tracks'?'selected':''}>${T('Tri : nb tracks')}</option>
-      <option value="since" ${S.lbsort==='since'?'selected':''}>${T('Tri : connu depuis')}</option>
-    </select>
     <span class="spacer"></span>
     <span class="result-count">${fmtFull(rows.length)} labels</span>
     <div class="viewtoggle">
@@ -2054,7 +2064,12 @@ function renderLabels(){
   document.querySelectorAll('.lbl-row[data-lbkey]').forEach(el=>el.addEventListener('click', ()=>openLabel(el.dataset.lbkey)));
   document.querySelectorAll('.viewtoggle button[data-lbmode]').forEach(b=>b.addEventListener('click', ()=>{ S.lbmode=b.dataset.lbmode; keepScroll(renderLabels); }));
   document.getElementById('lb-q').addEventListener('input', e=>{ S.lbq=e.target.value; S.shownLB=80; keepScroll(renderLabels); keepFocus('lb-q'); });
-  document.getElementById('lb-sort').addEventListener('change', e=>{ S.lbsort=e.target.value; keepScroll(renderLabels); });
+  document.querySelectorAll('th[data-lbsort]').forEach(h=>h.addEventListener('click', ()=>{
+    const key=h.dataset.lbsort;
+    if (S.lbsort===key) S.lbdir*=-1;
+    else { S.lbsort=key; S.lbdir=key==='name'?1:-1; }
+    keepScroll(renderLabels);
+  }));
   attachInfinite(()=>{ const y=window.scrollY; S.shownLB+=80; renderLabels(); window.scrollTo(0,y); });
 }
 
