@@ -676,7 +676,7 @@ const LBrows = (LB && LB.rows) || [];
 
 function fmt(n){
   if (n===-1||n==null) return '?';
-  if (n>=1e9) return (n/1e9).toFixed(2)+' Md';
+  if (n>=1e9) return (n/1e9).toFixed(2)+' B';
   if (n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1)+' M';
   if (n>=1e3) return Math.round(n/1e3)+' k';
   return ''+n;
@@ -1233,7 +1233,7 @@ function renderOpps(){
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span> ${wlStar('t',r[6])}${r[7]?' <span class="badge new">'+T('détectée')+' '+r[7].slice(5)+'</span>':''}</td>
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
-          <td class="num" title="${fmtFull(r[3])}">${r[3]>=HOT?'<span class="badge hot">'+fmt(r[3])+'</span>':fmt(r[3])}</td>
+          <td class="num" title="${fmtFull(r[3])}">${fmt(r[3])}</td>
           <td class="num" style="color:var(--cyan)">${money(revTotal(r))}</td>
           <td class="num" title="${s30.real?T('mesuré sur historique réel'):T('estimation, moyenne depuis la sortie')}">${fmt(s30.val)}${s30.real?'':' <span class="kwtag">'+T('est.')+'</span>'}</td>
           <td class="num" style="color:var(--cyan)" title="${s30.real?T('mesuré sur historique réel'):T('estimation, moyenne depuis la sortie')}">${money(rev30(r))}${s30.real?'':' <span class="kwtag">'+T('est.')+'</span>'}</td>
@@ -1284,11 +1284,11 @@ function renderOpps(){
       <option value="90" ${S.period==='90'?'selected':''}>🟡 ${T('3 derniers mois')} (${fmtFull(pcnt['90'])})</option>
       <option value="180" ${S.period==='180'?'selected':''}>🟠 ${T('6 derniers mois')} (${fmtFull(pcnt['180'])})</option>
       <option value="365" ${S.period==='365'?'selected':''}>🔴 ${T('12 derniers mois')} (${fmtFull(pcnt['365'])})</option>
-      <option value="all" ${S.period==='all'?'selected':''}>⚫ ${T("Tout l'historique")} (${fmtFull(pcnt['all'])})</option>
+      <option value="all" ${S.period==='all'?'selected':''}>🔵 ${T("Tout l'historique")} (${fmtFull(pcnt['all'])})</option>
     </select>
     <select id="f-st">
       <option value="all" ${S.statut==='all'?'selected':''}>🌍 ${T('Type de sortie : tous')}</option>
-      <option value="self" ${S.statut==='self'?'selected':''}>🧑‍🎤 Self-released</option>
+      <option value="self" ${S.statut==='self'?'selected':''}>🎛️ Self-released</option>
       <option value="other" ${S.statut==='other'?'selected':''}>🏷️ ${T('Autre label')}</option>
     </select>
     <select id="f-min">
