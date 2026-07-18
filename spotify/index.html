@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="../Spotify_Radar_data.js"></script>
 <script src="../Spotify_Playlists_data.js"></script>
+<script src="../Spotify_Labels_data.js"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
@@ -73,9 +74,19 @@ input,select{font-family:inherit;color:var(--text)}
 .nav .count{margin-left:auto;font-size:10.5px;font-weight:600;color:var(--dim);background:rgba(150,214,170,.09);padding:2px 7px;border-radius:20px;min-width:26px;text-align:center}
 .nav button.active .count{color:var(--acc2);background:rgba(30,215,96,.16)}
 .side-foot{border-top:1px solid var(--border);padding-top:13px}
-.sync-row{display:flex;align-items:center;gap:8px;padding:0 8px}
+.sync-row{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:9px;position:relative;cursor:pointer;transition:background .14s}
+.sync-row:hover, .sync-row.open{background:rgba(150,214,170,.07)}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex:none}
 .sync-txt{font-size:10.5px;color:var(--dim);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync-detail{
+  position:absolute;left:6px;bottom:calc(100% + 8px);z-index:70;min-width:220px;max-width:280px;
+  background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--border2);border-radius:11px;
+  padding:10px 13px;font-size:11px;line-height:1.55;color:var(--muted);box-shadow:0 8px 24px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .14s,transform .14s;white-space:normal;
+}
+.sync-row:hover .sync-detail, .sync-row.open .sync-detail{opacity:1;pointer-events:auto;transform:translateY(0)}
+.sync-detail::after{content:'';position:absolute;left:16px;top:100%;border:6px solid transparent;border-top-color:var(--bg2)}
+.sync-detail b{color:#fff}
 
 /* ---------- Sélecteur de langue (switch à drapeaux) ---------- */
 .lang-switch{
@@ -114,7 +125,8 @@ input,select{font-family:inherit;color:var(--text)}
 .kwtag{display:inline-block;padding:2px 8px;border-radius:12px;background:rgba(150,214,170,.08);border:1px solid var(--border2);color:var(--muted);font-size:10.5px;margin:1px 3px 1px 0;white-space:nowrap}
 
 /* KPI */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:22px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.kpis .sub{font-size:11px;color:var(--dim);margin-top:2px}
 .kpi{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--border);border-radius:var(--r);padding:16px 17px}
 .kpi .lbl{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);font-weight:600}
 .kpi .val{font-family:'Sora';font-size:25px;font-weight:800;margin-top:7px}
@@ -231,6 +243,9 @@ td.covtd{width:82px;padding:6px 2px 6px 10px}
 .badge.hot{color:#052e12;background:linear-gradient(90deg,#1ed760,#4ade80)}
 .badge.lofi{color:#a78bfa;background:rgba(167,139,250,.12);box-shadow:inset 0 0 0 1px rgba(167,139,250,.25)}
 .badge.disco{color:#f9a8d4;background:rgba(249,168,212,.10);box-shadow:inset 0 0 0 1px rgba(249,168,212,.25)}
+.lblcov{background:linear-gradient(135deg,#2e1f3d,#181228);font-family:'Sora';font-weight:700;color:#c4b5fd;font-size:24px}
+.lblcov::after{content:none}
+.plcard .lblcov.big{height:150px;font-size:44px}
 .badge.seg-top{color:#fb923c;background:rgba(251,146,60,.14);box-shadow:inset 0 0 0 1px rgba(251,146,60,.4)}
 .badge.seg-reg{color:#a78bfa;background:rgba(167,139,250,.14);box-shadow:inset 0 0 0 1px rgba(167,139,250,.4)}
 .badge.seg-occ{color:#60a5fa;background:rgba(37,99,235,.18);box-shadow:inset 0 0 0 1px rgba(59,130,246,.45)}
@@ -296,6 +311,7 @@ td.selc,th.selc{width:44px;padding-left:14px}
 }
 .acard .nm{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acard .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:9px}
+.acard .stats.stats2{grid-template-columns:1fr 1fr}
 .acard .st .v{font-family:'Sora';font-weight:700;font-size:15.5px}
 .acard .st .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
 .acard .foot{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--dim)}
@@ -373,16 +389,19 @@ td.selc,th.selc{width:44px;padding-left:14px}
     <button data-v="opps" data-fr="Toutes les pistes"><span class="emo">🎶</span>Toutes les pistes<span class="count" id="c-opps"></span></button>
     <button data-v="artists" data-fr="Tous les artistes"><span class="emo">🎸</span>Tous les artistes<span class="count" id="c-art"></span></button>
     <button data-v="playlists" data-fr="Toutes les playlists"><span class="emo">📻</span>Toutes les playlists<span class="count" id="c-pl"></span></button>
+    <button data-v="labels" data-fr="Tous les labels"><span class="emo">🏷️</span>Tous les labels<span class="count" id="c-lb"></span></button>
     <button data-v="watch" data-fr="Watchlist"><span class="emo">⭐</span>Watchlist<span class="count" id="c-watch"></span></button>
   </nav>
   <div class="side-foot">
-    <div class="sync-row">
+    <div class="sync-row" id="sync-row-tr">
       <div class="sync-dot" id="sync-dot-tr"></div>
       <div class="sync-txt" id="sync-txt-tr">—</div>
+      <div class="sync-detail" id="sync-detail-tr"></div>
     </div>
     <div class="sync-row" id="sync-row-pl" style="margin-top:5px">
       <div class="sync-dot" id="sync-dot-pl"></div>
       <div class="sync-txt" id="sync-txt-pl">—</div>
+      <div class="sync-detail" id="sync-detail-pl"></div>
     </div>
   </div>
 </aside>
@@ -474,6 +493,8 @@ const EN_MAP = {
   "Revenu mensuel est.":"Est. monthly revenue","catalogue hors Lofi":"catalog outside Lofi","cumulé":"lifetime",
   "Revenus estimés à":"Revenue estimated at","all-in Spotify, fourchette":"all-in Spotify, range","source Duetti / Loud & Clear 2025-26":"source Duetti / Loud & Clear 2025-26",
   "Revenu est.":"Est. revenue","mois":"mo","mo":"mo","lifetime":"lifetime",
+  "Streams total":"Total streams","Streams 30j":"Streams 30d","Revenu total":"Total revenue","Revenu 30j":"Revenue 30d",
+  "est.":"est.","mesuré sur historique réel":"measured from real history","estimation, moyenne depuis la sortie":"estimate, average since release",
   "ans":"yr","Rachat":"Buyout",
   "Simulation d'offre de rachat":"Buyout offer simulator",
   "Choisir le split artiste / label. Avance = prix d'achat de la part cédée. Payback = temps pour rembourser l'avance avec les revenus captés (objectif 2-3 ans).":"Pick the artist / label split. Advance = purchase price of the ceded share. Payback = time to recoup the advance from captured revenue (target 2-3 years).",
@@ -567,13 +588,15 @@ function paybackClass(months){
 // artists: [nom, nbLofi, flag, done, disco, origine, seedSrc]
 // rows:    [ai, track, date, streams, statut(0 self/1 autre), label, id, firstSeen]
 const A = D.artists, R = D.rows;
+const HIST = D.hist || {};   // tid -> [[dateISO, playcount], ...] (rempli par la veille)
 const AG = A.map((a,i)=>({i, name:a[0], lofi:a[1], flag:a[2], done:a[3], disco:a[4],
-  origin:a[5], seedSrc:a[6], id:a[7]||'', img:a[8]||'', email:a[9]||'', link:a[10]||'', n:0, self:0, streams:0, mstreams:0, hot:0, last:'', top:null}));
+  origin:a[5], seedSrc:a[6], id:a[7]||'', img:a[8]||'', email:a[9]||'', link:a[10]||'', n:0, self:0, streams:0, streams30:0, mstreams:0, hot:0, last:'', top:null}));
 for (const r of R){
   const g = AG[r[0]];
   g.n++; if (r[4]===0) g.self++;
   if (r[3]>0) g.streams += r[3];
   const pm = perMonth(r); if (pm>0) g.mstreams += pm;
+  g.streams30 += streams30(r).val;
   if (r[3]>=HOT) g.hot++;
   if (r[2] > g.last) g.last = r[2];
   if (!g.top || r[3] > g.top[3]) g.top = r;
@@ -589,6 +612,12 @@ const PL = window.SPOTIFY_PLAYLISTS || null;
 const PLmeta = (PL && PL.meta) || null;
 const PLrows = (PL && PL.rows) || [];
 /* colonnes PLrows : id,name,owner,curator,followers,tracks,first_seen,last_seen,lang,genre,use_case,fit,kw,enriched,big10k */
+
+/* ---------- module Labels (récap par label, dérivé des tracks "Autre label") ---------- */
+const LB = window.SPOTIFY_LABELS || null;
+const LBmeta = (LB && LB.meta) || null;
+const LBrows = (LB && LB.rows) || [];
+/* colonnes LBrows : key,name,tracks,streams,revenue,since,nArtists */
 
 function fmt(n){
   if (n===-1||n==null) return '?';
@@ -607,6 +636,27 @@ function perMonth(r){
   const m = monthsSince(r[2]);
   return (m===null||r[3]<0) ? -1 : Math.round(r[3]/m);
 }
+/* Streams des 30 derniers jours : réel si assez d'historique hebdo (track_history.tsv,
+   tracks ≥100k streams), sinon estimation via la vélocité moyenne depuis la sortie
+   (perMonth). Le crawler ne collecte cet historique que depuis peu : tant qu'il n'y a pas
+   2 points distincts, on retombe sur l'estimation plutôt que d'afficher un vide. */
+function streams30(r){
+  const pts = HIST[r[6]];
+  if (pts && pts.length >= 2){
+    const latest = pts[pts.length-1];
+    const latestMs = new Date(latest[0]+'T00:00:00').getTime();
+    const targetMs = latestMs - 30*864e5;
+    let base = null;
+    for (const p of pts){ if (new Date(p[0]+'T00:00:00').getTime() <= targetMs) base = p; }
+    if (!base) base = pts[0];
+    const baseMs = new Date(base[0]+'T00:00:00').getTime();
+    const days = Math.round((latestMs - baseMs)/864e5);
+    if (days > 0) return { val: Math.max(0, latest[1]-base[1]), real:true };
+  }
+  return { val: Math.max(perMonth(r),0), real:false };
+}
+function revTotal(r){ return r[3]>0 ? r[3]*RATE : 0; }
+function rev30(r){ return streams30(r).val*RATE; }
 function daysAgo(d){ return d ? Math.round((TODAY-new Date(d+'T00:00:00'))/864e5) : 1e9; }
 function esc(s){ return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 const trackUrl = id => 'https://open.spotify.com/track/'+id;
@@ -619,8 +669,9 @@ const S = {
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', shownA:60, aseg:'all',
   newDays:90, shownN:100,
-  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified', plmode:'grid',
-  amode:'grid', omode:'grid',
+  plq:'', plcur:'all', plsort:'followers', plonly:false, shownPL:80, plview:'qualified', plmode:'table',
+  amode:'table', omode:'table',
+  lbq:'', lbsort:'revenue', shownLB:80, lbmode:'table',
 };
 
 /* ---------- navigation ---------- */
@@ -668,6 +719,9 @@ function filteredRows(){
     let x,y;
     if (k===0){ x=A[a[0]][0].toLowerCase(); y=A[b[0]][0].toLowerCase(); }
     else if (k===7){ x=perMonth(a); y=perMonth(b); }
+    else if (k===10){ x=streams30(a).val; y=streams30(b).val; }
+    else if (k===11){ x=revTotal(a); y=revTotal(b); }
+    else if (k===12){ x=rev30(a); y=rev30(b); }
     else { x=a[k]; y=b[k]; }
     const c = x<y ? -1 : (x>y ? 1 : 0);
     return c*dir;
@@ -728,14 +782,13 @@ function renderOverview(){
   </div>
   <div class="kpis">
     ${kpi(T('Artistes scannés'), done, nTop+' top · '+nReg+' '+T('réguliers')+' · '+nOcc+' '+T('occasionnels'))}
-    ${kpi(T('Tracks hors Lofi'), fmtFull(R.length), T('catalogue analysé'))}
+    ${kpi(T('Tracks hors Lofi'), fmtFull(R.length), pSelf+' % self-released ('+fmtFull(nSelf)+')')}
     ${kpi(T('Streams cumulés'), fmt(totStreams), T('hors catalogue Lofi'), true)}
-    ${kpi(T('Revenu mensuel est.'), money(totMonthlyRev), T('catalogue hors Lofi')+' · '+money(totStreams*RATE)+' '+T('cumulé'), true)}
+    ${kpi(T('Revenu mensuel est.'), money(totMonthlyRev), money(totStreams*RATE)+' '+T('cumulé'), true)}
     ${kpi('Tracks ≥ 500k', fmtFull(nHot), T('priorités rachat'), true)}
-    ${kpi('Self-released', pSelf+' %', fmtFull(nSelf)+' '+T('tracks en indé'))}
     ${kpi(T('Sorties 90 j'), fmtFull(recent), disco?'+ '+disco+' '+T('artistes découverte'):T('veille nouveautés'))}
   </div>
-  <div style="font-size:11px;color:var(--dim);margin:-10px 0 20px 2px">${T('Revenus estimés à')} ${RATE}$/stream (${T('all-in Spotify, fourchette')} 0,003-0,005$ ; ${T('source Duetti / Loud & Clear 2025-26')}).</div>
+  <div style="font-size:11px;color:var(--dim);margin:0 0 20px 2px">${T('Revenus estimés à')} ${RATE}$/stream (${T('all-in Spotify, fourchette')} 0,003-0,005$ ; ${T('source Duetti / Loud & Clear 2025-26')}).</div>
   <div class="grid2">
     <div class="panel">
       <h3>${T('Top artistes par streams hors Lofi')} <span class="hint">${T('clic = détail des tracks')}</span></h3>
@@ -911,7 +964,6 @@ function wlStar(type,k){
 function fmtDate(iso){ const m=(''+iso).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?m[3]+'/'+m[2]+'/'+m[1]:(iso||'?'); }
 
 /* ---------- Fiche track (analytics) ---------- */
-const HIST = D.hist || {};   // tid -> [[dateISO, playcount], ...] (rempli par la veille)
 function sparkline(pts){
   if (!pts || pts.length<2) return '';
   const w=560, h=120, pad=6;
@@ -1022,29 +1074,31 @@ function renderOpps(){
         <th></th>
         <th data-k="1">Track</th>
         <th data-k="0">${T('Artiste')} ${sortArrow(0)}</th>
-        <th data-k="3" class="num">Streams ${sortArrow(3)}</th>
-        <th data-k="7" class="num">${T('Streams/mois')} ${sortArrow(7)}</th>
-        <th class="num">${T('Revenu est.')}</th>
+        <th data-k="3" class="num">${T('Streams total')} ${sortArrow(3)}</th>
+        <th data-k="10" class="num">${T('Streams 30j')} ${sortArrow(10)}</th>
+        <th data-k="11" class="num">${T('Revenu total')} ${sortArrow(11)}</th>
+        <th data-k="12" class="num">${T('Revenu 30j')} ${sortArrow(12)}</th>
         <th class="num">${T('Rachat')} ${S.palier}</th>
         <th data-k="2">${T('Sortie')} ${sortArrow(2)}</th>
         <th>${T('Statut')}</th>
         <th>Copyright</th>
       </tr></thead>
       <tbody>
-      ${slice.map(r=>`
+      ${slice.map(r=>{ const s30=streams30(r); return `
         <tr data-basehot="${r[3]>=HOT?1:0}" class="${r[3]>=HOT||(ag&&S.sel.has(r[6]))?'hot':''}">
           ${ag?`<td class="selc"><input type="checkbox" class="ck sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>`:''}
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span> ${wlStar('t',r[6])}${r[7]?' <span class="badge new">'+T('détectée')+' '+r[7].slice(5)+'</span>':''}</td>
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
           <td class="num" title="${fmtFull(r[3])}">${r[3]>=HOT?'<span class="badge hot">'+fmt(r[3])+'</span>':fmt(r[3])}</td>
-          <td class="num">${fmt(perMonth(r))}</td>
-          <td class="num" title="${T('lifetime')} ${money(r[3]*RATE)}" style="color:var(--cyan)">${perMonth(r)>0?money(perMonth(r)*RATE)+'/'+T('mo'):money(r[3]*RATE)}</td>
+          <td class="num" title="${s30.real?T('mesuré sur historique réel'):T('estimation, moyenne depuis la sortie')}">${fmt(s30.val)}${s30.real?'':' <span class="kwtag">'+T('est.')+'</span>'}</td>
+          <td class="num" style="color:var(--cyan)">${money(revTotal(r))}</td>
+          <td class="num" style="color:var(--cyan)" title="${s30.real?T('mesuré sur historique réel'):T('estimation, moyenne depuis la sortie')}">${money(rev30(r))}${s30.real?'':' <span class="kwtag">'+T('est.')+'</span>'}</td>
           <td class="num" title="${T('Payback')} ${paybackTxt(payback(Math.max(perMonth(r),0)))}"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
           <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[2])}</td>
           <td><span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span></td>
           <td><span class="lb" title="${esc(r[5])}">${esc(r[5])}</span></td>
-        </tr>`).join('')}
+        </tr>`;}).join('')}
       </tbody>
     </table>
     ${rows.length===0?'<div class="empty">'+T('Aucune track ne correspond à ces filtres.')+'</div>':''}
@@ -1052,7 +1106,7 @@ function renderOpps(){
   </div>`;
   const gridView = `
   <div class="acards">
-    ${slice.map(r=>`
+    ${slice.map(r=>{ const s30=streams30(r); return `
     <div class="acard plcard" onclick="openTrack('${r[6]}')">
       ${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}
       <div class="nm">${esc(r[1])} ${wlStar('t',r[6])}${r[7]?' <span class="badge new">'+T('détectée')+'</span>':''}</div>
@@ -1061,12 +1115,16 @@ function renderOpps(){
         <span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span>
       </div>
       <div class="stats">
-        <div class="st"><div class="v">${fmt(r[3])}</div><div class="l">Streams</div></div>
-        <div class="st"><div class="v">${fmt(perMonth(r))}</div><div class="l">${T('mois')}</div></div>
+        <div class="st"><div class="v">${fmt(r[3])}</div><div class="l">${T('Streams total')}</div></div>
+        <div class="st"><div class="v">${fmt(s30.val)}</div><div class="l">${T('Streams 30j')}</div></div>
         <div class="st"><div class="v" style="color:var(--acc2)">${eur(advance(Math.max(perMonth(r),0)))}</div><div class="l">${T('Rachat')}</div></div>
       </div>
+      <div class="stats stats2">
+        <div class="st"><div class="v" style="color:var(--cyan)">${money(revTotal(r))}</div><div class="l">${T('Revenu total')}</div></div>
+        <div class="st"><div class="v" style="color:var(--cyan)">${money(rev30(r))}</div><div class="l">${T('Revenu 30j')}</div></div>
+      </div>
       <div class="foot">${fmtDate(r[2])} · <span class="lb" title="${esc(r[5])}">${esc(r[5])}</span></div>
-    </div>`).join('')}
+    </div>`;}).join('')}
   </div>
   ${rows.length===0?'<div class="empty">'+T('Aucune track ne correspond à ces filtres.')+'</div>':''}
   ${sentinel(rows.length-S.shown)}`;
@@ -1171,11 +1229,15 @@ function renderArtists(){
         <div class="nm">${esc(g.name)}</div>
         <div style="font-size:11px;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${segBadge(g)} <span>${g.lofi?g.lofi+' '+T('tracks chez Lofi'):''}${g.disco?' · '+T('découverte')+' ('+esc(g.origin||'related')+')':''}</span></div>
         <div class="stats">
-          <div class="st"><div class="v">${fmt(g.streams)}</div><div class="l">${T('streams')}</div></div>
-          <div class="st"><div class="v">${g.n}</div><div class="l">tracks</div></div>
+          <div class="st"><div class="v">${fmt(g.streams)}</div><div class="l">${T('Streams total')}</div></div>
+          <div class="st"><div class="v">${fmt(g.streams30)}</div><div class="l">${T('Streams 30j')}</div></div>
           <div class="st"><div class="v" style="color:${g.hot?'var(--acc2)':'inherit'}">${g.hot}</div><div class="l">≥ 500k</div></div>
         </div>
-        <div class="foot">≈ ${money(g.mstreams*RATE)}/${T('mois')} · ${p}% ${T('indé')} · ${T('dernière sortie')} ${g.last||'?'}${g.link?` · <a href="${esc(g.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--violet)">${g.link.includes('instagram')?'📷':'🔗'}</a>`:''}</div>
+        <div class="stats stats2">
+          <div class="st"><div class="v" style="color:var(--cyan)">${money(g.streams*RATE)}</div><div class="l">${T('Revenu total')}</div></div>
+          <div class="st"><div class="v" style="color:var(--cyan)">${money(g.streams30*RATE)}</div><div class="l">${T('Revenu 30j')}</div></div>
+        </div>
+        <div class="foot">${g.n} tracks · ${p}% ${T('indé')} · ${T('dernière sortie')} ${g.last||'?'}${g.link?` · <a href="${esc(g.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--violet)">${g.link.includes('instagram')?'📷':'🔗'}</a>`:''}</div>
       </div>`;}).join('')}
   </div>
   ${sentinel(list.length-S.shownA)}`;
@@ -1185,7 +1247,10 @@ function renderArtists(){
       <thead><tr>
         <th></th>
         <th>${T('Artiste')}</th>
-        <th class="num">${T('streams')}</th>
+        <th class="num">${T('Streams total')}</th>
+        <th class="num">${T('Streams 30j')}</th>
+        <th class="num">${T('Revenu total')}</th>
+        <th class="num">${T('Revenu 30j')}</th>
         <th class="num">tracks</th>
         <th class="num">≥ 500k</th>
         <th class="num">${T('indé')}</th>
@@ -1199,6 +1264,9 @@ function renderArtists(){
           <td class="covtd">${artistCoverHtml(g)}</td>
           <td>${esc(g.name)} ${wlStar('a',g.name)} ${segBadge(g)}</td>
           <td class="num">${fmt(g.streams)}</td>
+          <td class="num">${fmt(g.streams30)}</td>
+          <td class="num" style="color:var(--cyan)">${money(g.streams*RATE)}</td>
+          <td class="num" style="color:var(--cyan)">${money(g.streams30*RATE)}</td>
           <td class="num">${g.n}</td>
           <td class="num" style="color:${g.hot?'var(--acc2)':'inherit'}">${g.hot}</td>
           <td class="num">${p}%</td>
@@ -1479,9 +1547,8 @@ function renderPlaylists(){
       <div class="cov" data-plid="${r[0]}"></div>
       <div class="nm">${esc(r[1])}${r[16]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</div>
       <div style="font-size:11px;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(r[2])} ${plCuratorBadge(r[3])}</div>
-      <div class="stats">
+      <div class="stats stats2">
         <div class="st"><div class="v">${plFollowersCell(r)}</div><div class="l">Followers</div></div>
-        <div class="st"><div class="v">${plGrowthCell(r)}</div><div class="l">30j</div></div>
         <div class="st"><div class="v">${r[16]?(r[6]||'?'):'—'}</div><div class="l">Tracks</div></div>
       </div>
       <div class="foot">${esc(r[10]||'?')} · ${esc(r[11]||'?')}</div>
@@ -1527,11 +1594,114 @@ function renderPlaylists(){
   if (typeof attachCovers==='function') attachCovers();
 }
 
+/* colonnes LBrows : key,name,tracks,streams,revenue,since,nArtists */
+function labelCover(name, big){
+  const letter = esc((name[0]||'?').toUpperCase());
+  return `<div class="cov lblcov${big?' big':''}">${letter}</div>`;
+}
+function lbFiltered(){
+  const q = S.lbq.trim().toLowerCase();
+  let rows = LBrows.filter(r=>!q || r[1].toLowerCase().includes(q));
+  const sorters = {
+    revenue: (a,b)=>b[4]-a[4],
+    streams: (a,b)=>b[3]-a[3],
+    tracks: (a,b)=>b[2]-a[2],
+    since: (a,b)=>(a[5]||'9999').localeCompare(b[5]||'9999'),
+  };
+  return rows.slice().sort(sorters[S.lbsort] || sorters.revenue);
+}
+function goLabel(name){
+  S.view = 'opps'; S.q = name; S.shown = 100;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v==='opps'));
+  syncHash(); render();
+}
+function renderLabels(){
+  if (!LBmeta){
+    V.innerHTML = `<div class="page-head"><div><h2>${T('Tous les labels')}</h2><p>${T('Aucune donnée labels chargée pour le moment.')}</p></div></div>`;
+    return;
+  }
+  const rows = lbFiltered();
+  const slice = rows.slice(0, S.shownLB);
+  const tableView = `
+  <div class="panel" style="padding:6px 14px 14px">
+    <table>
+      <thead><tr>
+        <th></th>
+        <th>${T('Label')}</th>
+        <th class="num">Tracks</th>
+        <th class="num">${T('Streams total')}</th>
+        <th class="num">${T('Revenu total')}</th>
+        <th>${T('Connu depuis')}</th>
+        <th class="num">${T('Artistes')}</th>
+      </tr></thead>
+      <tbody>
+      ${slice.map(r=>`
+        <tr onclick="goLabel('${esc(r[1]).replace(/'/g,"\\'")}')" style="cursor:pointer">
+          <td class="covtd">${labelCover(r[1])}</td>
+          <td>${esc(r[1])}</td>
+          <td class="num">${fmtFull(r[2])}</td>
+          <td class="num">${fmt(r[3])}</td>
+          <td class="num" style="color:var(--cyan)">${money(r[4])}</td>
+          <td style="white-space:nowrap">${r[5]?T('Connu depuis')+' '+fmtDate(r[5]):T('Non estimé')}</td>
+          <td class="num">${r[6]}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${rows.length===0?'<div class="empty">'+T('Aucun label ne correspond à cette recherche.')+'</div>':''}
+    ${sentinel(rows.length-S.shownLB)}
+  </div>`;
+  const gridView = `
+  <div class="acards">
+    ${slice.map(r=>`
+    <div class="acard plcard" onclick="goLabel('${esc(r[1]).replace(/'/g,"\\'")}')">
+      ${labelCover(r[1], true)}
+      <div class="nm">${esc(r[1])}</div>
+      <div class="stats">
+        <div class="st"><div class="v">${fmtFull(r[2])}</div><div class="l">Tracks</div></div>
+        <div class="st"><div class="v">${fmt(r[3])}</div><div class="l">${T('Streams total')}</div></div>
+        <div class="st"><div class="v" style="color:var(--cyan)">${money(r[4])}</div><div class="l">${T('Revenu total')}</div></div>
+      </div>
+      <div class="foot">${r[5]?T('Connu depuis')+' '+fmtDate(r[5]):T('Non estimé')} · ${r[6]} ${T('artistes')}</div>
+    </div>`).join('')}
+  </div>
+  ${rows.length===0?'<div class="empty">'+T('Aucun label ne correspond à cette recherche.')+'</div>':''}
+  ${sentinel(rows.length-S.shownLB)}`;
+
+  V.innerHTML = `
+  <div class="page-head">
+    <div>
+      <h2>${T('Tous les labels')} <span class="badge new" style="vertical-align:middle">${T('Non exhaustif')}</span></h2>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="lb-q" placeholder="${T('Rechercher un label…')}" value="${esc(S.lbq)}"></div>
+    <select id="lb-sort">
+      <option value="revenue" ${S.lbsort==='revenue'?'selected':''}>${T('Tri : revenu estimé')}</option>
+      <option value="streams" ${S.lbsort==='streams'?'selected':''}>${T('Tri : streams')}</option>
+      <option value="tracks" ${S.lbsort==='tracks'?'selected':''}>${T('Tri : nb tracks')}</option>
+      <option value="since" ${S.lbsort==='since'?'selected':''}>${T('Tri : connu depuis')}</option>
+    </select>
+    <span class="spacer"></span>
+    <span class="result-count">${fmtFull(rows.length)} labels</span>
+    <div class="viewtoggle">
+      <button class="${S.lbmode==='table'?'on':''}" data-lbmode="table" title="${T('Vue liste')}">☰</button>
+      <button class="${S.lbmode==='grid'?'on':''}" data-lbmode="grid" title="${T('Vue grille')}">▦</button>
+    </div>
+  </div>
+  ${S.lbmode==='grid' ? gridView : tableView}`;
+
+  document.querySelectorAll('.viewtoggle button[data-lbmode]').forEach(b=>b.addEventListener('click', ()=>{ S.lbmode=b.dataset.lbmode; keepScroll(renderLabels); }));
+  document.getElementById('lb-q').addEventListener('input', e=>{ S.lbq=e.target.value; S.shownLB=80; keepScroll(renderLabels); keepFocus('lb-q'); });
+  document.getElementById('lb-sort').addEventListener('change', e=>{ S.lbsort=e.target.value; keepScroll(renderLabels); });
+  attachInfinite(()=>{ const y=window.scrollY; S.shownLB+=80; renderLabels(); window.scrollTo(0,y); });
+}
+
 function render(){
   if (S.view==='overview') renderOverview();
   else if (S.view==='opps') renderOpps();
   else if (S.view==='artists') renderArtists();
   else if (S.view==='playlists') renderPlaylists();
+  else if (S.view==='labels') renderLabels();
   else if (S.view==='watch') renderWatch();
   attachCovers();
   if (S.artist>=0 && document.getElementById('artist-modal').style.display==='flex') renderArtistModal();
@@ -1541,6 +1711,7 @@ function render(){
 document.getElementById('c-opps').textContent = fmt(R.length);
 document.getElementById('c-art').textContent = withTracks.length;
 (function(){ const c=document.getElementById('c-pl'); if(c && PLmeta) c.textContent = fmt(PLmeta.playlists_10k_plus); })();
+(function(){ const c=document.getElementById('c-lb'); if(c && LBmeta) c.textContent = fmt(LBrows.length); })();
 (function(){ const w=wlGet(); const c=document.getElementById('c-watch'); if(c) c.textContent = (w.t.length+w.a.length)||''; })();
 function fmtTs(ts){
   const m = (''+ts).match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
@@ -1550,27 +1721,36 @@ function fmtTs(ts){
   return m[3]+'/'+m[2]+'/'+m[1] + (m[4] ? ', '+m[4] : '');
 }
 function updateFooter(){
-  // volontairement compact (peu de texte) : icône + date, détail complet en tooltip au survol
+  // volontairement compact (peu de texte) : icône + date, détail complet dans un popover custom au clic/survol
+  const trRow = document.getElementById('sync-row-tr');
   const trTxt = document.getElementById('sync-txt-tr');
-  const trRow = trTxt.closest('.sync-row');
+  const trDetail = document.getElementById('sync-detail-tr');
   trTxt.innerHTML = '🎶 '+esc(fmtTs(D.ts||D.t));
-  trRow.title = fmtFull(R.length)+' tracks · '+AG.filter(g=>g.done).length+' '+T('artistes scannés');
+  trDetail.innerHTML = `<b>${T('Tracks')}</b><br>${fmtFull(R.length)} tracks · ${AG.filter(g=>g.done).length} ${T('artistes scannés')}<br>${T('Dernier scan le')} ${esc(fmtTs(D.ts||D.t))}`;
   const plRow = document.getElementById('sync-row-pl');
   const plTxt = document.getElementById('sync-txt-pl');
   const plDot = document.getElementById('sync-dot-pl');
+  const plDetail = document.getElementById('sync-detail-pl');
   if (plRow){
     if (PLmeta){
       const paused = PLmeta.scan_status && PLmeta.scan_status !== 'ok';
       plTxt.innerHTML = '📻 '+esc(fmtTs(PLmeta.snapshot_ts))+(paused?' ⏸':'');
       const c = paused ? '#fbbf24' : 'var(--green)';
       plDot.style.background = c; plDot.style.boxShadow = '0 0 8px '+c;
-      plRow.title = fmtFull(PLmeta.playlists_discovered)+' playlists'+(paused?' · '+T('Scan incomplet, pause sécurité Spotify'):'');
+      plDetail.innerHTML = `<b>${T('Playlists')}</b><br>${fmtFull(PLmeta.playlists_discovered)} ${T('Playlists découvertes')} · ${fmtFull(PLmeta.playlists_10k_plus)} ≥10k<br>${T('Snapshot')} ${esc(fmtTs(PLmeta.snapshot_ts))}${paused?'<br><span style="color:#fbbf24">⏸ '+T('Scan incomplet, pause sécurité Spotify')+'</span>':''}`;
       plRow.style.display = '';
     } else {
       plRow.style.display = 'none';
     }
   }
 }
+function toggleSyncDetail(row){
+  document.querySelectorAll('.sync-row.open').forEach(r=>{ if(r!==row) r.classList.remove('open'); });
+  row.classList.toggle('open');
+}
+document.getElementById('sync-row-tr').addEventListener('click', e=>{ e.stopPropagation(); toggleSyncDetail(e.currentTarget); });
+document.getElementById('sync-row-pl').addEventListener('click', e=>{ e.stopPropagation(); toggleSyncDetail(e.currentTarget); });
+document.addEventListener('click', ()=>{ document.querySelectorAll('.sync-row.open').forEach(r=>r.classList.remove('open')); });
 function applyLang(){
   document.querySelectorAll('[data-fr]').forEach(el=>{
     if (el.tagName==='SMALL' || el.classList.contains('nav-label')){ el.textContent = T(el.dataset.fr); return; }
@@ -1594,7 +1774,7 @@ document.getElementById('lang-switch').addEventListener('click', ()=>{
 });
 /* restauration de la vue après F5 (hash d'URL) */
 const initV = location.hash.slice(1);
-if (['overview','opps','artists','watch','playlists'].includes(initV)){
+if (['overview','opps','artists','watch','playlists','labels'].includes(initV)){
   S.view = initV;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.v===initV));
 }
