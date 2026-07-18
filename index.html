@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="Lofi_Radar_data.js"></script>
+<script src="Lofi_Radar_channel_avatars.js"></script>
 <script src="Lofi_Radar_studio.js"></script>
 <script src="Lofi_Radar_chx.js"></script>
 <script src="Lofi_Radar_subs2.js"></script>
@@ -162,9 +163,10 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .xdd-btn.c-period:hover{border-color:rgba(74,222,128,.7)}
 .xdd-car{font-size:9px;opacity:.65;transition:transform .15s}
 .tipw{position:relative}
-.tipw:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);background:#141828;border:1.5px solid var(--border2);border-radius:11px;padding:8px 11px;font-size:11px;font-weight:600;color:var(--text);white-space:normal;width:max-content;max-width:190px;line-height:1.5;box-shadow:0 14px 34px rgba(0,0,0,.55);z-index:95;pointer-events:none;text-align:center;letter-spacing:0}
-.tipw:hover::after{border-color:var(--tipc,var(--border2))}
-.tipw:hover::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--tipc,var(--border2));z-index:95;pointer-events:none}
+.metric-tip{display:none;position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);background:#141828;border:1.5px solid var(--tipc,var(--border2));border-radius:11px;padding:8px 11px;font-size:11px;font-weight:600;color:var(--text);white-space:normal;width:max-content;max-width:210px;line-height:1.5;box-shadow:0 14px 34px rgba(0,0,0,.55);z-index:95;pointer-events:none;text-align:center;letter-spacing:0}
+.metric-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--tipc,var(--border2))}
+.metric-tip b{font:inherit;font-weight:800;color:var(--tipc,var(--text))}
+.tipw:hover .metric-tip{display:block}
 .vcard.ana-c{overflow:visible}
 .vcard.ana-c .thumbwrap{border-radius:var(--r) var(--r) 0 0}
 .xdd.open .xdd-car{transform:rotate(180deg)}
@@ -231,6 +233,8 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .vtable tr.row:hover{background:rgba(139,124,246,.05)}
 .ch-ava{border-radius:50%;position:relative;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex:none;overflow:hidden}
 .ch-ava img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
+.ch-ava.yt-ava{background:rgba(255,0,51,.13);color:#ff385f}
+.ch-ava.yt-ava svg{width:62%;height:62%;display:block}
 .flg{width:16px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:5px;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
 .seg{display:flex;flex-wrap:wrap;gap:9px;margin:2px 0 16px}
 .seg button{padding:11px 20px;border-radius:11px;border:1px solid var(--border);background:rgba(21,25,42,.65);color:var(--muted);font-family:inherit;font-weight:600;font-size:13.5px;cursor:pointer;transition:all .15s}
@@ -383,6 +387,17 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .copybtn{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--acc2);background:var(--accSoft);border:1px solid rgba(139,124,246,.3);padding:4px 10px;border-radius:8px;margin-top:7px;transition:all .13s}
 .copybtn:hover{background:rgba(139,124,246,.22)}
 .copybtn.done{color:var(--green);border-color:rgba(74,222,128,.4);background:rgba(74,222,128,.1)}
+.optim-legend{display:flex;flex-wrap:wrap;gap:7px 12px;margin:7px 0 12px;font-size:9.5px;color:var(--dim)}
+.optim-legend span{display:inline-flex;align-items:center;gap:5px}
+.optim-legend i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.optim-legend .keep i{background:#fbbf24}.optim-legend .add i{background:#34d399}.optim-legend .remove i{background:#f87171}
+.optim-diff{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px}
+.optim-chip{display:inline-flex;border-radius:7px;padding:3px 7px;font-size:11px;line-height:1.35;border:1px solid transparent}
+.optim-keep{background:rgba(251,191,36,.12);color:#fbbf24;border-color:rgba(251,191,36,.35)}
+.optim-add{background:rgba(52,211,153,.13);color:#34d399;border-color:rgba(52,211,153,.38)}
+.optim-remove{background:rgba(248,113,113,.12);color:#f87171;border-color:rgba(248,113,113,.36);text-decoration:line-through;text-decoration-thickness:1px}
+.optim-text{white-space:pre-wrap;line-height:1.65;margin:6px 0 2px;font-size:12px;color:var(--text)}
+.optim-text .optim-keep,.optim-text .optim-add,.optim-text .optim-remove{display:inline;padding:1px 2px;border:0;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 
 /* ---------- Roadmap ---------- */
 .month-h{font-family:'Sora';font-size:14.5px;font-weight:700;color:var(--text);margin:26px 0 12px;display:flex;align-items:center;gap:12px;position:sticky;top:86px;z-index:5;background:linear-gradient(180deg,var(--bg) 70%,transparent);padding:6px 0}
@@ -419,14 +434,20 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 
 /* ---------- Calendar ---------- */
 .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 14px}
+.cal-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:13px;margin:0 0 12px}
+.cal-controls .cal-viewtoggle{grid-column:1;justify-self:start}
+.cal-controls .cal-center{grid-column:2 / 4;justify-self:center}
+.cal-controls .cal-navright{grid-column:4;justify-self:end}
 .cal-center{display:flex;align-items:center;gap:14px}
 .cal-navright{display:flex;align-items:center;flex:none}
-.cal-shell{display:flex;gap:18px;align-items:flex-start}
+.cal-shell{display:flex;gap:18px;align-items:stretch}
 .cal-body{flex:1;min-width:0}
-.cal-legend-v{flex:none;display:flex;flex-direction:column;gap:16px;padding-top:58px;font-size:14px;font-weight:600;color:var(--muted);min-width:150px}
-.cal-legend-v span{display:flex;align-items:center;gap:11px;white-space:nowrap}
+.cal-legend-v{flex:none;align-self:center;display:flex;flex-direction:column;gap:8px;padding-top:0;font-size:13px;font-weight:600;color:var(--muted);min-width:150px}
+.cal-legend-v button{display:flex;align-items:center;gap:10px;white-space:nowrap;color:var(--muted);padding:6px 8px;border-radius:9px;text-align:left;transition:background .14s,color .14s,opacity .14s}
+.cal-legend-v button:hover,.cal-legend-v button.on{background:rgba(150,163,214,.08);color:var(--text)}
+.cal-legend-v button.off{opacity:.38}
 .cal-legend-v i{display:inline-block;width:15px;height:15px;border-radius:5px;flex:none;box-shadow:0 0 10px var(--lgc,transparent)}
-@media(max-width:1000px){.cal-shell{flex-direction:column}.cal-legend-v{flex-direction:row;flex-wrap:wrap;gap:12px 18px;padding-top:0;min-width:0}}
+@media(max-width:1000px){.cal-shell{flex-direction:column}.cal-legend-v{align-self:stretch;flex-direction:row;flex-wrap:wrap;gap:6px 10px;padding-top:0;min-width:0}}
 .cal-month{font-family:'Sora';font-size:22px;font-weight:700;min-width:230px;text-align:center;letter-spacing:-.3px}
 .cal-nav .arrow{font-size:19px;padding:7px 17px;line-height:1}
 .cal{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:rgba(15,18,30,.6)}
@@ -447,14 +468,14 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .cal-viewtoggle{display:flex;gap:4px;background:rgba(150,163,214,.06);border:1px solid var(--border);border-radius:14px;padding:3px}
 .cal-viewtoggle button{font-family:inherit;font-size:13px;font-weight:700;padding:9.5px 17px;border-radius:11px;color:var(--dim);cursor:pointer;letter-spacing:.3px}
 .cal-viewtoggle button.on{background:var(--acc);color:#fff;box-shadow:0 4px 14px rgba(139,124,246,.4)}
-.year-cal{display:grid;grid-template-columns:repeat(4,minmax(150px,calc((100vh - 232px)/3)));gap:13px;justify-content:center}
-@media(max-width:1100px){.year-cal{grid-template-columns:repeat(3,1fr)}}
+.year-cal{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:13px;width:100%;height:calc(100dvh - 205px)}
+@media(max-width:920px){.year-cal{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,minmax(0,1fr));height:auto}}
 @media(max-width:800px){.year-cal{grid-template-columns:repeat(2,1fr)}}
-.year-month{border:1px solid var(--border);border-radius:12px;background:rgba(15,18,30,.55);padding:9px 11px;min-width:0}
+.year-month{border:1px solid var(--border);border-radius:12px;background:rgba(15,18,30,.55);padding:clamp(8px,1.1vh,12px) clamp(9px,1vw,14px);min-width:0;min-height:0;display:flex;flex-direction:column}
 .year-month-h{font-family:'Sora';font-size:clamp(10px,1.35vh,14px);font-weight:700;margin-bottom:5px;text-align:center}
-.year-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;min-width:0}
+.year-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:auto repeat(6,minmax(0,1fr));gap:3px;min-width:0;min-height:0;flex:1}
 .year-dow{font-size:clamp(7px,1vh,10px);color:var(--dim);text-align:center;font-weight:700;opacity:.7;margin-bottom:1px}
-.year-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(8px,1.2vh,12px);color:var(--muted);border-radius:50%;position:relative;min-width:0}
+.year-cell{display:flex;align-items:center;justify-content:center;font-size:clamp(8px,1.2vh,12px);color:var(--muted);border-radius:50%;position:relative;min-width:0;min-height:0}
 .year-cell.out{opacity:.2}
 .year-cell.has-event{cursor:pointer;color:#fff;font-weight:800;font-size:clamp(9px,1.3vh,13px);text-shadow:0 1px 3px rgba(0,0,0,.6);transition:transform .12s}
 .year-cell.has-event:hover{transform:scale(1.25);z-index:3}
@@ -729,13 +750,20 @@ function buildRecoDesc(r){
   '👕 | Lofi Girl merch → https://link.lofigirlshop.com/shop\n'+
   '🎮 | Our video games → https://link.lofigirl.com/m/games\n'+
   '🎭 | Create your lofi avatar now → https://lofigirl.com/generator/\n\n'+
-  '🎨 | Art by Lofi Studio\n→ Production: Moutie Loukil / Léonore Kuszel\n→ Art Direction & Supervision: Laura Vuillerme\n→ BG: [a completer]\n→ Animation: [a completer]\n→ Assist, clean & colour: [a completer]\n→ Compositing: [a completer]\n\n'+
+  '🎨 | Art by Lofi Studio\n→ Production: [a completer]\n→ Art Direction & Supervision: [a completer]\n→ BG: [a completer]\n→ Animation: [a completer]\n→ Assist, clean & colour: [a completer]\n→ Compositing: [a completer]\n\n'+
   '🙏 Thank you for listening, I hope you will have a good time here\n'+
   '❤️ All visuals and music in this video are 100% crafted by talented human artists';
+}
+function sanitizeRecoCredits(desc){
+  return String(desc||'')
+    .replace(/(→\s*Production\s*:)[^\n]*/gi,'$1 [a completer]')
+    .replace(/(→\s*Art Direction\s*&\s*Supervision\s*:)[^\n]*/gi,'$1 [a completer]')
+    .replace(/(→\s*(?:BG|Animation|Assist,?\s*clean\s*&\s*colour|Compositing)\s*:)[^\n]*/gi,'$1 [a completer]');
 }
 function enrichRecos(recos){
   if(!recos)return recos;
   recos.forEach(r=>{
+    if(r.desc)r.desc=sanitizeRecoCredits(r.desc);
     if(r.__enr)return;r.__enr=1;
     const have=new Set(),parts=[];
     const push=x=>{const k=String(x).toLowerCase().trim();if(!k||have.has(k))return;have.add(k);parts.push(String(x).trim());};
@@ -745,6 +773,7 @@ function enrichRecos(recos){
     for(const p of parts){const cand=out?out+', '+p:p;if(cand.length>498)break;out=cand;}
     if(out&&out.length>=(r.kw||'').length)r.kw=out;
     if(!r.desc||r.desc.length<400)r.desc=buildRecoDesc(r);
+    r.desc=sanitizeRecoCredits(r.desc);
   });
   return recos;
 }
@@ -1926,6 +1955,14 @@ function calShift(d){
   RM.cal=b.getTime();render();
 }
 function calSetView(v){RM.view=v;render();}
+function calSetGenre(g){RM.genre=RM.genre===g?'':g;render();}
+function calLegendHTML(rows){
+  const genres=[...new Set(rows.map(r=>r.genre).filter(Boolean))];
+  return '<div class="cal-legend-v">'+genres.map(g=>{
+    const on=RM.genre===g,off=RM.genre&&RM.genre!==g;
+    return '<button class="'+(on?'on':off?'off':'')+'" onclick="calSetGenre('+jsq(g)+')" title="'+esc(on?'Show all genres':'Show only '+g)+'"><i style="background:'+gcolor(g)+';--lgc:'+gcolor(g)+'66"></i>'+esc(g)+'</button>';
+  }).join('')+'</div>';
+}
 function calHTML(rows,vt){
   const base=RM.cal?new Date(RM.cal):new Date();
   const y=base.getFullYear(),m=base.getMonth();
@@ -1940,11 +1977,11 @@ function calHTML(rows,vt){
   const start=new Date(y,m,1-((first.getDay()+6)%7));
   const today=new Date();today.setHours(0,0,0,0);
   const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
-  const byDay={};rows.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
-  const lg=[...new Set(rows.map(r=>r.genre).filter(Boolean))];
-  const legendV='<div class="cal-legend-v">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+';--lgc:'+gcolor(g)+'66"></i>'+esc(g)+'</span>').join('')+'</div>';
+  const shown=RM.genre?rows.filter(r=>r.genre===RM.genre):rows;
+  const byDay={};shown.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
+  const legendV=calLegendHTML(rows);
   let h='<div class="cal-shell"><div class="cal-body">'+
-    '<div class="cal-nav">'+toggle+
+    '<div class="cal-controls">'+toggle+
     '<div class="cal-center"><button class="ctl-btn arrow" onclick="calShift(-1)" title="Previous month">‹</button>'+
     '<div class="cal-month">'+MFULL[m]+' '+y+'</div>'+
     '<button class="ctl-btn arrow" onclick="calShift(1)" title="Next month">›</button></div>'+
@@ -1967,11 +2004,11 @@ function yearCalHTML(rows,y,toggle,vt){
   const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const today=new Date();today.setHours(0,0,0,0);
   const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
-  const byDay={};rows.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
-  const lg=[...new Set(rows.map(r=>r.genre).filter(Boolean))];
-  const legendV='<div class="cal-legend-v">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+';--lgc:'+gcolor(g)+'66"></i>'+esc(g)+'</span>').join('')+'</div>';
+  const shown=RM.genre?rows.filter(r=>r.genre===RM.genre):rows;
+  const byDay={};shown.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
+  const legendV=calLegendHTML(rows);
   let h='<div class="cal-shell"><div class="cal-body">'+
-    '<div class="cal-nav">'+toggle+
+    '<div class="cal-controls">'+toggle+
     '<div class="cal-center"><button class="ctl-btn arrow" onclick="calShift(-1)" title="Previous year">‹</button>'+
     '<div class="cal-month">'+y+'</div>'+
     '<button class="ctl-btn arrow" onclick="calShift(1)" title="Next year">›</button></div>'+
@@ -2180,8 +2217,7 @@ const AS={sort:'date',mode:'grid'};
 let _anaCache=null,_anaT=0;
 function anaRows(){
   if(_anaCache&&_anaT===SYNCED)return _anaCache;
-  const yr=Date.now()-365.25*86400000;
-  const out=(DATA.ours||[]).filter(v=>v.pub&&v.pub>=yr&&(v.durH==null||v.durH>=0.15)).map(v=>{
+  const out=(DATA.ours||[]).filter(v=>v.pub&&(v.durH==null||v.durH>=0.15)).map(v=>{
     const o=Object.assign({},v);
     o.ageM=(Date.now()-v.pub)/2629800000;
     const s=(DATA.hist&&DATA.hist[v.vid])||[];
@@ -2414,6 +2450,26 @@ function benefitFor(t){
   if(/heal/.test(t))return 'for healing & calm';
   return null;
 }
+function optimWordDiff(oldText,newText){
+  const a=(String(oldText||'').match(/\S+\s*/g)||[]),b=(String(newText||'').match(/\S+\s*/g)||[]);
+  const norm=x=>x.trim().toLowerCase();
+  const dp=Array.from({length:a.length+1},()=>new Uint16Array(b.length+1));
+  for(let i=a.length-1;i>=0;i--)for(let j=b.length-1;j>=0;j--)dp[i][j]=norm(a[i])===norm(b[j])?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+  const ops=[];let i=0,j=0;
+  const push=(type,text)=>{const last=ops[ops.length-1];if(last&&last.type===type)last.text+=text;else ops.push({type,text});};
+  while(i<a.length&&j<b.length){
+    if(norm(a[i])===norm(b[j])){push('keep',b[j]);i++;j++;}
+    else if(dp[i+1][j]>=dp[i][j+1]){push('remove',a[i]);i++;}
+    else{push('add',b[j]);j++;}
+  }
+  while(i<a.length)push('remove',a[i++]);
+  while(j<b.length)push('add',b[j++]);
+  return ops;
+}
+function optimTextDiffHTML(oldText,newText){
+  return '<div class="optim-text">'+optimWordDiff(oldText,newText).map(x=>'<span class="optim-'+x.type+'">'+esc(x.text)+'</span>').join('')+'</div>';
+}
+function optimChipHTML(text,type){return '<span class="optim-chip optim-'+type+'">'+esc(text)+'</span>';}
 function buildOptimProposal(o){
   const S=window.SEO||{};const m=S[o.vid];
   if(!m||!m.kw)return null;
@@ -2435,6 +2491,10 @@ function buildOptimProposal(o){
   while(tags.join(', ').length>480)tags.pop();
   const dedup=[];const seen=new Set();
   tags.forEach(t=>{if(!seen.has(norm(t))){seen.add(norm(t));dedup.push(t);}});
+  const finalSet=new Set(dedup.map(norm));
+  const kept=dedup.filter(t=>mySet.has(norm(t)));
+  const added=dedup.filter(t=>!mySet.has(norm(t)));
+  const removed=m.kw.filter(t=>!finalSet.has(norm(t)));
   // suggestion de titre
   const sig=titleSignals(o.title);
   const cohSigs=cohSeo.map(c=>titleSignals(c.hook||''));
@@ -2443,6 +2503,7 @@ function buildOptimProposal(o){
   const ben=missing.map(benefitFor).find(Boolean);
   if(ben&&!POWER_WORDS.some(w=>o.title.toLowerCase().includes(w))) titleSug=o.title+' | '+ben;
   else if(mainKw&&!sig.hasSeparator) titleSug=o.title+' | '+mainKw;
+  if(!titleSug)titleSug=o.title;
   // hook de description
   let hookSug=null;
   if(missing.length){
@@ -2461,7 +2522,7 @@ function buildOptimProposal(o){
     '👕 | Lofi Girl merch → https://link.lofigirlshop.com/shop\n'+
     '🎮 | Our video games → https://link.lofigirl.com/m/games\n\n'+
     '🙏 Thank you for listening\n❤️ All visuals and music in this video are 100% crafted by talented human artists';
-  const p={tags:dedup,tagsStr:dedup.join(', '),missAdd:missing.slice(0,40),titleSug,hookSug,descSug,missTop:missing.slice(0,8),needTs:!m.ts};
+  const p={tags:dedup,tagsStr:dedup.join(', '),kept,added,removed,titleSug,hookSug,descSug,currentHook:m.hook||'',missTop:missing.slice(0,8),needTs:!m.ts};
   OPTIM_REG[o.vid]=p;
   return p;
 }
@@ -2475,10 +2536,12 @@ function optimHTML(o,p){
   const fr=typeof LANG!=='undefined'&&LANG==='fr';
   let h='<div class="dw-sec" style="border:1px solid rgba(139,124,246,.35);border-radius:12px;padding:14px;background:rgba(139,124,246,.06)">';
   h+='<div class="k">🛠️ Optimization proposal (ready to paste into Studio)</div><div class="v">';
-  if(p.missAdd&&p.missAdd.length)h+='<b style="color:#34d399">Tags to add ('+p.missAdd.length+')</b> — used by top '+esc(o.gk||o.genre)+' videos but missing here:<br><div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px">'+p.missAdd.map(t=>'<span class="tag" style="background:rgba(52,211,153,.14);color:#34d399;border:1px solid rgba(52,211,153,.4)">'+esc(t)+'</span>').join('')+'</div>';
-  h+='<br><b style="color:var(--acc2)">Full suggested tag list ('+p.tags.length+' tags, '+p.tagsStr.length+'/500 characters)</b>:<br><span style="font-size:12px;color:#34d399;line-height:1.6">'+esc(p.tagsStr)+'</span><br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'tags\',this)">⧉ Copy all tags</button>';
-  if(p.titleSug)h+='<br><br><b style="color:var(--acc2)">Suggested title</b> (adds the sought-after benefit):<br>'+esc(p.titleSug)+'<br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'title\',this)">⧉ Copy title</button>';
-  if(p.descSug)h+='<br><br><b style="color:var(--acc2)">Suggested description</b> (keyword-rich hook + Lofi Girl boilerplate):<br><span style="font-size:11.5px;color:var(--muted);white-space:pre-wrap;line-height:1.55;display:block;margin-top:5px;max-height:150px;overflow:auto">'+esc(p.descSug)+'</span><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'desc\',this)">⧉ Copy description</button>';
+  h+='<div class="optim-legend"><span class="keep"><i></i>Current & kept</span><span class="add"><i></i>Added</span><span class="remove"><i></i>Removed · excluded from copy</span></div>';
+  h+='<b style="color:var(--acc2)">Suggested keywords ('+p.tags.length+' tags, '+p.tagsStr.length+'/500 characters)</b>:'+
+    '<div class="optim-diff">'+p.kept.map(t=>optimChipHTML(t,'keep')).join('')+p.added.map(t=>optimChipHTML(t,'add')).join('')+p.removed.map(t=>optimChipHTML(t,'remove')).join('')+'</div>'+
+    '<button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'tags\',this)">⧉ Copy keywords</button>';
+  if(p.titleSug)h+='<br><br><b style="color:var(--acc2)">Suggested title</b>:'+optimTextDiffHTML(o.title,p.titleSug)+'<button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'title\',this)">⧉ Copy title</button>';
+  if(p.descSug)h+='<br><br><b style="color:var(--acc2)">Suggested description</b>:'+optimTextDiffHTML(p.currentHook,p.descSug)+'<button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'desc\',this)">⧉ Copy description</button>';
   if(p.needTs)h+='<br><br><b style="color:var(--amber)">⏱ Add the tracklist with timestamps</b> — generates “key moments” in Google/YouTube search.';
   h+='</div></div>';
   if(fr)h=frz(h);
@@ -2519,11 +2582,20 @@ function tipText(val,med,fmt){
   const rel=diff>0?('+'+diff+'% '+(fr?'au-dessus de la médiane chaîne':'above channel median')):diff<0?(diff+'% '+(fr?'sous la médiane chaîne':'below channel median')):(fr?'dans la médiane chaîne':'at channel median');
   return (fr?'Médiane chaîne : ':'Channel median: ')+f(med)+'  ·  '+rel;
 }
+function tipHTML(val,med,fmt){
+  if(val==null||med==null||!med)return '';
+  const fr=typeof LANG!=='undefined'&&LANG==='fr';
+  const f=fmt||fmtN,diff=Math.round((val/med-1)*100),col=vsMed(val,med);
+  const pct=(diff>0?'+':'')+diff+'%';
+  const rel=diff>0?(fr?' au-dessus de la médiane chaîne':' above channel median'):
+    diff<0?(fr?' sous la médiane chaîne':' below channel median'):(fr?' dans la médiane chaîne':' at channel median');
+  return '<span class="metric-tip" style="--tipc:'+col+'">'+(fr?'Médiane chaîne : ':'Channel median: ')+esc(f(med))+' · <b>'+pct+'</b>'+rel+'</span>';
+}
 function anaStat(val,med,lbl,hl,fmt){
   const f=fmt||fmtN;
   const tip=tipText(val,med,f);
   const col=vsMed(val,med);
-  return '<div class="vstat'+(hl?' hl':'')+(tip?' tipw':'')+'"'+(tip?' data-tip="'+esc(tip)+'" style="--tipc:'+col+'"':'')+'><b style="color:'+col+'">'+f(val)+'</b><span>'+lbl+'</span></div>';
+  return '<div class="vstat'+(hl?' hl':'')+(tip?' tipw':'')+'"'+(tip?' style="--tipc:'+col+'"':'')+'><b style="color:'+col+'">'+f(val)+'</b><span>'+lbl+'</span>'+tipHTML(val,med,f)+'</div>';
 }
 function anaCardHTML(o,i){
   const cmt=(window.CMT&&window.CMT[o.vid]!=null)?window.CMT[o.vid]:null;
@@ -2558,13 +2630,13 @@ function fillAnaLikes(){
       el.style.color=col;
       const tip=tipText(n,med,fmtN);
       const wrap=el.closest('[data-alikesw]');
-      if(tip&&wrap){wrap.setAttribute('data-tip',tip);wrap.classList.add('tipw');wrap.style.setProperty('--tipc',col);}
+      if(tip&&wrap){wrap.classList.add('tipw');wrap.style.setProperty('--tipc',col);wrap.insertAdjacentHTML('beforeend',tipHTML(n,med,fmtN));}
     }
   }
 }
 function anaHTML(){
   const rows=[...anaRows()];
-  if(!rows.length)return '<div class="empty">No long-form releases found in the 🎯 Our Videos tab for the last 12 months.</div>';
+  if(!rows.length)return '<div class="empty">No long-form releases found in the 🎯 Our Videos tab.</div>';
   const sf=AS.sort;
   rows.sort((a,b)=>sf==='date'?(b.pub-a.pub):sf==='pctAsc'?((a.pct==null?101:a.pct)-(b.pct==null?101:b.pct)):sf==='pctDesc'?((b.pct==null?-1:b.pct)-(a.pct==null?-1:a.pct)):(b.views||0)-(a.views||0));
   let h='';
@@ -2619,7 +2691,6 @@ function openAnaIdx(i){
       '<div class="dw-sec"><div class="k">📈 View history</div>'+histChart((DATA.hist&&DATA.hist[o.vid])||null)+'</div>'+
       sec('Diagnosis',(o.diags||[]).map(d=>'• '+esc(d)).join('<br>'),'🔬')+
       (o.reco?sec('Linked recommendation','#'+Math.round(o.reco.n)+' · '+esc(o.reco.title)+(o.reco.pot?' · predicted '+esc(o.reco.pot):'')+(o.reco.scoreAdj!=null?' · score '+Math.round(o.reco.scoreAdj):''),'💡'):'')+
-      sec('Cohort','Compared against '+fmtInt(o.cohN)+' '+esc(o.gk)+' videos on the radar'+(o.cohMed!=null?' · median '+fmtN(o.cohMed)+' views/mo':''),'⚖️')+
       '<div id="deepaudit" class="dw-sec"><div class="k">🔬 Deep audit (thumbnail, title, SEO)</div><div class="v">Analysis in progress <span class="spin-inline"></span></div></div>'+
     '</div>';
   document.getElementById('drawer').classList.add('show');
@@ -2784,8 +2855,17 @@ function avaFallback(img,handle,step){
   img.remove();
 }
 function vChanAva(v,size){
-  const c=(typeof chanFor==='function'?chanFor(v):null)||{name:v.channel,url:v.chUrl||v.url||'',niche:''};
-  return chAva(c,size);
+  const atlas=window.YT_CHANNEL_AVATARS||{},channels=atlas.channels||{},videos=atlas.videos||{};
+  const uc=handleOf(v.chUrl||'');
+  const c=(typeof chanFor==='function'?chanFor(v):null)||null;
+  let src=(uc&&channels[uc])||(v.vid&&videos[v.vid])||'';
+  if(!src&&c&&c.av)src='https://yt3.googleusercontent.com/'+c.av;
+  if(src){
+    src=String(src).replace(/=(?:w|s)\d+.*$/,'')+'=s'+(size*2)+'-c-k-c0x00ffffff-no-rj';
+  }
+  return '<span class="ch-ava yt-ava" style="width:'+size+'px;height:'+size+'px" title="'+esc(v.channel||'YouTube channel')+'">'+
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 4.8 12 4.8 12 4.8s-6 0-7.7.5a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2 12a28 28 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9c1.7.5 7.7.5 7.7.5s6 0 7.7-.5a2.7 2.7 0 0 0 1.9-1.9A28 28 0 0 0 22 12a28 28 0 0 0-.4-4.8ZM10 15.2V8.8l5.5 3.2-5.5 3.2Z"/></svg>'+
+    (src?'<img loading="lazy" src="'+esc(src)+'" onerror="this.remove()" alt="">':'')+'</span>';
 }
 function chAva(c,size){
   const col=gcolor(c.niche);
@@ -3053,7 +3133,7 @@ const FR_LIT=[
 ['Competitive intelligence across ','Veille concurrentielle sur '],
 [' instrumental videos · updated daily by the scan',' vidéos instrumentales · mise à jour quotidienne par le scan'],
 ['Full competitive audit, trends & fresh discoveries merged · filter by release date to see what’s new','Audit concurrentiel complet, tendances et découvertes fusionnés · filtre par date de sortie pour voir le contenu récent'],
-['How each of our long-form releases performed vs the market · last 12 months · Shorts excluded','Performance de chacune de nos sorties long format vs le marché · 12 derniers mois · Shorts exclus'],
+['How each of our long-form releases performed vs the market · full channel history · Shorts excluded','Performance de toutes nos sorties long format vs le marché · historique complet de la chaîne · Shorts exclus'],
 ['24/7 streams surfacing on the scan keywords · concurrent viewers tracked hourly','Streams 24/7 détectés sur les mots-clés du scan · spectateurs simultanés suivis toutes les heures'],
 ['Competitive channel audit · subscribers & total views tracked by the weekly scan','Audit des chaînes concurrentes · abonnés et vues totales suivis par le scan hebdomadaire'],
 [' original concepts ranked by potential · descriptions & SEO keywords ready to copy',' concepts originaux classés par potentiel · descriptions et mots-clés SEO prêts à copier'],
@@ -3080,7 +3160,7 @@ const FR_LIT=[
 ['>views/mo</span>','>vues/mois</span>'],['>views</span>','>vues</span>'],['>age</span>','>âge</span>'],['>published</span>','>publiée</span>'],['>duration</span>','>durée</span>'],['>watching now</span>','>spectateurs</span>'],['>peak measured</span>','>pic mesuré</span>'],['>peak</span>','>pic</span>'],['>started</span>','>lancé</span>'],['>scans</span>','>scans</span>'],['>subscribers</span>','>abonnés</span>'],['>total views</span>','>vues totales</span>'],['>views / year</span>','>vues / an</span>'],['>avg last 10</span>','>moy. 10 dern.</span>'],['>percentile vs market</span>','>percentile vs marché</span>'],['>percentile · channel</span>','>percentile · chaîne</span>'],['th · channel<','e · chaîne<'],['>avg view duration (median ','>durée moy. de vue (médiane '],['>views/mo lifetime</span>','>vues/mois (vie)</span>'],['>views/mo now</span>','>vues/mois (actuel)</span>'],['>impressions</span>','>impressions</span>'],['>avg view duration</span>','>durée moy. de vue</span>'],['>reco score</span>','>score reco</span>'],['>potential</span>','>potentiel</span>'],['>release date</span>','>date de sortie</span>'],
 [' watching</span>',' spectateurs</span>'],[' watching<',' spectateurs<'],
 ['>Overperforming<','>Surperforme<'],['>In line<','>Dans la norme<'],['>Underperforming<','>Sous-performe<'],['>Too early<','>Trop tôt<'],
-['beating 70% of their genre cohort','au-dessus de 70 % de leur cohorte de genre'],['below 40% of their genre cohort','sous les 40 % de leur cohorte de genre'],['long-form releases · last 12 months','sorties long format · 12 derniers mois'],['vs competing videos of the same genre','vs les vidéos concurrentes du même genre'],['median views/mo across our releases','vues/mois médianes de nos sorties'],['impressions click-through · YouTube Studio, 365 days','taux de clic des impressions · YouTube Studio, 365 jours'],
+['beating 70% of their genre cohort','au-dessus de 70 % de leur cohorte de genre'],['below 40% of their genre cohort','sous les 40 % de leur cohorte de genre'],['long-form releases · full channel history','sorties long format · historique complet de la chaîne'],['vs competing videos of the same genre','vs les vidéos concurrentes du même genre'],['median views/mo across our releases','vues/mois médianes de nos sorties'],['impressions click-through · YouTube Studio, 365 days','taux de clic des impressions · YouTube Studio, 365 jours'],
 ['>Videos analysed<','>Vidéos analysées<'],['>Median percentile<','>Percentile médian<'],['>Channel velocity<','>Vélocité chaîne<'],['>Median CTR<','>CTR médian<'],['>Streams tracked<','>Streams suivis<'],['>Channels tracked<','>Chaînes suivies<'],['>Combined subscribers<','>Abonnés cumulés<'],['>Median views / year<','>Vues / an médianes<'],['>Active channels<','>Chaînes actives<'],
 ['Market benchmark (radar) × YouTube Studio private data (impressions, CTR, retention · 365 days, refreshed on demand)','Benchmark marché (radar) × données privées YouTube Studio (impressions, CTR, rétention · 365 jours, rafraîchies à la demande)'],
 ['📋 All releases','📋 Toutes les sorties'],[' releases<',' sorties<'],[' release<',' sortie<'],['>Today<','>Aujourd’hui<'],
@@ -3122,10 +3202,11 @@ const FR_LIT=[
 ['S — Steady income','S — Rente potentielle'],['A — Strong','A — Fort'],['B — Solid','B — Solide'],['C — Niche / to test','C — Niche / à tester'],
 ['✓ Copied<','✓ Copié<'],
 ['🛠️ Optimization proposal (ready to paste into Studio)','🛠️ Proposition d’optimisation (prête à coller dans Studio)'],
-['Suggested tags (','Tags proposés ('],['/500 characters)</b> — brand + our tags that perform + top-genre tags:','/500 caractères)</b> — marque + nos tags qui performent + tags des tops du genre :'],
-['⧉ Copy tags','⧉ Copier les tags'],
+['Current & kept','Actuels conservés'],['>Added<','>Ajoutés<'],['Removed · excluded from copy','Retirés · exclus de la copie'],
+['Suggested keywords (','Mots-clés suggérés ('],['/500 characters)</b>:','/500 caractères)</b> :'],
+['⧉ Copy keywords','⧉ Copier les mots-clés'],
 ['>Suggested title<','>Titre suggéré<'],[' (adds the sought-after benefit):',' (ajoute le bénéfice recherché) :'],
-['>Suggested description hook<','>Début de description suggéré<'],[' (the first 125 characters matter most):',' (les 125 premiers caractères comptent le plus) :'],['⧉ Copy hook','⧉ Copier le hook'],
+['>Suggested description<','>Description suggérée<'],['⧉ Copy description','⧉ Copier la description'],['⧉ Copy title','⧉ Copier le titre'],
 ['⏱ Add the tracklist with timestamps','⏱ Ajouter la tracklist avec timestamps'],['</b> — generates “key moments” in Google/YouTube search.','</b> — génère des «key moments» dans la recherche Google/YouTube.'],
 ['🔬 Deep packaging audit','🔬 Audit approfondi du packaging'],['Not enough comparable videos in this genre for a reliable audit.','Pas assez de vidéos comparables dans ce genre pour un audit fiable.'],
 ['Thumbnail — composition & color','Thumbnail — composition & couleur'],['>✍️ Title<','>✍️ Titre<'],['Description & keywords','Description & mots-clés'],
