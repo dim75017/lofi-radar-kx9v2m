@@ -12,6 +12,7 @@
 <script src="Lofi_Radar_data.js"></script>
 <script src="Lofi_Radar_studio.js"></script>
 <script src="Lofi_Radar_chx.js"></script>
+<script src="Lofi_Radar_subs2.js"></script>
 <script src="Lofi_Radar_seo.js"></script>
 <style>
 :root{
@@ -1382,7 +1383,7 @@ function listHTML(kind,rows){
         '<td class="num vpmcell">'+fmtN(v.vpm)+'</td><td class="num">'+fmtN(v.views)+'</td>'+
         '<td class="num">'+fmtDur(v.durH)+'</td><td class="num">'+fmtDate(v.pub)+'</td>'+
         '<td>'+gtag(v.genre)+'</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(v.channel)+'</td>'+
-        '<td class="num">'+fmtN(v.subs)+'</td></tr>').join('')+'</tbody></table>';
+        '<td class="num">'+fmtN(subsFor(v))+'</td></tr>').join('')+'</tbody></table>';
   }
   if(rows.length>st.limit)h+='<button class="load-more" onclick="VS.'+kind+'.limit+=120;rerenderList(\''+kind+'\')">Loading more · '+fmtInt(rows.length-st.limit)+' remaining</button>';
   window['_page_'+kind]=page;
@@ -1395,7 +1396,7 @@ function vcardHTML(kind,v,i){
       (v.durH!=null?'<span class="dur">'+fmtDur(v.durH)+'</span>':'')+'</div>'+
     '<div class="vbody">'+
       '<div class="vtitle">'+esc(v.title)+'</div>'+
-      '<div class="vmeta"><a href="'+esc(v.chUrl||'#')+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a><span class="subs">· '+fmtN(v.subs)+' subs</span></div>'+
+      '<div class="vmeta"><a href="'+esc(v.chUrl||'#')+'" target="_blank" onclick="event.stopPropagation()">'+esc(v.channel)+'</a><span class="subs">· '+fmtN(subsFor(v))+' subs</span></div>'+
       '<div class="vtags">'+gtag(v.genre,0,true)+'</div>'+
       '<div class="vstats">'+
         '<div class="vstat hl"><b>'+fmtN(v.vpm)+'</b><span>views/mo</span></div>'+
@@ -1436,7 +1437,7 @@ function openDrawer(kind,v){
       '<div class="dw-title"><a href="'+esc(v.url)+'" target="_blank">'+esc(v.title)+'</a></div>'+
       '<div class="dw-sub">'+gtag(v.genre,0,true)+
         (v.chUrl?'<a class="tag ghost" href="'+esc(v.chUrl)+'" target="_blank">'+esc(v.channel)+' ↗</a>':ghosttag(v.channel))+
-        '<span class="tag ghost">'+fmtN(v.subs)+' subs</span>'+likeTag(v.vid)+'</div>'+
+        '<span class="tag ghost">'+fmtN(subsFor(v))+' subs</span>'+likeTag(v.vid)+'</div>'+
       '<div class="dw-stats">'+
         '<div class="dw-stat hl"><b>'+fmtN(v.vpm)+'</b><span>views/mo</span></div>'+
         '<div class="dw-stat"><b>'+fmtN(v.views)+'</b><span>views</span></div>'+
@@ -1913,6 +1914,7 @@ function suggestRoadmapDate(reco,avoidKeys){
   const lastRain=[...rmRows].reverse().find(r=>schedIsRain(r));
   const today=new Date();today.setHours(0,0,0,0);
   const dayKey=x=>x.getFullYear()+'-'+x.getMonth()+'-'+x.getDate();
+  const usedDays=new Set(rmRows.map(r=>dayKey(new Date(r.date))));
   const passes=[
     {allowFriday:false,respectWeeks:true,respectGap:true},
     {allowFriday:true,respectWeeks:true,respectGap:true},
@@ -1925,6 +1927,7 @@ function suggestRoadmapDate(reco,avoidKeys){
       const dow=d.getDay();
       if(dow===0||dow===6)continue;
       if(dow===5&&!pass.allowFriday)continue;
+      if(usedDays.has(dayKey(d)))continue;
       if(avoidKeys&&avoidKeys.has(dayKey(d)))continue;
       if(pass.respectWeeks&&usedWeeks.has(schedWeekKey(d)))continue;
       if(rule.seasonalMonths&&!rule.seasonalMonths.includes(d.getMonth()))continue;
@@ -2518,7 +2521,7 @@ function livesHTML(){
 }
 function liveCardHTML(v,i){
   const now=liveNow(v.vid),peak24=livePeak24h(v.vid),peakAll=livePeak(v.vid);
-  const chRec=chanByName(v.channel),chSubs=chRec?chRec.subs:null;
+  const chSubs=subsFor(v);
   return '<div class="vcard" onclick="openLiveIdx('+i+')">'+
     '<div class="thumbwrap">'+wlStar('l',v.vid)+'<img loading="lazy" src="'+thumb(v.vid)+'" onerror="if(!this._f){this._f=1;this.src=\'https://i.ytimg.com/vi/'+v.vid+'/hqdefault.jpg\'}else this.style.visibility=\'hidden\'">'+
       '<span class="vpm-flag" style="background:rgba(220,38,38,.94);color:#fff"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff1a1a;box-shadow:0 0 0 0.8px rgba(255,255,255,.9);margin-right:2px"></span> '+fmtN(now)+' watching</span>'+
@@ -2780,6 +2783,22 @@ function chanByName(n){
   return CHAN_NAMEIX[String(n).toLowerCase().replace(/\s+/g,' ').trim()]||null;
 }
 function chanFor(v){return chanByUrl(v.chUrl||'')||chanByName(v.channel)||null;}
+let SUBS2_NORM=null;
+function subs2For(name){
+  if(!window.SUBS2||!name)return null;
+  if(!SUBS2_NORM){
+    SUBS2_NORM={};
+    Object.keys(window.SUBS2).forEach(k=>{SUBS2_NORM[k.toLowerCase().replace(/\s+/g,' ').trim()]=window.SUBS2[k];});
+  }
+  const v=SUBS2_NORM[String(name).toLowerCase().replace(/\s+/g,' ').trim()];
+  return v==null?null:v;
+}
+function subsFor(v){
+  if(v.subs!=null)return v.subs;
+  const c=chanFor(v);
+  if(c&&c.subs!=null)return c.subs;
+  return subs2For(v.channel);
+}
 function wlVideoTableHTML(rows){
   return '<table class="vtable"><thead><tr><th></th><th>Title</th><th>Views/mo</th><th>Views</th><th>Duration</th><th>Published</th><th>Genre</th><th>Channel</th><th>Subs</th></tr></thead><tbody>'+
     rows.map((v,i)=>'<tr class="row" onclick="openIdx(\'mix\','+i+')">'+
@@ -2788,7 +2807,7 @@ function wlVideoTableHTML(rows){
       '<td class="num vpmcell">'+fmtN(v.vpm)+'</td><td class="num">'+fmtN(v.views)+'</td>'+
       '<td class="num">'+fmtDur(v.durH)+'</td><td class="num">'+fmtDate(v.pub)+'</td>'+
       '<td>'+gtag(v.genre)+'</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(v.channel)+'</td>'+
-      '<td class="num">'+fmtN(v.subs)+'</td></tr>').join('')+'</tbody></table>';
+      '<td class="num">'+fmtN(subsFor(v))+'</td></tr>').join('')+'</tbody></table>';
 }
 function wlLiveTableHTML(rows){
   return '<table class="vtable"><thead><tr><th></th><th>Stream</th><th>Channel</th><th>👀 Now</th><th>Peak</th><th>Started</th><th>Discovery keywords</th></tr></thead><tbody>'+
