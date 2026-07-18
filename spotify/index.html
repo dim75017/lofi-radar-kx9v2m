@@ -191,11 +191,13 @@ input,select{font-family:inherit;color:var(--text)}
 }
 .search-wrap input[type=text]:focus{border-color:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.14)}
 .toolbar select{
-  background:var(--bg2);border:1.5px solid var(--border2);border-radius:13px;padding:9.5px 14px;
-  font-size:12.5px;font-weight:600;outline:none;appearance:auto;height:38px;box-sizing:border-box;transition:all .14s;
+  background:var(--bg2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235d6485' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 7.5 10 12.5 15 7.5'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background-size:13px;border:1.5px solid var(--border2);border-radius:13px;padding:9.5px 32px 9.5px 14px;
+  font-size:12.5px;font-weight:600;outline:none;appearance:none;-webkit-appearance:none;-moz-appearance:none;height:38px;box-sizing:border-box;transition:all .14s;cursor:pointer;
 }
 .toolbar select:hover{border-color:#4ade80}
 .toolbar select:focus{border-color:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.14)}
+.toolbar select option{background:var(--panel);color:var(--text)}
 .chip{padding:7.5px 13px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);transition:all .14s}
 .chip:hover{color:var(--text);border-color:var(--border2)}
 .chip.on{color:#052e12;background:linear-gradient(90deg,#1ed760,#4ade80);border-color:transparent}
@@ -525,7 +527,7 @@ const EN_MAP = {
   "Simulation d'offre de rachat":"Buyout offer simulator",
   "Choisir le split artiste / label. Avance = prix d'achat de la part cédée. Payback = temps pour rembourser l'avance avec les revenus captés (objectif 2-3 ans).":"Pick the artist / label split. Advance = purchase price of the ceded share. Payback = time to recoup the advance from captured revenue (target 2-3 years).",
   "rachat total":"full buyout","Avance à verser":"Advance to pay","Revenu capté /mois":"Captured revenue /mo","Payback":"Payback","Part cédée au label":"Share ceded to label","Contact":"Contact","contact à trouver":"contact to find",
-  "top artiste":"top artist","Tracks sélectionnées":"Selected tracks","Tout sélectionner":"Select all",
+  "top artiste":"top artist","fidèle":"loyal","Tracks sélectionnées":"Selected tracks","Tout sélectionner":"Select all",
   "Coche les tracks à racheter ci-dessous, choisis le split artiste / label : l'avance et le payback se recalculent. Objectif payback 2-3 ans.":"Tick the tracks to buy below, pick the artist / label split: advance and payback recompute. Target payback 2-3 years.",
   "Aucune track sélectionnée — coche des lignes pour simuler une offre.":"No track selected — tick rows to simulate an offer.",
   "Watchlist":"Watchlist","Date de sortie":"Release date","Ajouter / retirer de la watchlist":"Add / remove from watchlist",
@@ -779,7 +781,7 @@ function artistCoverHtml(g){
 function seg(g){ return g.lofi>50 ? 'top' : (g.lofi>=25 ? 'reg' : (g.lofi>0 ? 'occ' : 'ext')); }
 function segBadge(g){
   const s = seg(g);
-  if (s==='top') return '<span class="badge seg-top">★ '+T('top artiste')+'</span>';
+  if (s==='top') return '<span class="badge seg-top">★ '+T('fidèle')+'</span>';
   if (s==='reg') return '<span class="badge seg-reg">'+T('régulier')+'</span>';
   if (s==='occ') return '<span class="badge seg-occ">'+T('occasionnel')+'</span>';
   return '<span class="badge seg-ext">'+T('hors label')+'</span>';
@@ -1198,11 +1200,11 @@ function renderOpps(){
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="f-q" placeholder="${T('Rechercher track, artiste, label…')}" value="${esc(S.q)}"></div>
     <select id="f-period">
-      <option value="30" ${S.period==='30'?'selected':''}>🕐 ${T('1 dernier mois')} (${fmtFull(pcnt['30'])})</option>
-      <option value="90" ${S.period==='90'?'selected':''}>📆 ${T('3 derniers mois')} (${fmtFull(pcnt['90'])})</option>
-      <option value="180" ${S.period==='180'?'selected':''}>🗓️ ${T('6 derniers mois')} (${fmtFull(pcnt['180'])})</option>
-      <option value="365" ${S.period==='365'?'selected':''}>📈 ${T('12 derniers mois')} (${fmtFull(pcnt['365'])})</option>
-      <option value="all" ${S.period==='all'?'selected':''}>⏳ ${T("Tout l'historique")} (${fmtFull(pcnt['all'])})</option>
+      <option value="30" ${S.period==='30'?'selected':''}>🟢 ${T('1 dernier mois')} (${fmtFull(pcnt['30'])})</option>
+      <option value="90" ${S.period==='90'?'selected':''}>🟡 ${T('3 derniers mois')} (${fmtFull(pcnt['90'])})</option>
+      <option value="180" ${S.period==='180'?'selected':''}>🟠 ${T('6 derniers mois')} (${fmtFull(pcnt['180'])})</option>
+      <option value="365" ${S.period==='365'?'selected':''}>🔴 ${T('12 derniers mois')} (${fmtFull(pcnt['365'])})</option>
+      <option value="all" ${S.period==='all'?'selected':''}>⚫ ${T("Tout l'historique")} (${fmtFull(pcnt['all'])})</option>
     </select>
     <select id="f-st">
       <option value="all" ${S.statut==='all'?'selected':''}>🌍 ${T('Type de sortie : tous')}</option>
@@ -1217,8 +1219,8 @@ function renderOpps(){
       <option value="5000000" ${S.min===5000000?'selected':''}>💎 ≥ 5M</option>
     </select>
     <select id="f-rel">
-      <option value="all" ${S.rel==='all'?'selected':''}>🧑‍🎤 ${T("Type d'artiste : tous")}</option>
-      <option value="top" ${S.rel==='top'?'selected':''}>⭐ Top artists (>50)</option>
+      <option value="all" ${S.rel==='all'?'selected':''}>🎸 ${T("Type d'artiste : tous")}</option>
+      <option value="top" ${S.rel==='top'?'selected':''}>⭐ Loyal (>50)</option>
       <option value="reg" ${S.rel==='reg'?'selected':''}>🔁 Regulars (25-50)</option>
       <option value="occ" ${S.rel==='occ'?'selected':''}>🎲 Occasional (1-24)</option>
       <option value="ext" ${S.rel==='ext'?'selected':''}>🚫 ${T('Jamais')}</option>
