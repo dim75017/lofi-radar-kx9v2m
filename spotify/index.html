@@ -164,6 +164,8 @@ input,select{font-family:inherit;color:var(--text)}
 .top-row .nm .badge{margin-left:auto;flex:none}
 .top-row .sub{font-size:11.5px;color:var(--muted);margin:4px 0 6px}
 .top-row .vals{text-align:right;flex:none}
+.top-row .vals.vals2{display:flex;gap:16px;align-items:flex-start}
+.top-row .valblock{min-width:52px}
 .top-row .v1{font-family:'Sora';font-weight:800;font-size:16.5px}
 .top-row .v2{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.9px;margin-top:1px}
 .year-wrap{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px}
@@ -198,6 +200,31 @@ input,select{font-family:inherit;color:var(--text)}
 .toolbar select:hover{border-color:#4ade80}
 .toolbar select:focus{border-color:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.14)}
 .toolbar select option{background:var(--panel);color:var(--text)}
+/* Dropdown custom : le <select> natif est cache (logique/valeur), remplace visuellement
+   par un bouton + une liste flottante, pour garantir des coins arrondis partout (un
+   <select> natif ignore souvent le border-radius sur sa liste ouverte). */
+.csel-wrap{position:relative;display:inline-flex}
+.csel-native{display:none}
+.csel-btn{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  background:var(--bg2);border:1.5px solid var(--border2);border-radius:13px;padding:9.5px 14px;
+  font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text);outline:none;
+  height:38px;box-sizing:border-box;transition:all .14s;cursor:pointer;white-space:nowrap;
+}
+.csel-btn:hover{border-color:#4ade80}
+.csel-wrap.open .csel-btn{border-color:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.14)}
+.csel-label{overflow:hidden;text-overflow:ellipsis}
+.csel-chevron{font-size:10px;color:var(--dim);flex:none;transition:transform .15s}
+.csel-wrap.open .csel-chevron{transform:rotate(180deg)}
+.csel-list{
+  position:absolute;top:calc(100% + 6px);left:0;min-width:100%;max-height:280px;overflow-y:auto;
+  background:var(--panel);border:1.5px solid var(--border2);border-radius:13px;
+  box-shadow:0 16px 40px rgba(0,0,0,.5);padding:6px;z-index:200;display:none;
+}
+.csel-wrap.open .csel-list{display:block}
+.csel-opt{padding:8.5px 12px;border-radius:9px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;white-space:nowrap}
+.csel-opt:hover{background:rgba(74,222,128,.12)}
+.csel-opt.on{color:#052e12;background:linear-gradient(90deg,#1ed760,#4ade80)}
 .chip{padding:7.5px 13px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);transition:all .14s}
 .chip:hover{color:var(--text);border-color:var(--border2)}
 .chip.on{color:#052e12;background:linear-gradient(90deg,#1ed760,#4ade80);border-color:transparent}
@@ -469,7 +496,7 @@ const EN_MAP = {
   "Aucune track retrouvée pour ce label dans la base actuelle.":"No track found for this label in the current database.",
   "Tout voir":"View all","priorités":"priorities","revenu mensuel est.":"est. monthly revenue","sorties 90 j":"releases (90d)",
   "découvertes":"discovered","followers cumulés":"total followers","identifiés":"identified","couvertes":"covered",
-  "revenu est. cumulé":"est. lifetime revenue","revenu est.":"est. revenue",
+  "revenu est. cumulé":"est. lifetime revenue","revenu est.":"est. revenue","revenu":"revenue",
   "Aucune donnée playlists chargée.":"No playlist data loaded.","Aucune donnée labels chargée.":"No label data loaded.",
   "Toutes périodes":"All periods","90 derniers jours":"Last 90 days","12 derniers mois":"Last 12 months","3 dernières années":"Last 3 years",
   "< 1 mois":"< 1 month","< 3 mois":"< 3 months","< 6 mois":"< 6 months","< 12 mois":"< 12 months","< 3 ans":"< 3 years",
@@ -760,6 +787,50 @@ function filteredRows(){
 /* ---------- rendus ---------- */
 const V = document.getElementById('view');
 
+/* Dropdowns custom (bords arrondis y compris sur la liste déroulante ouverte, ce qu'un
+   <select> natif ne permet pas sur tous les navigateurs). On garde le <select> natif
+   caché dans le DOM comme source de vérité (valeur + événement 'change' natif dispatché
+   à la sélection), donc toute la logique métier existante (addEventListener('change',...))
+   continue de fonctionner sans modification. */
+function enhanceSelects(root){
+  (root||document).querySelectorAll('select').forEach(sel=>{
+    if (sel.dataset.cselDone) return;
+    sel.dataset.cselDone = '1';
+    const wrap = document.createElement('span');
+    wrap.className = 'csel-wrap';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add('csel-native');
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'csel-btn';
+    const list = document.createElement('div');
+    list.className = 'csel-list';
+    wrap.appendChild(btn); wrap.appendChild(list);
+    function paint(){
+      const opt = sel.options[sel.selectedIndex];
+      btn.innerHTML = `<span class="csel-label">${opt?esc(opt.textContent):''}</span><span class="csel-chevron">▾</span>`;
+      list.innerHTML = [...sel.options].map((o,i)=>`<div class="csel-opt${i===sel.selectedIndex?' on':''}" data-i="${i}">${esc(o.textContent)}</div>`).join('');
+    }
+    paint();
+    btn.addEventListener('click', e=>{
+      e.stopPropagation();
+      const willOpen = !wrap.classList.contains('open');
+      document.querySelectorAll('.csel-wrap.open').forEach(w=>{ if(w!==wrap) w.classList.remove('open'); });
+      wrap.classList.toggle('open', willOpen);
+    });
+    list.addEventListener('click', e=>{
+      const optEl = e.target.closest('.csel-opt'); if (!optEl) return;
+      sel.selectedIndex = Number(optEl.dataset.i);
+      wrap.classList.remove('open');
+      paint();
+      sel.dispatchEvent(new Event('change', {bubbles:true}));
+    });
+  });
+}
+document.addEventListener('click', ()=>{ document.querySelectorAll('.csel-wrap.open').forEach(w=>w.classList.remove('open')); });
+new MutationObserver(()=>enhanceSelects()).observe(V, {childList:true, subtree:true});
+new MutationObserver(()=>enhanceSelects()).observe(document.getElementById('am-body'), {childList:true, subtree:true});
+
 function kpi(lbl,val,sub,hl){
   return `<div class="kpi ${hl?'hl':''}"><div class="lbl">${lbl}</div><div class="val">${val}</div><div class="sub">${sub||''}</div></div>`;
 }
@@ -829,9 +900,12 @@ function renderOverview(){
         ${r[8]?`<div class="cov has" style="width:40px;height:40px;border-radius:9px;margin:0;background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}" style="width:40px;height:40px;border-radius:9px;margin:0"></div>`}
         <div class="ti">
           <div class="nm"><span class="nmtxt">${esc(r[1])}</span></div>
-          <div class="sub">${esc(A[r[0]][0])} · ${fmtDate(r[2])}</div>
+          <div class="sub">${esc(A[r[0]][0])} · ${fmtDate(r[2])} · <span style="color:var(--cyan)">≈ ${perMonth(r)>0?money(perMonth(r)*RATE):money(revTotal(r))}/${T('mois')}</span></div>
         </div>
-        <div class="vals"><div class="v1">${fmt(r[3])}</div><div class="v2">streams</div></div>
+        <div class="vals vals2">
+          <div class="valblock"><div class="v1" style="color:var(--cyan)">${money(revTotal(r))}</div><div class="v2">${T('revenu')}</div></div>
+          <div class="valblock"><div class="v1">${fmt(r[3])}</div><div class="v2">streams</div></div>
+        </div>
       </div>`).join('')}
     </div>
 
@@ -847,10 +921,13 @@ function renderOverview(){
         <span class="rank">${ix+1}</span>
         <div class="ov-cov">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div>
         <div class="ti">
-          <div class="nm"><span class="nmtxt">${esc(g.name)}</span> ${segBadge(g)}</div>
+          <div class="nm"><span class="nmtxt">${esc(g.name)}</span></div>
           <div class="sub">${g.n} tracks · <span style="color:var(--green)">${g.self} ${T('indé')}</span> · <span style="color:var(--cyan)">≈ ${money(g.mstreams*RATE)}/${T('mois')}</span></div>
         </div>
-        <div class="vals"><div class="v1">${fmt(g.streams)}</div><div class="v2">streams</div></div>
+        <div class="vals vals2">
+          <div class="valblock"><div class="v1" style="color:var(--cyan)">${money(g.streams*RATE)}</div><div class="v2">${T('revenu')}</div></div>
+          <div class="valblock"><div class="v1">${fmt(g.streams)}</div><div class="v2">streams</div></div>
+        </div>
       </div>`).join('')}
     </div>
 
@@ -888,9 +965,12 @@ function renderOverview(){
         <div style="width:40px;flex:none">${labelCover(r[1], false, r[7]).replace('class="cov lblcov"','class="cov lblcov" style="width:40px;height:40px;border-radius:9px;margin:0;font-size:15px"')}</div>
         <div class="ti">
           <div class="nm"><span class="nmtxt">${esc(r[1])}</span></div>
-          <div class="sub">${fmtFull(r[2])} tracks · ${r[6]} ${T('artistes')}</div>
+          <div class="sub">${fmtFull(r[2])} tracks · ${r[6]} ${T('artistes')} · <span style="color:var(--cyan)">≈ ${money(labelStreams30(r[0])*RATE)}/${T('mois')}</span></div>
         </div>
-        <div class="vals"><div class="v1" style="color:var(--cyan)">${money(r[4])}</div><div class="v2">${T('revenu est.')}</div></div>
+        <div class="vals vals2">
+          <div class="valblock"><div class="v1" style="color:var(--cyan)">${money(r[4])}</div><div class="v2">${T('revenu')}</div></div>
+          <div class="valblock"><div class="v1">${fmt(r[3])}</div><div class="v2">streams</div></div>
+        </div>
       </div>`).join('')}` : `<div class="empty">${T('Aucune donnée labels chargée.')}</div>`}
     </div>
 
@@ -1310,6 +1390,7 @@ function renderArtists(){
       <thead><tr>
         <th></th>
         <th>${T('Artiste')}</th>
+        <th>${T('Statut')}</th>
         <th class="num">${T('Streams total')}</th>
         <th class="num">${T('Revenu total')}</th>
         <th class="num">${T('Streams 30j')}</th>
@@ -1325,7 +1406,8 @@ function renderArtists(){
         return `
         <tr onclick="goArtist(${g.i})" style="cursor:pointer">
           <td class="covtd">${artistCoverHtml(g)}</td>
-          <td>${esc(g.name)} ${wlStar('a',g.name)} ${segBadge(g)}</td>
+          <td>${esc(g.name)} ${wlStar('a',g.name)}</td>
+          <td style="white-space:nowrap"><div>${segBadge(g)}</div><div style="font-size:11px;color:var(--dim);margin-top:3px">${g.lofi||0} ${T('tracks chez Lofi')}</div></td>
           <td class="num">${fmt(g.streams)}</td>
           <td class="num" style="color:var(--cyan)">${money(g.streams*RATE)}</td>
           <td class="num">${fmt(g.streams30)}</td>
