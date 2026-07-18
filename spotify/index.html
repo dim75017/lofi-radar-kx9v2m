@@ -322,6 +322,28 @@ td.selc,th.selc{width:44px;padding-left:14px}
 .tmbox .tg .l{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);font-weight:600}
 .tmbox .tg .v{font-family:'Sora';font-weight:700;font-size:16px;margin-top:4px}
 .spark{margin-top:6px}
+.perf-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0 16px}
+.perf-grid.compact{margin:0 0 14px}
+.perf-card{min-width:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 13px}
+.perf-card .plabel{font-size:10px;line-height:1.35;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);font-weight:700}
+.perf-card .pvalue{font-family:'Sora';font-size:18px;font-weight:800;margin-top:6px;overflow-wrap:anywhere}
+.perf-card .pcompare{font-size:10.5px;color:var(--muted);line-height:1.45;margin-top:5px;min-height:30px}
+.perf-card .pcompare.good{color:var(--acc2)}
+.perf-card .pcompare.bad{color:var(--red)}
+.perf-card .ppartial{display:inline-block;margin-top:6px;color:var(--dim);font-size:9.5px;line-height:1.35}
+.analytics-section{min-width:0;background:rgba(150,214,170,.02);border:1px solid var(--border);border-radius:13px;padding:14px 15px;margin:12px 0}
+.analytics-section h4{font-family:'Sora';font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.analytics-note{font-size:10.5px;color:var(--dim);line-height:1.5}
+.analytics-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px}
+.analytics-kpi{min-width:0;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:11px 12px}
+.analytics-kpi .l{font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);font-weight:700}
+.analytics-kpi .v{font-family:'Sora';font-size:15px;font-weight:700;margin-top:5px;overflow-wrap:anywhere}
+.contributors{display:grid;gap:6px}
+.contributor{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:7px 3px;border-bottom:1px solid rgba(150,214,170,.06);font-size:11.5px}
+.contributor:last-child{border-bottom:0}
+.contributor .cn{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contributor .cv{font-family:'Sora';font-weight:700;font-size:11.5px}
+.metric-partial{color:var(--dim);font-size:10px;font-weight:600}
 .tmbox .tnote{font-size:11px;color:var(--dim);margin-top:12px;line-height:1.5}
 .wl-star{background:none;border:none;color:#fbbf24;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;vertical-align:middle;opacity:.55;transition:opacity .12s,transform .12s ease}
 .wl-star:hover{opacity:1}
@@ -383,7 +405,7 @@ td.selc,th.selc{width:44px;padding-left:14px}
 .step b{font-size:13px;display:block;margin-bottom:5px}
 .step p{font-size:12px;color:var(--muted);line-height:1.55}
 
-@media(max-width:1400px){
+@media(max-width:1750px){
   .panel{overflow:visible}
   table.responsive-table{display:block;width:100%;min-width:0!important}
   table.responsive-table thead{display:none}
@@ -465,6 +487,7 @@ td.selc,th.selc{width:44px;padding-left:14px}
   .ambox table{min-width:0}
   .offer{padding:15px}
   .offer .ogrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .perf-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .ck{width:24px;height:24px}
 }
 
@@ -510,6 +533,10 @@ td.selc,th.selc{width:44px;padding-left:14px}
   .tmbox h3,.tmbox .tar{overflow-wrap:anywhere}
   .tmbox .tgrid{grid-template-columns:1fr}
   .tmbox .tclose{position:absolute;right:22px}
+  .perf-grid{grid-template-columns:1fr}
+  .perf-card .pcompare{min-height:0}
+  .analytics-section{padding:12px}
+  .analytics-kpis{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -649,6 +676,15 @@ const EN_MAP = {
   "Revenus estimés à":"Revenue estimated at","all-in Spotify, fourchette":"all-in Spotify, range","source Duetti / Loud & Clear 2025-26":"source Duetti / Loud & Clear 2025-26",
   "Revenu est.":"Est. revenue","mois":"mo","mo":"mo","lifetime":"lifetime",
   "Streams total":"Total streams","Streams 30j":"Streams 30d","Revenu total":"Total revenue","Revenu 30j":"Revenue 30d",
+  "Streams 24 h":"Streams 24h","Streams 7 j":"Streams 7d","Flux de streams":"Stream flow","Flux réel sur la période":"Actual flow over the period",
+  "24 h précédentes":"previous 24h","7 j précédents":"previous 7d","30 j précédents":"previous 30d","vs période précédente":"vs previous period",
+  "Données partielles":"Partial data","Historique insuffisant":"Not enough history","Aucune extrapolation":"No extrapolation","tracks couvertes":"tracks covered",
+  "Fiche Analytics":"Analytics profile","Performance comparée":"Compared performance","Courbe quotidienne":"Daily chart","Streams quotidiens":"Daily streams",
+  "Monthly listeners":"Monthly listeners","Évolution des monthly listeners":"Monthly listener trend","Principales contributions":"Top contributors",
+  "Signal":"Signal","Rising":"Rising","Hot":"Hot","Non disponible":"Unavailable","Vélocité 7 j":"7-day velocity","Cadence de collecte":"Collection cadence",
+  "Followers 24 h":"Followers 24h","Followers 7 j":"Followers 7d","Followers 30 j":"Followers 30d","Évolution followers":"Follower change",
+  "Placements / rangs connus":"Known placements / ranks","Dernières variations":"Latest changes","Classification":"Classification","Label":"Label",
+  "Historique quotidien requis pour cette fenêtre.":"Daily history is required for this window.","Comparaison indisponible tant que la période précédente n'est pas complète.":"Comparison is unavailable until the previous equal period is complete.",
   "est.":"est.","mesuré sur historique réel":"measured from real history","estimation, moyenne depuis la sortie":"estimate, average since release",
   "ans":"yr","Rachat":"Buyout",
   "Simulation d'offre de rachat":"Buyout offer simulator",
@@ -743,18 +779,49 @@ function paybackClass(months){
 // artists: [nom, nbLofi, flag, done, disco, origine, seedSrc]
 // rows:    [ai, track, date, streams, statut(0 self/1 autre), label, id, firstSeen]
 const A = D.artists, R = D.rows;
-const HIST = D.hist || {};   // tid -> [[dateISO, playcount], ...] (rempli par la veille)
+/* Raccord progressif aux historiques journaliers validés.
+   Le dashboard ne lit jamais SQLite et ne promeut aucune table staging. Un export approuvé
+   pourra définir window.SPOTIFY_PERFORMANCE avant ce script avec ce contrat :
+   {
+     source:'soundcharts_staging',
+     tracks:{spotifyId:{history:[[date,cumulativeStreams]],cadence_days,label,signal}},
+     artists:{spotifyId:{monthly_listeners_history:[[date,value]],signal}},
+     playlists:{spotifyId:{history:[[date,followers]],placements:[],last_variations:[]}}
+   }
+   D.hist et PL.hist restent compatibles. Sans points quotidiens suffisants, l'UI affiche —. */
+const PERF = window.SPOTIFY_PERFORMANCE || {};
+const PERF_TRACKS = PERF.tracks || {};
+const PERF_ARTISTS = PERF.artists || {};
+const PERF_PLAYLISTS = PERF.playlists || {};
+const SC = window.SPOTIFY_SOUNDCHARTS || null;
+function perfHistory(entry){
+  if (Array.isArray(entry)) return entry;
+  return entry && Array.isArray(entry.history) ? entry.history : [];
+}
+const HIST = Object.assign({}, D.hist || {}); // tid -> [[dateISO, compteur cumulatif], ...]
+for (const [tid,entry] of Object.entries(PERF_TRACKS)){
+  const pts = perfHistory(entry); if (pts.length) HIST[tid] = pts;
+}
 const AG = A.map((a,i)=>({i, name:a[0], lofi:a[1], flag:a[2], done:a[3], disco:a[4],
-  origin:a[5], seedSrc:a[6], id:a[7]||'', img:a[8]||'', email:a[9]||'', link:a[10]||'', n:0, self:0, streams:0, streams30:0, mstreams:0, hot:0, last:'', top:null}));
+  origin:a[5], seedSrc:a[6], id:a[7]||'', img:a[8]||'', email:a[9]||'', link:a[10]||'', n:0, self:0, streams:0, streams24:null, streams7:null, streams30:null, mstreams:0, hot:0, last:'', top:null, perf:null}));
+const TRACKS_BY_ARTIST = new Map();
 for (const r of R){
   const g = AG[r[0]];
+  if (!TRACKS_BY_ARTIST.has(r[0])) TRACKS_BY_ARTIST.set(r[0], []);
+  TRACKS_BY_ARTIST.get(r[0]).push(r);
   g.n++; if (r[4]===0) g.self++;
   if (r[3]>0) g.streams += r[3];
   const pm = perMonth(r); if (pm>0) g.mstreams += pm;
-  g.streams30 += streams30(r).val;
   if (r[3]>=HOT) g.hot++;
   if (r[2] > g.last) g.last = r[2];
   if (!g.top || r[3] > g.top[3]) g.top = r;
+}
+for (const g of AG){
+  const rows = TRACKS_BY_ARTIST.get(g.i) || [];
+  g.perf = performanceForRows(rows);
+  g.streams24 = g.perf[1].current;
+  g.streams7 = g.perf[7].current;
+  g.streams30 = g.perf[30].current;
 }
 const withTracks = AG.filter(g=>g.n>0);
 const totStreams = withTracks.reduce((s,g)=>s+g.streams,0);
@@ -766,7 +833,10 @@ const nSelf = R.reduce((s,r)=>s+(r[4]===0?1:0),0);
 const PL = window.SPOTIFY_PLAYLISTS || null;
 const PLmeta = (PL && PL.meta) || null;
 const PLrows = (PL && PL.rows) || [];
-const PLhist = (PL && PL.hist) || {};
+const PLhist = Object.assign({}, (PL && PL.hist) || {});
+for (const [pid,entry] of Object.entries(PERF_PLAYLISTS)){
+  const pts = perfHistory(entry); if (pts.length) PLhist[pid] = pts;
+}
 /* colonnes PLrows : id,name,owner,curator,followers,tracks,first_seen,last_seen,lang,genre,use_case,fit,kw,enriched,big10k */
 
 /* ---------- module Labels (récap par label, dérivé des tracks "Autre label") ---------- */
@@ -792,27 +862,142 @@ function perMonth(r){
   const m = monthsSince(r[2]);
   return (m===null||r[3]<0) ? -1 : Math.round(r[3]/m);
 }
-/* Streams des 30 derniers jours : réel si assez d'historique hebdo (track_history.tsv,
-   tracks ≥100k streams), sinon estimation via la vélocité moyenne depuis la sortie
-   (perMonth). Le crawler ne collecte cet historique que depuis peu : tant qu'il n'y a pas
-   2 points distincts, on retombe sur l'estimation plutôt que d'afficher un vide. */
-function streams30(r){
-  const pts = HIST[r[6]];
-  if (pts && pts.length >= 2){
-    const latest = pts[pts.length-1];
-    const latestMs = new Date(latest[0]+'T00:00:00').getTime();
-    const targetMs = latestMs - 30*864e5;
-    let base = null;
-    for (const p of pts){ if (new Date(p[0]+'T00:00:00').getTime() <= targetMs) base = p; }
-    if (!base) base = pts[0];
-    const baseMs = new Date(base[0]+'T00:00:00').getTime();
-    const days = Math.round((latestMs - baseMs)/864e5);
-    if (days > 0) return { val: Math.max(0, latest[1]-base[1]), real:true };
+function normalizeCounterHistory(raw){
+  const daily = new Map();
+  for (const p of (raw||[])){
+    const d = Array.isArray(p) ? p[0] : (p&&p.date);
+    const v = Number(Array.isArray(p) ? p[1] : (p&&p.value));
+    const day = (d||'').toString().slice(0,10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(v)) daily.set(day,v);
   }
-  return { val: Math.max(perMonth(r),0), real:false };
+  return [...daily.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+}
+function shiftDay(day,offset){
+  const d = new Date(day+'T00:00:00Z');
+  if (!Number.isFinite(d.getTime())) return '';
+  d.setUTCDate(d.getUTCDate()+offset);
+  return d.toISOString().slice(0,10);
+}
+function dayGap(a,b){
+  const x=new Date(a+'T00:00:00Z').getTime(), y=new Date(b+'T00:00:00Z').getTime();
+  return Math.round((y-x)/864e5);
+}
+/* Une fenêtre n'est valide que si les baselines existent aux dates exactes D-N et D-2N.
+   Le T0 seul ne produit donc jamais un faux zéro et aucun trou n'est extrapolé. */
+function counterWindow(raw,days){
+  const pts = normalizeCounterHistory(raw);
+  const empty = {days,current:null,previous:null,comparisonCurrent:null,change:null,pct:null,currentReady:false,comparisonReady:false,points:pts.length};
+  if (!pts.length) return empty;
+  const latest = pts[pts.length-1], byDay = new Map(pts);
+  const d1 = shiftDay(latest[0],-days), d2 = shiftDay(latest[0],-2*days);
+  if (!byDay.has(d1)) return Object.assign(empty,{latestDate:latest[0]});
+  const current = latest[1]-byDay.get(d1);
+  if (!byDay.has(d2)) return Object.assign(empty,{latestDate:latest[0],current,currentReady:true});
+  const previous = byDay.get(d1)-byDay.get(d2);
+  const change = current-previous;
+  return {days,current,previous,comparisonCurrent:current,change,pct:previous>0?change/previous*100:null,currentReady:true,comparisonReady:true,points:pts.length,latestDate:latest[0]};
+}
+function aggregateWindowForRows(rows,days){
+  let current=0,currentCount=0,comparableCurrent=0,previous=0,comparisonCount=0,points=0;
+  for (const r of rows){
+    const w = counterWindow(HIST[r[6]]||[],days); points+=w.points||0;
+    if (w.currentReady){ current+=w.current; currentCount++; }
+    if (w.comparisonReady){ comparableCurrent+=w.current; previous+=w.previous; comparisonCount++; }
+  }
+  const total=rows.length, change=comparableCurrent-previous;
+  return {days,current:currentCount?current:null,previous:comparisonCount?previous:null,comparisonCurrent:comparisonCount?comparableCurrent:null,
+    change:comparisonCount?change:null,pct:comparisonCount&&previous>0?change/previous*100:null,currentReady:currentCount>0,comparisonReady:comparisonCount>0,
+    currentCount,comparisonCount,total,partial:currentCount<total,comparisonPartial:comparisonCount<total,points};
+}
+function performanceForRows(rows){ return {1:aggregateWindowForRows(rows,1),7:aggregateWindowForRows(rows,7),30:aggregateWindowForRows(rows,30)}; }
+function trackWindow(r,days){
+  const w=counterWindow(HIST[r[6]]||[],days);
+  return Object.assign(w,{currentCount:w.currentReady?1:0,comparisonCount:w.comparisonReady?1:0,total:1,partial:!w.currentReady,comparisonPartial:!w.comparisonReady});
+}
+function dailyFlowSeries(raw){
+  const pts=normalizeCounterHistory(raw), out=[];
+  for(let i=1;i<pts.length;i++) if(dayGap(pts[i-1][0],pts[i][0])===1) out.push([pts[i][0],pts[i][1]-pts[i-1][1]]);
+  return out;
+}
+function aggregateDailyFlow(rows){
+  const sums=new Map(), coverage=new Map();
+  for(const r of rows) for(const p of dailyFlowSeries(HIST[r[6]]||[])){
+    sums.set(p[0],(sums.get(p[0])||0)+p[1]); coverage.set(p[0],(coverage.get(p[0])||0)+1);
+  }
+  return {points:[...sums.entries()].sort((a,b)=>a[0].localeCompare(b[0])),coverage,total:rows.length};
+}
+function streams30(r){
+  const w=trackWindow(r,30);
+  return {val:w.current,real:w.currentReady,partial:w.partial,window:w};
+}
+function fmtMetric(v){ return v==null?'—':fmt(v); }
+function fmtFullMetric(v){ return v==null?'—':fmtFull(v); }
+function moneyMetric(v){ return v==null?'—':money(v); }
+function signedFull(v){ return v==null?'—':(v>0?'+':'')+fmtFull(v); }
+function signedPct(v){ return v==null?'':` (${v>0?'+':''}${v.toFixed(1)}%)`; }
+function previousPeriodName(days){ return days===1?T('24 h précédentes'):days===7?T('7 j précédents'):T('30 j précédents'); }
+function perfCardHtml(label,w){
+  const value=w.currentReady?signedFull(w.current):'—';
+  let compare=T("Comparaison indisponible tant que la période précédente n'est pas complète.");
+  let cls='';
+  if(w.comparisonReady){
+    compare=`${T('vs période précédente')} ${signedFull(w.change)}${signedPct(w.pct)}`;
+    cls=w.change>0?'good':(w.change<0?'bad':'');
+  }
+  let partial='';
+  if(!w.currentReady) partial=T('Historique quotidien requis pour cette fenêtre.');
+  else if(w.total>1 && w.partial) partial=`${T('Données partielles')} · ${w.currentCount}/${w.total} ${T('tracks couvertes')}`;
+  else if(w.comparisonPartial) partial=T('Données partielles');
+  return `<div class="perf-card"><div class="plabel">${label} · ${T('Flux réel sur la période')}</div><div class="pvalue">${value}</div><div class="pcompare ${cls}">${compare}</div>${partial?`<span class="ppartial">${partial} · ${T('Aucune extrapolation')}</span>`:''}</div>`;
+}
+function perfGridHtml(perf,prefix){
+  return `<div class="perf-grid">${perfCardHtml(prefix+' 24 h',perf[1])}${perfCardHtml(prefix+' 7 j',perf[7])}${perfCardHtml(prefix+' 30 j',perf[30])}</div>`;
+}
+function trackPerfEntry(r){ return PERF_TRACKS[r[6]] || {}; }
+function artistPerfEntry(g){ return PERF_ARTISTS[g.id] || PERF_ARTISTS[g.name] || {}; }
+function playlistPerfEntry(r){ return PERF_PLAYLISTS[r[0]] || {}; }
+function scArtistRow(g){
+  if(!SC || !Array.isArray(SC.artists)) return null;
+  const schema=(SC.schemas&&SC.schemas.artists)||[];
+  const idIx=schema.indexOf('spotify_id'), nameIx=schema.indexOf('name');
+  return SC.artists.find(r=>(idIx>=0&&g.id&&r[idIx]===g.id)||(nameIx>=0&&r[nameIx]===g.name))||null;
+}
+function artistAudience(g){
+  const entry=artistPerfEntry(g), hist=normalizeCounterHistory(entry.monthly_listeners_history||[]);
+  if(hist.length){
+    const last=hist[hist.length-1], prev=hist.length>1?hist[hist.length-2]:null;
+    return {current:last[1],delta:prev?last[1]-prev[1]:null,date:last[0],history:hist,partial:hist.length<2};
+  }
+  const row=scArtistRow(g);
+  if(row){
+    const schema=SC.schemas.artists||[], cur=Number(row[schema.indexOf('monthly_listeners')]), delta=Number(row[schema.indexOf('delta')]);
+    return {current:Number.isFinite(cur)?cur:null,delta:Number.isFinite(delta)?delta:null,date:row[schema.indexOf('source_date')]||null,history:[],partial:true};
+  }
+  return {current:null,delta:null,date:null,history:[],partial:true};
+}
+function performanceSignal(perf,entry){
+  if(entry&&entry.signal) return esc(entry.signal);
+  if(entry&&entry.hot===true) return T('Hot');
+  const w=perf&&perf[7];
+  if(w&&w.comparisonReady&&w.change>0) return `${T('Rising')} · 7 j vs 7 j`;
+  return '—';
+}
+function contributorRows(rows,days){
+  const out=[];
+  for(const r of rows){ const w=trackWindow(r,days); if(w.currentReady) out.push({r,w}); }
+  out.sort((a,b)=>b.w.current-a.w.current);
+  return out.slice(0,5);
+}
+function contributorsHtml(rows,days){
+  const top=contributorRows(rows,days);
+  if(!top.length) return `<div class="analytics-note">${T('Historique insuffisant')} · ${T('Aucune extrapolation')}</div>`;
+  return `<div class="contributors">${top.map(x=>`<div class="contributor"><span class="cn">${esc(x.r[1])}</span><span class="cv">${signedFull(x.w.current)}</span></div>`).join('')}</div>`;
+}
+function dailyChartHtml(points,emptyText){
+  return points&&points.length>=2?sparkline(points):`<div class="analytics-note" style="padding:18px 2px">${emptyText||T('Historique insuffisant')} · ${T('Aucune extrapolation')}</div>`;
 }
 function revTotal(r){ return r[3]>0 ? r[3]*RATE : 0; }
-function rev30(r){ return streams30(r).val*RATE; }
+function rev30(r){ const v=streams30(r).val; return v==null?null:v*RATE; }
 function daysAgo(d){ return d ? Math.round((TODAY-new Date(d+'T00:00:00'))/864e5) : 1e9; }
 function esc(s){ return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 const trackUrl = id => 'https://open.spotify.com/track/'+id;
@@ -875,12 +1060,15 @@ function filteredRows(){
     let x,y;
     if (k===0){ x=A[a[0]][0].toLowerCase(); y=A[b[0]][0].toLowerCase(); }
     else if (k===7){ x=perMonth(a); y=perMonth(b); }
-    else if (k===10){ x=streams30(a).val; y=streams30(b).val; }
+    else if (k===20){ x=trackWindow(a,1).current; y=trackWindow(b,1).current; }
+    else if (k===21){ x=trackWindow(a,7).current; y=trackWindow(b,7).current; }
+    else if (k===10){ x=trackWindow(a,30).current; y=trackWindow(b,30).current; }
     else if (k===11){ x=revTotal(a); y=revTotal(b); }
     else if (k===12){ x=rev30(a); y=rev30(b); }
     else if (k===13){ x=advance(Math.max(perMonth(a),0)); y=advance(Math.max(perMonth(b),0)); }
     else if (k===5){ x=(a[5]||'').toLowerCase(); y=(b[5]||'').toLowerCase(); }
     else { x=a[k]; y=b[k]; }
+    if (x==null || y==null) return x==null ? (y==null?0:1) : -1;
     const c = x<y ? -1 : (x>y ? 1 : 0);
     return c*dir;
   });
@@ -1001,6 +1189,8 @@ function renderOverview(){
   const topLb = LBrows.slice().sort((a,b)=>b[4]-a[4]).slice(0,OVN);
   const topPl = PLmeta ? PLrows.filter(r=>r[17]).slice().sort((a,b)=>b[4]-a[4]).slice(0,OVN) : [];
   const top5 = top.slice(0,OVN);
+  const catalogPerf = performanceForRows(R);
+  const playlistsPerf = playlistPerformance(PLrows);
 
   V.innerHTML = `
   <div class="page-head">
@@ -1017,6 +1207,7 @@ function renderOverview(){
         <div class="ov-st"><div class="v" style="color:var(--acc2)">${fmt(nHot)}</div><div class="l">≥ 500k (${T('priorités')})</div></div>
         <div class="ov-st"><div class="v" style="color:var(--cyan)">${money(totMonthlyRev)}</div><div class="l">${T('revenu mensuel est.')}</div></div>
       </div>
+      ${perfGridHtml(catalogPerf,T('Streams'))}
       ${topTracks.map((r,ix)=>`
       <div class="top-row" onclick="openTrack('${r[6]}')">
         <span class="rank">${ix+1}</span>
@@ -1039,6 +1230,7 @@ function renderOverview(){
         <div class="ov-st"><div class="v">${nTop+nReg}</div><div class="l">top + ${T('réguliers')}</div></div>
         <div class="ov-st"><div class="v">${fmtFull(recent)}</div><div class="l">${T('sorties 90 j')}</div></div>
       </div>
+      ${perfGridHtml(catalogPerf,T('Streams'))}
       ${top5.map((g,ix)=>`
       <div class="top-row" onclick="goArtist(${g.i})">
         <span class="rank">${ix+1}</span>
@@ -1062,8 +1254,9 @@ function renderOverview(){
         <div class="ov-st"><div class="v" style="color:var(--acc2)">${fmtFull(PLmeta.playlists_10k_plus)}</div><div class="l">≥ 10k followers</div></div>
         <div class="ov-st"><div class="v" style="color:var(--cyan)">${fmt(PLmeta.followers_sum)}</div><div class="l">${T('followers cumulés')}</div></div>
       </div>
+      ${perfGridHtml(playlistsPerf,T('Followers'))}
       ${topPl.map((r,ix)=>`
-      <div class="top-row" onclick="window.open('https://open.spotify.com/playlist/${r[0]}','_blank')">
+      <div class="top-row" onclick="openPlaylist('${r[0]}')">
         <span class="rank">${ix+1}</span>
         <div class="cov" data-plid="${r[0]}" style="width:40px;height:40px;border-radius:9px;margin:0"></div>
         <div class="ti">
@@ -1088,7 +1281,7 @@ function renderOverview(){
         <div style="width:40px;flex:none">${labelCover(r[1], false, r[7]).replace('class="cov lblcov"','class="cov lblcov" style="width:40px;height:40px;border-radius:9px;margin:0;font-size:15px"')}</div>
         <div class="ti">
           <div class="nm"><span class="nmtxt">${esc(r[1])}</span></div>
-          <div class="sub">${fmtFull(r[2])} tracks · ${r[6]} ${T('artistes')} · <span style="color:var(--cyan)">≈ ${money(labelStreams30(r[0])*RATE)}/${T('mois')}</span></div>
+          <div class="sub">${fmtFull(r[2])} tracks · ${r[6]} ${T('artistes')} · <span style="color:var(--cyan)">${moneyMetric(labelStreams30(r[0])==null?null:labelStreams30(r[0])*RATE)}/30 j</span></div>
         </div>
         <div class="vals vals2">
           <div class="valblock"><div class="v1" style="color:var(--cyan)">${money(r[4])}</div><div class="v2">${T('revenu')}</div></div>
@@ -1150,6 +1343,11 @@ function artistTableRows(rows){
 function renderArtistModal(){
   const i = S.artist; const g = AG[i]; if(!g) return;
   const rows = artistRows(i);
+  const allRows = TRACKS_BY_ARTIST.get(i) || [];
+  const perf = g.perf || performanceForRows(allRows);
+  const flows = aggregateDailyFlow(allRows);
+  const audience = artistAudience(g);
+  const entry = artistPerfEntry(g);
   const selfPct = g.n ? Math.round(g.self/g.n*100) : 0;
   const selM = rows.filter(r=>S.sel.has(r[6])).reduce((s,r)=>s+Math.max(perMonth(r),0),0);
   const selN = rows.filter(r=>S.sel.has(r[6])).length;
@@ -1159,7 +1357,7 @@ function renderArtistModal(){
       <div class="av-sm">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div>
       <div style="min-width:0;flex:1">
         <h3>${esc(g.name)}</h3>
-        <div class="tar" style="cursor:default">${segBadge(g)} · ${rows.length} ${T('tracks indé')} (${T('sur')} ${g.n} ${T('hors Lofi')}) · ${fmt(g.streams)} streams</div>
+        <div class="tar" style="cursor:default">${T('Fiche Analytics')} · ${segBadge(g)} · ${rows.length} ${T('tracks indé')} (${T('sur')} ${g.n} ${T('hors Lofi')})</div>
       </div>
       <button class="tclose" onclick="closeArtistModal()">✕</button>
     </div>
@@ -1169,7 +1367,26 @@ function renderArtistModal(){
       <div class="tg"><div class="l">≥ 500k</div><div class="v">${fmtFull(g.hot)}</div></div>
       <div class="tg"><div class="l">${T('Dernière sortie')}</div><div class="v" style="font-size:13px">${fmtDate(g.last)}</div></div>
       <div class="tg"><div class="l">${T('Streams total')}</div><div class="v">${fmt(g.streams)}</div></div>
-      <div class="tg"><div class="l">${T('Streams 30j')}</div><div class="v">${fmt(g.streams30)}</div></div>
+      <div class="tg"><div class="l">${T('Signal performance')}</div><div class="v" style="font-size:13px">${performanceSignal(perf,entry)}</div></div>
+    </div>
+    ${perfGridHtml(perf,T('Streams'))}
+    <div class="analytics-section">
+      <h4>${T('Courbe quotidienne des streams')} <span class="analytics-note">${T('Flux quotidien, pas compteur lifetime')}</span></h4>
+      ${dailyChartHtml(flows.points,T('Historique quotidien insuffisant pour tracer la courbe.'))}
+      ${flows.points.length?`<div class="analytics-note">${T('Données partielles')} · ${T('couverture variable selon les tracks')}</div>`:''}
+    </div>
+    <div class="analytics-section">
+      <h4>${T('Évolution des monthly listeners')}</h4>
+      <div class="analytics-kpis">
+        <div class="analytics-kpi"><div class="l">Monthly listeners</div><div class="v">${fmtFullMetric(audience.current)}</div></div>
+        <div class="analytics-kpi"><div class="l">${T('Dernière variation')}</div><div class="v">${signedFull(audience.delta)}</div></div>
+        <div class="analytics-kpi"><div class="l">${T('Dernière observation')}</div><div class="v">${audience.date?fmtDate(audience.date):'—'}</div></div>
+      </div>
+      ${dailyChartHtml(audience.history,T("Historique de monthly listeners non raccordé."))}
+    </div>
+    <div class="analytics-section">
+      <h4>${T('Tracks les plus contributrices')} <span class="analytics-note">7 j</span></h4>
+      ${contributorsHtml(allRows,7)}
     </div>
     ${offerHtml(g, selM, selN, rows.length)}
     <label class="selall" style="margin:2px 0 8px"><input type="checkbox" class="ck" id="am-sel-all" ${rows.length&&rows.every(r=>S.sel.has(r[6]))?'checked':''}> ${T('Tout sélectionner')}</label>
@@ -1256,38 +1473,43 @@ function trackOfferHtml(r){
 function openTrack(tid){
   const r = R.find(x=>x[6]===tid); if(!r) return;
   const g = AG[r[0]];
-  const vel = perMonth(r);
-  const hist = HIST[tid] || [];
-  const trend = hist.length>=2 ? (hist[hist.length-1][1]>=hist[0][1] ? '↗ '+T('en hausse') : '↘ '+T('en baisse')) : null;
+  const perf = {1:trackWindow(r,1),7:trackWindow(r,7),30:trackWindow(r,30)};
+  const daily = dailyFlowSeries(HIST[tid] || []);
+  const entry = trackPerfEntry(r);
+  const velocity = perf[7].currentReady ? perf[7].current/7 : null;
+  const cadence = Number.isFinite(Number(entry.cadence_days)) ? Number(entry.cadence_days)+' j' : '—';
+  const label = entry.label || (r[4]===1 ? r[5] : null);
   const box = document.getElementById('tmbox');
   box.innerHTML = `
     <div class="thd">
       <div class="tcov" ${r[8]?`style="background-image:url('${esc(r[8])}')"`:''}></div>
       <div style="min-width:0">
         <h3>${esc(r[1])}</h3>
-        <div class="tar" onclick="closeTrack();goArtist(${r[0]})">${esc(A[r[0]][0])} ${segBadge(g)}</div>
+        <div class="tar" onclick="closeTrack();goArtist(${r[0]})">${T('Fiche Analytics')} · ${esc(A[r[0]][0])} ${segBadge(g)}</div>
       </div>
       <button class="tclose" onclick="closeTrack()">✕</button>
     </div>
     <div class="tgrid">
-      <div class="tg"><div class="l">Streams</div><div class="v">${fmt(r[3])}</div></div>
-      <div class="tg"><div class="l">${T('Streams/mois')}</div><div class="v" style="color:var(--cyan)">${fmt(vel)}</div></div>
-      <div class="tg"><div class="l">${T('Revenu /mois')}</div><div class="v" style="color:var(--cyan)">${vel>0?eur(vel*RATE*(1+BUY.multiPlat)*BUY.fx):'—'}</div></div>
-      <div class="tg"><div class="l">${T('Rachat')} ${S.palier}</div><div class="v" style="color:var(--acc2)">${eur(advance(Math.max(vel,0)))}</div></div>
+      <div class="tg"><div class="l">${T('Streams total lifetime')}</div><div class="v">${fmt(r[3])}</div></div>
+      <div class="tg"><div class="l">${T('Vélocité réelle')}</div><div class="v" style="color:var(--cyan)">${velocity==null?'—':fmt(Math.round(velocity))+'/'+T('jour')}</div></div>
+      <div class="tg"><div class="l">${T('Cadence')}</div><div class="v">${cadence}</div></div>
+      <div class="tg"><div class="l">${T('Signal performance')}</div><div class="v" style="font-size:13px">${performanceSignal(perf,entry)}</div></div>
       <div class="tg"><div class="l">${T('Sortie')}</div><div class="v">${fmtDate(r[2])}</div></div>
-      <div class="tg"><div class="l">${T('Statut')}</div><div class="v" style="font-size:13px">${r[4]===0?T('Indé'):'Label'}</div></div>
-      <div class="tg"><div class="l">Copyright</div><div class="v" style="font-size:12px;line-height:1.4">${esc(r[5]||'—')}</div></div>
+      <div class="tg"><div class="l">${T('Classification')}</div><div class="v" style="font-size:13px">${r[4]===0?T('Indépendant'):'Label'}</div></div>
+      <div class="tg"><div class="l">${T('Label')}</div><div class="v" style="font-size:12px;line-height:1.4">${label?esc(label):'—'}</div></div>
+      <div class="tg"><div class="l">© / ℗</div><div class="v" style="font-size:12px;line-height:1.4">${r[5]?esc(r[5]):'—'}</div></div>
+    </div>
+    ${perfGridHtml(perf,T('Streams'))}
+    <div class="analytics-section">
+      <h4>${T('Courbe quotidienne des streams')} <span class="analytics-note">${T('Flux quotidien, pas compteur lifetime')}</span></h4>
+      ${dailyChartHtml(daily,T('Historique quotidien insuffisant pour tracer la courbe.'))}
     </div>
     ${trackOfferHtml(r)}
-    <div class="tg" style="background:none;border-color:var(--border)">
-      <div class="l" style="display:flex;justify-content:space-between">${T('Évolution des streams')} ${trend?`<span style="color:${trend[0]==='↗'?'var(--green)':'var(--red)'}">${trend}</span>`:''}</div>
-      ${hist.length>=2 ? sparkline(hist) : `<div style="padding:22px 4px;color:var(--dim);font-size:12px">${T("Courbe en cours de constitution : la veille hebdomadaire enregistre un point par semaine. Reviens dans quelques semaines pour voir la tendance.")}</div>`}
-    </div>
     <div style="display:flex;gap:10px;margin-top:14px">
       <a class="btn-back" style="margin:0;text-decoration:none" href="${trackUrl(r[6])}" target="_blank" rel="noopener">▶ ${T('Ouvrir sur Spotify')}</a>
       <button class="chip" onclick="toggleWL('t','${r[6]}',event);openTrack('${r[6]}')">${wlHas('t',r[6])?'⭐ '+T('Épinglé'):'☆ '+T('Épingler')}</button>
     </div>
-    <div class="tnote">${T("Revenus & rachat estimés (0,0035$/stream, +20% multi-plateformes, modèle LOFI RECORDS). L'historique des streams est capté par la veille pour tracer la tendance dans le temps.")}</div>`;
+    <div class="tnote">${T("Les fenêtres Analytics utilisent uniquement l'historique quotidien et comparent des périodes de même durée. Le simulateur de rachat reste une estimation séparée.")}</div>`;
   document.getElementById('track-modal').style.display='flex';
 }
 function closeTrack(){ document.getElementById('track-modal').style.display='none'; }
@@ -1352,15 +1574,16 @@ function renderOpps(){
         <th data-k="0">${T('Artiste')} ${sortArrow(0)}</th>
         <th data-k="3" class="num">${T('Streams total')}</th>
         <th data-k="11" class="num">${T('Revenu total')} ${sortArrow(11)}</th>
-        <th data-k="10" class="num">${T('Streams 30j')} ${sortArrow(10)}</th>
-        <th data-k="12" class="num">${T('Revenu 30j')} ${sortArrow(12)}</th>
+        <th data-k="20" class="num" title="${T('Flux réel sur la période')}">${T('Streams 24 h')} ${sortArrow(20)}</th>
+        <th data-k="21" class="num" title="${T('Flux réel sur la période')}">${T('Streams 7 j')} ${sortArrow(21)}</th>
+        <th data-k="10" class="num" title="${T('Flux réel sur la période')}">${T('Streams 30 j')} ${sortArrow(10)}</th>
         <th data-k="13" class="num">${T('Rachat')} ${S.palier} ${sortArrow(13)}</th>
         <th data-k="2">${T('Sortie')} ${sortArrow(2)}</th>
         <th data-k="4">${T('Statut')} ${sortArrow(4)}</th>
         <th data-k="5">Copyright ${sortArrow(5)}</th>
       </tr></thead>
       <tbody>
-      ${slice.map(r=>{ const s30=streams30(r); return `
+      ${slice.map(r=>{ const w1=trackWindow(r,1), w7=trackWindow(r,7), w30=trackWindow(r,30); return `
         <tr data-basehot="${r[3]>=HOT?1:0}" class="${r[3]>=HOT||(ag&&S.sel.has(r[6]))?'hot':''}">
           ${ag?`<td class="selc"><input type="checkbox" class="ck sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>`:''}
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
@@ -1368,8 +1591,9 @@ function renderOpps(){
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
           <td class="num" title="${fmtFull(r[3])}">${fmt(r[3])}</td>
           <td class="num" style="color:var(--cyan)">${money(revTotal(r))}</td>
-          <td class="num" title="${s30.real?T('mesuré sur historique réel'):T('estimation, moyenne depuis la sortie')}">${fmt(s30.val)}${s30.real?'':' <span class="kwtag">'+T('est.')+'</span>'}</td>
-          <td class="num" style="color:var(--cyan)" title="${s30.real?T('mesuré sur historique réel'):T('estimation, moyenne depuis la sortie')}">${money(rev30(r))}${s30.real?'':' <span class="kwtag">'+T('est.')+'</span>'}</td>
+          <td class="num" title="${T('Streams des dernières 24 h')} · ${T('Aucune extrapolation')}">${fmtMetric(w1.current)}${w1.currentReady?'':' <span class="metric-partial">'+T('Données partielles')+'</span>'}</td>
+          <td class="num" title="${T('Streams des 7 derniers jours')} · ${T('Aucune extrapolation')}">${fmtMetric(w7.current)}${w7.currentReady?'':' <span class="metric-partial">'+T('Données partielles')+'</span>'}</td>
+          <td class="num" title="${T('Streams des 30 derniers jours')} · ${T('Aucune extrapolation')}">${fmtMetric(w30.current)}${w30.currentReady?'':' <span class="metric-partial">'+T('Données partielles')+'</span>'}</td>
           <td class="num" title="${T('Payback')} ${paybackTxt(payback(Math.max(perMonth(r),0)))}"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
           <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[2])}</td>
           <td><span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span></td>
@@ -1382,7 +1606,7 @@ function renderOpps(){
   </div>`;
   const gridView = `
   <div class="acards">
-    ${slice.map(r=>{ const s30=streams30(r); return `
+    ${slice.map(r=>{ const w1=trackWindow(r,1), w7=trackWindow(r,7), w30=trackWindow(r,30); return `
     <div class="acard plcard grid-clean" onclick="openTrack('${r[6]}')">
       ${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}
       <div class="nm">${esc(r[1])} ${wlStar('t',r[6])}${r[7]?' <span class="badge new">'+T('détectée')+'</span>':''}</div>
@@ -1396,9 +1620,9 @@ function renderOpps(){
         <div class="st"><div class="v" style="color:var(--acc2)">${eur(advance(Math.max(perMonth(r),0)))}</div><div class="l">${T('Rachat')}</div></div>
       </div>
       <div class="stats">
-        <div class="st"><div class="v">${fmt(s30.val)}</div><div class="l">${T('Streams 30j')}</div></div>
-        <div class="st"><div class="v" style="color:var(--cyan)">${money(rev30(r))}</div><div class="l">${T('Revenu 30j')}</div></div>
-        <div class="st date"><div class="v">${fmtDate(r[2])}</div><div class="l">${T('Sortie')}</div></div>
+        <div class="st"><div class="v">${fmtMetric(w1.current)}</div><div class="l">${T('Streams 24 h')}</div></div>
+        <div class="st"><div class="v">${fmtMetric(w7.current)}</div><div class="l">${T('Streams 7 j')}</div></div>
+        <div class="st"><div class="v">${fmtMetric(w30.current)}</div><div class="l">${T('Streams 30 j')}</div></div>
       </div>
     </div>`;}).join('')}
   </div>
@@ -1495,8 +1719,9 @@ function renderArtists(){
     status:(a,b)=>({ext:0,occ:1,reg:2,top:3}[seg(a)]-({ext:0,occ:1,reg:2,top:3}[seg(b)])),
     streams:(a,b)=>a.streams-b.streams,
     revenue:(a,b)=>a.streams-b.streams,
-    streams30:(a,b)=>a.streams30-b.streams30,
-    revenue30:(a,b)=>a.streams30-b.streams30,
+    streams24:(a,b)=>(a.streams24==null?(S.adir===-1?-Infinity:Infinity):a.streams24)-(b.streams24==null?(S.adir===-1?-Infinity:Infinity):b.streams24),
+    streams7:(a,b)=>(a.streams7==null?(S.adir===-1?-Infinity:Infinity):a.streams7)-(b.streams7==null?(S.adir===-1?-Infinity:Infinity):b.streams7),
+    streams30:(a,b)=>(a.streams30==null?(S.adir===-1?-Infinity:Infinity):a.streams30)-(b.streams30==null?(S.adir===-1?-Infinity:Infinity):b.streams30),
     n:(a,b)=>a.n-b.n,
     hot:(a,b)=>a.hot-b.hot,
     self:(a,b)=>(a.n?a.self/a.n:0)-(b.n?b.self/b.n:0),
@@ -1517,9 +1742,10 @@ function renderArtists(){
           <div class="st"><div class="v">${fmt(g.streams)}</div><div class="l">${T('Streams total')}</div></div>
           <div class="st"><div class="v" style="color:var(--cyan)">${money(g.streams*RATE)}</div><div class="l">${T('Revenu total')}</div></div>
         </div>
-        <div class="stats stats2">
-          <div class="st"><div class="v">${fmt(g.streams30)}</div><div class="l">${T('Streams 30j')}</div></div>
-          <div class="st"><div class="v" style="color:var(--cyan)">${money(g.streams30*RATE)}</div><div class="l">${T('Revenu 30j')}</div></div>
+        <div class="stats">
+          <div class="st"><div class="v">${fmtMetric(g.streams24)}</div><div class="l">${T('Streams 24 h')}</div></div>
+          <div class="st"><div class="v">${fmtMetric(g.streams7)}</div><div class="l">${T('Streams 7 j')}</div></div>
+          <div class="st"><div class="v">${fmtMetric(g.streams30)}</div><div class="l">${T('Streams 30 j')}</div></div>
         </div>
       </div>`).join('')}
   </div>
@@ -1533,8 +1759,9 @@ function renderArtists(){
         <th data-asort="status">${T('Statut')} ${artistSortArrow('status')}</th>
         <th data-asort="streams" class="num">${T('Streams total')} ${artistSortArrow('streams')}</th>
         <th data-asort="revenue" class="num">${T('Revenu total')} ${artistSortArrow('revenue')}</th>
-        <th data-asort="streams30" class="num">${T('Streams 30j')} ${artistSortArrow('streams30')}</th>
-        <th data-asort="revenue30" class="num">${T('Revenu 30j')} ${artistSortArrow('revenue30')}</th>
+        <th data-asort="streams24" class="num" title="${T('Flux réel sur la période')}">${T('Streams 24 h')} ${artistSortArrow('streams24')}</th>
+        <th data-asort="streams7" class="num" title="${T('Flux réel sur la période')}">${T('Streams 7 j')} ${artistSortArrow('streams7')}</th>
+        <th data-asort="streams30" class="num" title="${T('Flux réel sur la période')}">${T('Streams 30 j')} ${artistSortArrow('streams30')}</th>
         <th data-asort="n" class="num">tracks ${artistSortArrow('n')}</th>
         <th data-asort="hot" class="num">≥ 500k ${artistSortArrow('hot')}</th>
         <th data-asort="self" class="num">${T('indé')} ${artistSortArrow('self')}</th>
@@ -1550,8 +1777,9 @@ function renderArtists(){
           <td style="white-space:nowrap"><div>${segBadge(g)}</div><div style="font-size:11px;color:var(--dim);margin-top:3px">${g.lofi||0} ${T('tracks chez Lofi')}</div></td>
           <td class="num">${fmt(g.streams)}</td>
           <td class="num" style="color:var(--cyan)">${money(g.streams*RATE)}</td>
-          <td class="num">${fmt(g.streams30)}</td>
-          <td class="num" style="color:var(--cyan)">${money(g.streams30*RATE)}</td>
+          <td class="num">${fmtMetric(g.streams24)}</td>
+          <td class="num">${fmtMetric(g.streams7)}</td>
+          <td class="num">${fmtMetric(g.streams30)}</td>
           <td class="num">${g.n}</td>
           <td class="num" style="color:${g.hot?'var(--acc2)':'inherit'}">${g.hot}</td>
           <td class="num">${p}%</td>
@@ -1626,7 +1854,7 @@ function renderNew(){
           <td>${wlStar('t',r[6])}</td>
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[2])}</td>
-          <td><a class="tk" href="${trackUrl(r[6])}" target="_blank" rel="noopener">${esc(r[1])}</a>${r[7]?' <span class="badge new">'+T('détectée')+'</span>':''}</td>
+          <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span>${r[7]?' <span class="badge new">'+T('détectée')+'</span>':''}</td>
           <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
           <td class="num">${fmt(r[3])}</td>
           <td class="num">${fmt(perMonth(r))}</td>
@@ -1756,7 +1984,9 @@ function plFiltered(){
     usage: (a,b)=>(a[11]||'').localeCompare(b[11]||''),
     created: (a,b)=>(a[14]||'').localeCompare(b[14]||''),
     recent: (a,b)=>(a[8]||'').localeCompare(b[8]||''),
-    growth: (a,b)=>(a[18]==null?-1e15:a[18])-(b[18]==null?-1e15:b[18]),
+    growth24: (a,b)=>(playlistWindow(a,1).current==null?(S.pldir===-1?-Infinity:Infinity):playlistWindow(a,1).current)-(playlistWindow(b,1).current==null?(S.pldir===-1?-Infinity:Infinity):playlistWindow(b,1).current),
+    growth7: (a,b)=>(playlistWindow(a,7).current==null?(S.pldir===-1?-Infinity:Infinity):playlistWindow(a,7).current)-(playlistWindow(b,7).current==null?(S.pldir===-1?-Infinity:Infinity):playlistWindow(b,7).current),
+    growth30: (a,b)=>(playlistWindow(a,30).current==null?(S.pldir===-1?-Infinity:Infinity):playlistWindow(a,30).current)-(playlistWindow(b,30).current==null?(S.pldir===-1?-Infinity:Infinity):playlistWindow(b,30).current),
   };
   const sorter = sorters[S.plsort] || sorters.followers;
   rows = rows.slice().sort((a,b)=>S.pldir*sorter(a,b));
@@ -1795,48 +2025,80 @@ function plHistory(r){
   pts.sort((a,b)=>a[0].localeCompare(b[0]));
   return pts;
 }
+function playlistWindow(r,days){
+  const w=counterWindow(plHistory(r),days);
+  return Object.assign(w,{currentCount:w.currentReady?1:0,comparisonCount:w.comparisonReady?1:0,total:1,partial:!w.currentReady,comparisonPartial:!w.comparisonReady});
+}
+function playlistPerformance(rows){
+  const eligible=(rows||[]).filter(r=>r[5]==='ok');
+  const one=days=>{
+    let current=0,currentCount=0,comparableCurrent=0,previous=0,comparisonCount=0;
+    for(const r of eligible){
+      const w=playlistWindow(r,days);
+      if(w.currentReady){current+=w.current;currentCount++;}
+      if(w.comparisonReady){comparableCurrent+=w.current;previous+=w.previous;comparisonCount++;}
+    }
+    const change=comparableCurrent-previous, total=eligible.length;
+    return {days,current:currentCount?current:null,previous:comparisonCount?previous:null,comparisonCurrent:comparisonCount?comparableCurrent:null,
+      change:comparisonCount?change:null,pct:comparisonCount&&previous>0?change/previous*100:null,currentReady:currentCount>0,comparisonReady:comparisonCount>0,
+      currentCount,comparisonCount,total,partial:currentCount<total,comparisonPartial:comparisonCount<total};
+  };
+  return {1:one(1),7:one(7),30:one(30)};
+}
+function playlistWindowCell(r,days){
+  const w=playlistWindow(r,days);
+  return w.currentReady?`<span style="color:${w.current>0?'var(--acc2)':(w.current<0?'var(--red)':'var(--muted)')};font-weight:650">${signedFull(w.current)}</span>`:`<span class="metric-partial" title="${T('Historique quotidien requis pour cette fenêtre.')}">—</span>`;
+}
+function playlistRecentVariations(r){
+  const pts=normalizeCounterHistory(plHistory(r)), out=[];
+  for(let i=1;i<pts.length;i++) if(dayGap(pts[i-1][0],pts[i][0])===1) out.push([pts[i][0],pts[i][1]-pts[i-1][1]]);
+  return out.slice(-5).reverse();
+}
 
 function openPlaylist(pid){
   const r = PLrows.find(x=>x[0]===pid); if(!r) return;
   const hist = plHistory(r);
-  const first = hist[0], last = hist[hist.length-1];
-  const delta = hist.length>=2 ? last[1]-first[1] : null;
-  const days = hist.length>=2 ? Math.max(1,Math.round((new Date(last[0]+'T00:00:00')-new Date(first[0]+'T00:00:00'))/864e5)) : null;
-  const trendColor = delta==null?'var(--dim)':(delta>0?'var(--acc2)':(delta<0?'var(--red)':'var(--dim)'));
+  const perf={1:playlistWindow(r,1),7:playlistWindow(r,7),30:playlistWindow(r,30)};
+  const entry=playlistPerfEntry(r);
+  const placements=Array.isArray(entry.placements)?entry.placements:[];
+  const variations=Array.isArray(entry.last_variations)&&entry.last_variations.length?entry.last_variations:playlistRecentVariations(r);
   const box = document.getElementById('tmbox');
   box.innerHTML = `
     <div class="thd">
       <div class="tcov cov" data-plid="${r[0]}"></div>
       <div style="min-width:0">
         <h3>${esc(r[1])}</h3>
-        <div class="tar" style="cursor:default">${esc(r[2]||T('Curateur non renseigné'))} ${plCuratorBadge(r[3])}</div>
+        <div class="tar" style="cursor:default">${T('Fiche Analytics')} · ${esc(r[2]||T('Curateur non renseigné'))} ${plCuratorBadge(r[3])}</div>
       </div>
       <button class="tclose" onclick="closeTrack()">✕</button>
     </div>
     <div class="tgrid">
-      <div class="tg"><div class="l">Followers</div><div class="v">${r[5]==='ok'?fmtFull(r[4]):plFollowersCell(r)}</div></div>
-      <div class="tg"><div class="l">${T('Évolution 30j')}</div><div class="v" style="font-size:13px">${plGrowthCell(r)}</div></div>
+      <div class="tg"><div class="l">${T('Followers actuels')}</div><div class="v">${r[5]==='ok'?fmtFull(r[4]):plFollowersCell(r)}</div></div>
       <div class="tg"><div class="l">Tracks</div><div class="v">${r[16]?(r[6]||'?'):'—'}</div></div>
+      <div class="tg"><div class="l">Fit score</div><div class="v">${r[16]?(r[12]||0):'—'}</div></div>
       <div class="tg"><div class="l">Genre</div><div class="v" style="font-size:13px">${esc(r[10]||'?')}</div></div>
       <div class="tg"><div class="l">Usage</div><div class="v" style="font-size:13px">${esc(r[11]||'?')}</div></div>
       <div class="tg"><div class="l">${T('Première observation')}</div><div class="v" style="font-size:13px">${fmtDate(r[7])}</div></div>
       <div class="tg"><div class="l">${T('Dernière observation')}</div><div class="v" style="font-size:13px">${fmtDate(r[8])}</div></div>
       <div class="tg"><div class="l">${T('Création estimée')}</div><div class="v" style="font-size:13px">${plEstDateCell(r)}</div></div>
     </div>
-    <div class="tg" style="background:none;border-color:var(--border)">
-      <div class="l" style="display:flex;justify-content:space-between;gap:12px;align-items:center">
-        <span>${T('Évolution des followers')}</span>
-        ${delta==null?'':`<span style="color:${trendColor};font-size:12px">${delta>0?'+':''}${fmtFull(delta)} · ${days}${T('j')}</span>`}
-      </div>
-      ${hist.length>=2 ? `
-        <div style="display:flex;justify-content:space-between;gap:12px;margin-top:12px;color:var(--dim);font-size:11px">
-          <span>${fmtDate(first[0])} · ${fmtFull(first[1])}</span><span>${fmtDate(last[0])} · ${fmtFull(last[1])}</span>
-        </div>${sparkline(hist)}` : `<div style="padding:22px 4px;color:var(--dim);font-size:12px;line-height:1.6">${T("Courbe en cours de constitution : le scan quotidien enregistrera un point par jour. Reviens après le prochain snapshot pour voir la tendance.")}</div>`}
+    ${perfGridHtml(perf,T('Followers'))}
+    <div class="analytics-section">
+      <h4>${T('Courbe historique des followers')} <span class="analytics-note">${T('Compteur followers')}</span></h4>
+      ${dailyChartHtml(hist,T('Historique quotidien insuffisant pour tracer la courbe.'))}
+    </div>
+    <div class="analytics-section">
+      <h4>${T('Placements et rangs connus')}</h4>
+      ${placements.length?`<div class="contributors">${placements.slice(0,10).map(p=>`<div class="contributor"><span class="cn">${esc(p.name||p.playlist||String(p))}</span><span class="cv">${p.rank!=null?'#'+esc(p.rank):'—'}</span></div>`).join('')}</div>`:`<div class="analytics-note">— · ${T('Donnée non disponible dans le raccord actuel')}</div>`}
+    </div>
+    <div class="analytics-section">
+      <h4>${T('Dernières variations')}</h4>
+      ${variations.length?`<div class="contributors">${variations.slice(0,5).map(p=>{const d=Array.isArray(p)?p[0]:(p.date||'');const v=Number(Array.isArray(p)?p[1]:p.value);return `<div class="contributor"><span class="cn">${fmtDate(d)}</span><span class="cv">${Number.isFinite(v)?signedFull(v):'—'}</span></div>`;}).join('')}</div>`:`<div class="analytics-note">— · ${T('Historique insuffisant')}</div>`}
     </div>
     <div style="display:flex;gap:10px;margin-top:14px">
       <a class="btn-back" style="margin:0;text-decoration:none" href="https://open.spotify.com/playlist/${r[0]}" target="_blank" rel="noopener">▶ ${T('Ouvrir sur Spotify')}</a>
     </div>
-    <div class="tnote">${T("L'historique des followers est alimenté par les snapshots quotidiens du scanner.")}</div>`;
+    <div class="tnote">${T("Les évolutions comparent toujours des fenêtres de même durée et utilisent uniquement les snapshots quotidiens réellement disponibles.")}</div>`;
   document.getElementById('track-modal').style.display='flex';
   if (typeof attachCovers==='function') attachCovers();
 }
@@ -1856,7 +2118,9 @@ function renderPlaylists(){
         <th data-plsort="name">Playlist ${plSortArrow('name')}</th>
         <th data-plsort="curator">${T('Curateur')} ${plSortArrow('curator')}</th>
         <th data-plsort="followers" class="num">Followers ${plSortArrow('followers')}</th>
-        <th data-plsort="growth" class="num">${T('Évolution 30j')} ${plSortArrow('growth')}</th>
+        <th data-plsort="growth24" class="num" title="${T('Évolution followers sur les dernières 24 h')}">${T('Followers 24 h')} ${plSortArrow('growth24')}</th>
+        <th data-plsort="growth7" class="num" title="${T('Évolution followers sur les 7 derniers jours')}">${T('Followers 7 j')} ${plSortArrow('growth7')}</th>
+        <th data-plsort="growth30" class="num" title="${T('Évolution followers sur les 30 derniers jours')}">${T('Followers 30 j')} ${plSortArrow('growth30')}</th>
         <th data-plsort="tracks" class="num">Tracks ${plSortArrow('tracks')}</th>
         <th data-plsort="fit" class="num">Fit score ${plSortArrow('fit')}</th>
         <th data-plsort="genre">Genre ${plSortArrow('genre')}</th>
@@ -1872,7 +2136,9 @@ function renderPlaylists(){
           <td><span class="tk">${esc(r[1])}</span>${r[16]?'':' <span class="badge new" title="'+T('Détail pas encore récupéré')+'">'+T('en attente')+'</span>'}</td>
           <td>${esc(r[2])} ${plCuratorBadge(r[3])}</td>
           <td class="num" title="${fmtFull(r[4])}">${plFollowersCell(r)}</td>
-          <td class="num">${plGrowthCell(r)}</td>
+          <td class="num">${playlistWindowCell(r,1)}</td>
+          <td class="num">${playlistWindowCell(r,7)}</td>
+          <td class="num">${playlistWindowCell(r,30)}</td>
           <td class="num">${r[16]?(r[6]||'?'):'—'}</td>
           <td class="num">${r[16]?(r[12]||0):'—'}</td>
           <td>${esc(r[10]||'?')}</td>
@@ -1896,6 +2162,11 @@ function renderPlaylists(){
       <div class="stats stats2">
         <div class="st"><div class="v">${plFollowersCell(r)}</div><div class="l">Followers</div></div>
         <div class="st"><div class="v">${r[16]?(r[6]||'?'):'—'}</div><div class="l">Tracks</div></div>
+      </div>
+      <div class="stats">
+        <div class="st"><div class="v">${playlistWindowCell(r,1)}</div><div class="l">${T('Followers 24 h')}</div></div>
+        <div class="st"><div class="v">${playlistWindowCell(r,7)}</div><div class="l">${T('Followers 7 j')}</div></div>
+        <div class="st"><div class="v">${playlistWindowCell(r,30)}</div><div class="l">${T('Followers 30 j')}</div></div>
       </div>
     </div>`).join('')}
   </div>
@@ -2000,8 +2271,7 @@ function labelStreams30(key){
   if (!LB_S30) LB_S30 = new Map();
   let v = LB_S30.get(key);
   if (v === undefined){
-    v = 0;
-    for (const r of labelRowsOf(key)) v += streams30(r).val;
+    v = aggregateWindowForRows(labelRowsOf(key),30).current;
     LB_S30.set(key, v);
   }
   return v;
@@ -2121,8 +2391,8 @@ function renderLabels(){
           <td class="num">${fmtFull(r[2])}</td>
           <td class="num">${fmt(r[3])}</td>
           <td class="num" style="color:var(--cyan)">${money(r[4])}</td>
-          <td class="num">${fmt(labelStreams30(r[0]))}</td>
-          <td class="num" style="color:var(--cyan)">${money(labelStreams30(r[0])*RATE)}</td>
+          <td class="num">${fmtMetric(labelStreams30(r[0]))}</td>
+          <td class="num" style="color:var(--cyan)">${moneyMetric(labelStreams30(r[0])==null?null:labelStreams30(r[0])*RATE)}</td>
           <td style="white-space:nowrap">${r[5]?T('Connu depuis')+' '+fmtDate(r[5]):T('Non estimé')}</td>
           <td class="num">${r[6]}</td>
         </tr>`).join('')}
@@ -2143,8 +2413,8 @@ function renderLabels(){
         <div class="st"><div class="v">${fmtFull(r[2])}</div><div class="l">Tracks</div></div>
       </div>
       <div class="stats stats2">
-        <div class="st"><div class="v">${fmt(labelStreams30(r[0]))}</div><div class="l">${T('Streams 30j')}</div></div>
-        <div class="st"><div class="v" style="color:var(--cyan)">${money(labelStreams30(r[0])*RATE)}</div><div class="l">${T('Revenu 30j')}</div></div>
+        <div class="st"><div class="v">${fmtMetric(labelStreams30(r[0]))}</div><div class="l">${T('Streams 30j')}</div></div>
+        <div class="st"><div class="v" style="color:var(--cyan)">${moneyMetric(labelStreams30(r[0])==null?null:labelStreams30(r[0])*RATE)}</div><div class="l">${T('Revenu 30j')}</div></div>
       </div>
       <div class="foot">${r[5]?T('Connu depuis')+' '+fmtDate(r[5]):T('Non estimé')} · ${r[6]} ${T('artistes')}</div>
     </div>`).join('')}
