@@ -84,7 +84,9 @@ input,select{font-family:inherit;color:var(--text)}
 .sync-dot.load{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.35}}
 .sync-txt{font-size:11px;color:var(--dim);line-height:1.5;min-width:0}
-.sync-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync-line{display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help}
+.sync-line-dot{width:6px;height:6px;border-radius:50%;flex:none}
+.topbar .sub:empty{display:none}
 .side-foot .btn-refresh{
   display:flex;align-items:center;justify-content:center;gap:7px;padding:8px;border-radius:10px;
   background:rgba(150,163,214,.07);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);
@@ -746,6 +748,7 @@ function parseWorkbook(wb){
 <script>
 /* ================= HELPERS ================= */
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function stripCopyLead(s){return (s||'').replace(/^\s*copy the packaging logic\s*:\s*/i,'');}
 function fmtN(x){
   if(x==null||isNaN(x))return '—';
   if(x>=1e9)return (x/1e9).toFixed(1).replace(/\.0$/,'')+'B';
@@ -764,6 +767,7 @@ const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov',
 function fmtDate(ms){if(!ms)return '—';const d=new Date(ms);return MONTHS[d.getMonth()]+' '+d.getFullYear();}
 function fmtDT(ms){if(!ms)return '—';const d=new Date(ms);return d.getDate()+' '+MONTHS[d.getMonth()]+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function fmtDateFull(ms){if(!ms)return '—';const d=new Date(ms);return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
+function fmtDateTimeShort(ms){if(!ms)return '—';const d=new Date(ms);const p=n=>String(n).padStart(2,'0');return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+', '+p(d.getHours())+':'+p(d.getMinutes());}
 function fmtAge(m){if(m==null)return '—';return m<1?'<1 mo':(m<12?m.toFixed(1).replace(/\.0$/,'')+' mo':(m/12).toFixed(1).replace(/\.0$/,'')+' yr');}
 function thumb(vid,q){return vid?('https://i.ytimg.com/vi/'+vid+'/'+(q||'mqdefault')+'.jpg'):'';}
 
@@ -947,13 +951,27 @@ function maxHistTime(hist){
   }
   return m;
 }
+function scanDotColor(ms){
+  if(ms==null)return 'var(--dim)';
+  const h=(Date.now()-ms)/3600000;
+  if(h<26)return 'var(--green)';
+  if(h<72)return 'var(--amber)';
+  return 'var(--red)';
+}
 function lastScanText(){
   if(!DATA)return '';
+  const fr=typeof LANG!=='undefined'&&LANG==='fr';
   const vT=maxHistTime(DATA.hist);
   const lT=maxHistTime(DATA.liveHourly)||maxHistTime(DATA.liveHist);
   const parts=[];
-  if(vT!=null)parts.push('<div class="sync-line">🎬 videos '+timeAgo(vT)+'</div>');
-  if(lT!=null)parts.push('<div class="sync-line">📡 streams '+timeAgo(lT)+'</div>');
+  const line=(ms,emo,labelEn,labelFr,descEn,descFr)=>{
+    const tip=fr
+      ? 'Scan '+labelFr+' — dernière mise à jour le '+fmtDateTimeShort(ms)+'. '+descFr
+      : labelEn+' scan — last updated '+fmtDateTimeShort(ms)+'. '+descEn;
+    return '<div class="sync-line" title="'+esc(tip)+'"><span class="sync-line-dot" style="background:'+scanDotColor(ms)+'"></span>'+emo+' '+fmtDateTimeShort(ms)+'</div>';
+  };
+  if(vT!=null)parts.push(line(vT,'🎬','Videos','Vidéos','Refreshes the video catalog, views and stats.','Actualise le catalogue de vidéos, leurs vues et statistiques.'));
+  if(lT!=null)parts.push(line(lT,'📡','Streams','Streams','Refreshes live streams and viewer counts.','Actualise les streams en direct et le nombre de spectateurs.'));
   return parts.join('');
 }
 
@@ -1151,16 +1169,17 @@ function render(){
   if(!DATA)return;
   const t=document.getElementById('view-title'),s=document.getElementById('view-sub'),el=document.getElementById('view');
   closeDrawer();
-  if(route==='dashboard'){t.innerHTML='Dashboard <span class="pill">LIVE</span>';s.textContent='Competitive intelligence across '+fmtInt(DATA.all.length)+' instrumental videos · updated daily by the scan';el.innerHTML=dashHTML();}
-  else if(route==='mix'){t.innerHTML='Videos <span class="pill">DAILY SCAN</span>';s.textContent='Full competitive audit, trends & fresh discoveries merged · filter by release date to see what\u2019s new';el.innerHTML=videosHTML('mix');}
+  s.textContent='';
+  if(route==='dashboard'){t.innerHTML='Dashboard <span class="pill">LIVE</span>';el.innerHTML=dashHTML();}
+  else if(route==='mix'){t.innerHTML='Videos <span class="pill">DAILY SCAN</span>';el.innerHTML=videosHTML('mix');}
   else if(route==='all'||route==='trends'||route==='news'){route='mix';renderNav();render();return;}
-  else if(route==='recos'){t.textContent='Recommendations';s.textContent=fmtInt(DATA.recos.length)+' original concepts ranked by potential · descriptions & SEO keywords ready to copy';el.innerHTML=recosHTML();}
-  else if(route==='roadmap'){t.textContent='Roadmap';s.textContent='Release plan balanced by genre, character and season · synced with Monday';el.innerHTML=roadmapHTML();}
-  else if(route==='ana'){t.innerHTML='Analysis <span class="pill">OUR VIDEOS</span>';s.textContent='How each of our long-form releases performed vs the market · last 12 months · Shorts excluded';el.innerHTML=anaHTML();}
-  else if(route==='watch'){t.innerHTML='Watchlist <span class="pill">⭐</span>';s.textContent='Your pinned videos, livestreams and channels · stored in this browser';el.innerHTML=watchHTML();}
-  else if(route==='live'){t.innerHTML='Livestreams <span class="pill">LIVE</span>';s.textContent='24/7 streams surfacing on the scan keywords · concurrent viewers tracked hourly';el.innerHTML=livesHTML();}
-  else if(route==='chan'){t.textContent='Channels';s.textContent='Competitive channel audit · subscribers & total views tracked by the weekly scan';el.innerHTML=chanHTML();}
-  else if(route==='kw'){t.textContent='Keywords';s.textContent='The search corpus scanned on every sync · what feeds All Videos, Trends & News';el.innerHTML=kwHTML();}
+  else if(route==='recos'){t.textContent='Recommendations';el.innerHTML=recosHTML();}
+  else if(route==='roadmap'){t.textContent='Roadmap';el.innerHTML=roadmapHTML();}
+  else if(route==='ana'){t.innerHTML='Analysis <span class="pill">OUR VIDEOS</span>';el.innerHTML=anaHTML();}
+  else if(route==='watch'){t.innerHTML='Watchlist <span class="pill">⭐</span>';el.innerHTML=watchHTML();}
+  else if(route==='live'){t.innerHTML='Livestreams <span class="pill">LIVE</span>';el.innerHTML=livesHTML();}
+  else if(route==='chan'){t.textContent='Channels';el.innerHTML=chanHTML();}
+  else if(route==='kw'){t.textContent='Keywords';el.innerHTML=kwHTML();}
   i18nView();armAutoLoad();fillLikes();
 }
 
@@ -1395,13 +1414,13 @@ function openDrawer(kind,v){
   const sec=(k,val,icon)=>val?'<div class="dw-sec"><div class="k">'+(icon||'')+' '+k+'</div><div class="v">'+esc(val)+'</div></div>':'';
   let extra='';
   if(kind==='mix'){
-    extra=sec('Why trending / notable',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg||v.angle,'💡')+sec('What to copy',v.copy,'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨')+
+    extra=sec('Why trending / notable',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg||v.angle,'💡')+sec('What to copy',stripCopyLead(v.copy),'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨')+
       sec('Discovery keywords',v.disc,'🔎')+
       (v.rank?sec('Best search rank','#'+Math.round(v.rank),'🏁'):'')+
       (v.added?sec('First seen by the scan',fmtDateFull(v.added),'🗓️'):'')+
       sec('Found via search keywords',v.kw,'🔎')+sec('Title pattern',v.pattern,'✏️');
   }else if(kind==='trends'){
-    extra=sec('Why trending',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg,'💡')+sec('What to copy',v.copy,'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨');
+    extra=sec('Why trending',v.why,'🔥')+sec('Lofi Girl suggestion',v.sugg,'💡')+sec('What to copy',stripCopyLead(v.copy),'🎯')+sec('Musical direction',v.musical,'🎼')+sec('Visual direction',v.visual,'🎨');
   }else if(kind==='news'){
     extra=sec('Why notable',v.why,'📌')+sec('Lofi Girl angle',v.angle,'💡')+sec('Discovery keywords',v.disc,'🔎')+
       (v.rank?sec('Best search rank','#'+Math.round(v.rank),'🏁'):'')+
@@ -1884,7 +1903,7 @@ function schedBucket(r){
 }
 function schedIsRain(r){return /pluie|rain|thunder|orage|storm/i.test((r.title||'')+' '+(r.concept||'')+' '+(r.style||''));}
 function schedWeekKey(d){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x.getFullYear()+'-'+x.getMonth()+'-'+x.getDate();}
-function suggestRoadmapDate(reco){
+function suggestRoadmapDate(reco,avoidKeys){
   const bucket=schedBucket(reco);
   const rule=SCHED_RULES[bucket]||{};
   const rain=schedIsRain(reco);
@@ -1894,6 +1913,7 @@ function suggestRoadmapDate(reco){
   const lastOfBucket=[...rmRows].reverse().find(r=>schedBucket(r)===bucket);
   const lastRain=[...rmRows].reverse().find(r=>schedIsRain(r));
   const today=new Date();today.setHours(0,0,0,0);
+  const dayKey=x=>x.getFullYear()+'-'+x.getMonth()+'-'+x.getDate();
   const passes=[
     {allowFriday:false,respectWeeks:true,respectGap:true},
     {allowFriday:true,respectWeeks:true,respectGap:true},
@@ -1906,6 +1926,7 @@ function suggestRoadmapDate(reco){
       const dow=d.getDay();
       if(dow===0||dow===6)continue;
       if(dow===5&&!pass.allowFriday)continue;
+      if(avoidKeys&&avoidKeys.has(dayKey(d)))continue;
       if(pass.respectWeeks&&usedWeeks.has(schedWeekKey(d)))continue;
       if(rule.seasonalMonths&&!rule.seasonalMonths.includes(d.getMonth()))continue;
       if(rule.seasonalDayMax&&d.getDate()>rule.seasonalDayMax)continue;
@@ -1945,8 +1966,10 @@ function schedMiniCal(dateHi,rows){
   return h;
 }
 function openSchedulePopup(reco){
-  const sug=suggestRoadmapDate(reco);
-  SCHED_CUR={reco,sug};
+  const avoid=new Set();
+  const sug=suggestRoadmapDate(reco,avoid);
+  if(sug)avoid.add(sug.date.getFullYear()+'-'+sug.date.getMonth()+'-'+sug.date.getDate());
+  SCHED_CUR={reco,sug,avoid};
   renderSchedPopup();
   document.getElementById('sched-backdrop').classList.add('show');
   document.getElementById('sched-modal').classList.add('show');
@@ -1989,15 +2012,13 @@ function renderSchedPopup(){
 }
 function skipSchedDate(){
   if(!SCHED_CUR)return;
-  const prevDate=SCHED_CUR.sug.date;
-  const rmRows=(DATA.roadmap||[]).filter(r=>r.date).concat(SCHED_LOCAL,[{date:+prevDate,genre:SCHED_CUR.reco.genre}]);
-  const bucket=schedBucket(SCHED_CUR.reco);
-  const fakeReco=Object.assign({},SCHED_CUR.reco);
-  const savedRoadmap=DATA.roadmap;
-  DATA.roadmap=rmRows;
-  const sug=suggestRoadmapDate(fakeReco);
-  DATA.roadmap=savedRoadmap;
-  if(sug)SCHED_CUR.sug=sug;
+  if(!SCHED_CUR.avoid)SCHED_CUR.avoid=new Set();
+  if(SCHED_CUR.sug){const p=SCHED_CUR.sug.date;SCHED_CUR.avoid.add(p.getFullYear()+'-'+p.getMonth()+'-'+p.getDate());}
+  const sug=suggestRoadmapDate(SCHED_CUR.reco,SCHED_CUR.avoid);
+  if(sug){
+    SCHED_CUR.sug=sug;
+    SCHED_CUR.avoid.add(sug.date.getFullYear()+'-'+sug.date.getMonth()+'-'+sug.date.getDate());
+  }
   renderSchedPopup();
 }
 function confirmSchedDate(){
@@ -2361,7 +2382,6 @@ function anaCardHTML(o,i){
       '<div class="vstats">'+
         '<div class="vstat hl"><b style="color:'+pcol(o.pctCh)+'">'+fmtN(o.views)+'</b><span>views</span></div>'+
         '<div class="vstat"><b style="color:'+vsMed(o.vpm,o.chMed)+'">'+fmtN(o.vpm)+'</b><span>views/mo</span></div>'+
-        '<div class="vstat"><b style="color:'+pcol(o.pctCh)+'">'+(o.pctCh==null?'—':o.pctCh+'th')+'</b><span>percentile</span></div>'+
       '</div></div></div>';
 }
 function anaHTML(){
@@ -2387,8 +2407,7 @@ function anaHTML(){
   h+='<div class="toolbar">'+xdd('c-sort',asSortRow[1]+' Sort · '+asSortRow[2],asSortOpts)+
     '<div class="tb-right"><div class="viewtoggle">'+
       '<button class="'+(AS.mode!=='table'?'on':'')+'" onclick="AS.mode=\'grid\';render()" title="Grid">'+ICONS.grid+'</button>'+
-      '<button class="'+(AS.mode==='table'?'on':'')+'" onclick="AS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div>'+
-    '<div class="result-count">Market benchmark (radar) × YouTube Studio private data (impressions, CTR, retention · 365 days, refreshed on demand)</div></div></div>';
+      '<button class="'+(AS.mode==='table'?'on':'')+'" onclick="AS.mode=\'table\';render()" title="Table">'+ICONS.rows+'</button></div></div>';
   window._page_ana=rows;
   if(AS.mode==='table'){
     h+=rows.map((o,i)=>{
