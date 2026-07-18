@@ -163,7 +163,10 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .xdd-car{font-size:9px;opacity:.65;transition:transform .15s}
 .tipw{position:relative}
 .tipw:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);background:#141828;border:1.5px solid var(--border2);border-radius:11px;padding:8px 11px;font-size:11px;font-weight:600;color:var(--text);white-space:normal;width:max-content;max-width:190px;line-height:1.5;box-shadow:0 14px 34px rgba(0,0,0,.55);z-index:95;pointer-events:none;text-align:center;letter-spacing:0}
-.tipw:hover::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--border2);z-index:95;pointer-events:none}
+.tipw:hover::after{border-color:var(--tipc,var(--border2))}
+.tipw:hover::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--tipc,var(--border2));z-index:95;pointer-events:none}
+.vcard.ana-c{overflow:visible}
+.vcard.ana-c .thumbwrap{border-radius:var(--r) var(--r) 0 0}
 .xdd.open .xdd-car{transform:rotate(180deg)}
 .xdd-list{position:absolute;top:calc(100% + 7px);left:0;min-width:100%;max-height:320px;overflow-y:auto;
   background:#141828;border:1.5px solid var(--border2);border-radius:16px;padding:6px;z-index:80;
@@ -420,10 +423,10 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .cal-navright{display:flex;align-items:center;flex:none}
 .cal-shell{display:flex;gap:18px;align-items:flex-start}
 .cal-body{flex:1;min-width:0}
-.cal-legend-v{flex:none;display:flex;flex-direction:column;gap:10px;padding-top:56px;font-size:12px;color:var(--muted)}
-.cal-legend-v span{display:flex;align-items:center;gap:8px;white-space:nowrap}
-.cal-legend-v i{display:inline-block;width:11px;height:11px;border-radius:4px;flex:none}
-@media(max-width:900px){.cal-shell{flex-direction:column}.cal-legend-v{flex-direction:row;flex-wrap:wrap;padding-top:0}}
+.cal-legend-v{flex:none;display:flex;flex-direction:column;gap:16px;padding-top:58px;font-size:14px;font-weight:600;color:var(--muted);min-width:150px}
+.cal-legend-v span{display:flex;align-items:center;gap:11px;white-space:nowrap}
+.cal-legend-v i{display:inline-block;width:15px;height:15px;border-radius:5px;flex:none;box-shadow:0 0 10px var(--lgc,transparent)}
+@media(max-width:1000px){.cal-shell{flex-direction:column}.cal-legend-v{flex-direction:row;flex-wrap:wrap;gap:12px 18px;padding-top:0;min-width:0}}
 .cal-month{font-family:'Sora';font-size:22px;font-weight:700;min-width:230px;text-align:center;letter-spacing:-.3px}
 .cal-nav .arrow{font-size:19px;padding:7px 17px;line-height:1}
 .cal{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:rgba(15,18,30,.6)}
@@ -444,7 +447,7 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .cal-viewtoggle{display:flex;gap:4px;background:rgba(150,163,214,.06);border:1px solid var(--border);border-radius:14px;padding:3px}
 .cal-viewtoggle button{font-family:inherit;font-size:13px;font-weight:700;padding:9.5px 17px;border-radius:11px;color:var(--dim);cursor:pointer;letter-spacing:.3px}
 .cal-viewtoggle button.on{background:var(--acc);color:#fff;box-shadow:0 4px 14px rgba(139,124,246,.4)}
-.year-cal{display:grid;grid-template-columns:repeat(4,minmax(150px,calc((100vh - 255px)/3)));gap:12px;justify-content:start}
+.year-cal{display:grid;grid-template-columns:repeat(4,minmax(150px,calc((100vh - 232px)/3)));gap:13px;justify-content:center}
 @media(max-width:1100px){.year-cal{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:800px){.year-cal{grid-template-columns:repeat(2,1fr)}}
 .year-month{border:1px solid var(--border);border-radius:12px;background:rgba(15,18,30,.55);padding:9px 11px;min-width:0}
@@ -676,6 +679,75 @@ function parseVideos(ws,kind){
   }
   return out;
 }
+function _kwPool(r){
+  const g=(r.genre||'').toLowerCase(),ni=(r.niche||'').toLowerCase(),pe=(r.perso||'').toLowerCase(),t=(r.title||'').toLowerCase(),gt=g+' '+t;
+  const pool=['lofi girl','lofi','lo-fi','chill beats','relaxing music','calm music','chill music','background music','aesthetic music','instrumental music','music to relax to','chill vibes'];
+  const add=a=>a.forEach(x=>pool.push(x));
+  if(/lofi|chill ?hop|hip ?hop/.test(g)){add(['lofi hip hop','lofi radio','lofi mix','lofi beats','chillhop','study beats','lofi playlist','lofi chill','lofi vibes','beats to relax study to','chill lofi','lofi music','lofi beats to study']);}
+  if(/dark ambient/.test(g)){add(['dark ambient','dark atmospheric music','horror ambient','dungeon synth','eerie ambient','ominous soundscape','dark drone']);}
+  else if(/ambient/.test(g)){add(['ambient music','sleep ambient','ambient soundscape','atmospheric music','ambient drone','space ambient','cinematic ambient','ethereal ambient','ambient sleep music','calming ambient']);}
+  if(/jazz|bossa/.test(g)){add(['jazz music','smooth jazz','jazz cafe','coffee shop jazz','relaxing jazz','jazz piano','bossa nova','night jazz','jazz instrumental','cozy jazz','jazz for work','warm jazz']);}
+  if(/piano|classi/.test(g)){add(['piano music','relaxing piano','emotional piano','sleep piano','piano instrumental','soft piano','beautiful piano','calm piano','peaceful piano']);}
+  if(/classi/.test(g)){add(['classical music','relaxing classical','classical piano','instrumental classical','baroque music']);}
+  if(/nature/.test(g)){add(['nature sounds','rain sounds','forest sounds','ocean sounds','white noise','rain for sleeping','thunderstorm sounds','nature ambience','river sounds','birds singing']);}
+  if(/house/.test(g)){add(['lofi house','chill house','deep house','melodic house','house music','downtempo']);}
+  if(/guitar|acoust/.test(g)){add(['acoustic guitar','guitar music','relaxing guitar','spanish guitar','fingerstyle guitar','soft guitar']);}
+  if(/synth|retro|wave|electro/.test(g)){add(['synthwave','retrowave','80s synthwave','cyberpunk music','outrun','synthwave mix','chillwave','electronic music']);}
+  if(/rain|storm|pluie|orage/.test(gt)){add(['rain ambience','cozy rain','rainy day','sleep sounds','heavy rain']);}
+  if(/sleep|nuit|night|dorm/.test(ni+' '+t)){add(['sleep music','music for sleeping','deep sleep music','insomnia relief','fall asleep fast','sleeping music','bedtime music','8 hours sleep music','music for deep sleep','relaxing sleep music']);}
+  if(/stud|focus|work|concentr|travail/.test(ni+' '+t)){add(['study music','music for studying','concentration music','focus music','deep focus music','study session','pomodoro music','productivity music','work music','music for concentration']);}
+  if(/relax|spa|detente|détente|calm|medit|d[eé]tente/.test(ni+' '+t)){add(['relaxing music','stress relief music','calm your mind','meditation music','soothing music','anxiety relief','relaxation music','music for relaxation']);}
+  if(/gam/.test(ni+' '+t)){add(['gaming music','music for gaming','focus gaming music']);}
+  if(/coffee|cafe|café/.test(ni+' '+t)){add(['coffee shop ambience','cafe music','morning coffee music']);}
+  if(/christmas|no[eë]l|xmas/.test(gt)){add(['christmas music','christmas lofi','cozy christmas','holiday music','christmas ambience']);}
+  if(/halloween/.test(gt)){add(['halloween music','spooky music','halloween ambience','creepy music']);}
+  if(/autumn|automne|fall/.test(t)){add(['autumn lofi','cozy autumn','fall vibes','autumn ambience']);}
+  if(/summer|[eé]t[eé]/.test(t)){add(['summer lofi','summer vibes','summer chill']);}
+  if(/winter|hiver|snow|neige/.test(t)){add(['winter lofi','cozy winter','snow ambience']);}
+  if(/lofi girl|synthwave boy/.test(pe)){add(['lofi girl animation','lofi girl study','lofi girl beats']);}
+  add(['1 hour','2 hours','8 hours','black screen','no ads','loop','24/7','study and relax','beats to chill to','music to study to']);
+  return pool;
+}
+function buildRecoDesc(r){
+  const t=(r.title||'this mix').trim();
+  const dur=(r.dur&&/\d/.test(r.dur))?r.dur:'long';
+  const ni=(r.niche||'').toLowerCase()+' '+(r.title||'').toLowerCase()+' '+(r.genre||'').toLowerCase();
+  let intro;
+  if(/sleep|nuit|night|dorm/.test(ni))
+    intro='Press play, dim the lights and let '+t+' carry you into deep, restful sleep. This '+dur+' mix was crafted to quiet your mind, slow your breathing and hold the calm of the night in place — no interruptions, just rest.';
+  else if(/stud|focus|work|concentr|travail|gam/.test(ni))
+    intro='Put on '+t+' and settle into a state of deep focus. This '+dur+' mix keeps the distractions out and the momentum in — made for studying, working or slipping into flow.';
+  else if(/relax|spa|medit|calm|detente|détente/.test(ni))
+    intro='Take a breath and let '+t+' wash the day away. This '+dur+' mix is here to ease the tension, calm your thoughts and give you a quiet moment that’s entirely yours.';
+  else
+    intro='Let '+t+' set the mood. This '+dur+' mix is your background for whatever the moment calls for — relaxing, focusing or simply drifting along.';
+  return intro+'\n\n'+
+  '🎼 | Listen on Spotify, Apple music and more →\nhttps://fanlink.tv/[a-completer]\n\n'+
+  '🎶 | Tracklist\n[00:00] [Artiste] - [Titre]\n[XX:XX] [Artiste] - [Titre]\n\n'+
+  '🌎 | Lofi Girl on all social media → https://link.lofigirl.com/m/Community\n'+
+  '🌐 | Our Websites → https://link.lofigirl.com/m/website\n'+
+  '👕 | Lofi Girl merch → https://link.lofigirlshop.com/shop\n'+
+  '🎮 | Our video games → https://link.lofigirl.com/m/games\n'+
+  '🎭 | Create your lofi avatar now → https://lofigirl.com/generator/\n\n'+
+  '🎨 | Art by Lofi Studio\n→ Production: Moutie Loukil / Léonore Kuszel\n→ Art Direction & Supervision: Laura Vuillerme\n→ BG: [a completer]\n→ Animation: [a completer]\n→ Assist, clean & colour: [a completer]\n→ Compositing: [a completer]\n\n'+
+  '🙏 Thank you for listening, I hope you will have a good time here\n'+
+  '❤️ All visuals and music in this video are 100% crafted by talented human artists';
+}
+function enrichRecos(recos){
+  if(!recos)return recos;
+  recos.forEach(r=>{
+    if(r.__enr)return;r.__enr=1;
+    const have=new Set(),parts=[];
+    const push=x=>{const k=String(x).toLowerCase().trim();if(!k||have.has(k))return;have.add(k);parts.push(String(x).trim());};
+    String(r.kw||'').split(/[,;\n]+/).forEach(x=>{if(x.trim())push(x);});
+    _kwPool(r).forEach(push);
+    let out='';
+    for(const p of parts){const cand=out?out+', '+p:p;if(cand.length>498)break;out=cand;}
+    if(out&&out.length>=(r.kw||'').length)r.kw=out;
+    if(!r.desc||r.desc.length<400)r.desc=buildRecoDesc(r);
+  });
+  return recos;
+}
 function parseRecos(ws){
   const hr=findHeader(ws,0,'n°');if(hr<0)return[];
   const out=[];const end=lastRow(ws);
@@ -691,6 +763,7 @@ function parseRecos(ws){
       scoreAdj:num(cv(ws,r,19)), recal:str(cv(ws,r,20))
     });
   }
+  enrichRecos(out);
   return out;
 }
 function parseRoadmap(ws){
@@ -1036,6 +1109,7 @@ function saveCache(d){
 function loadCache(){
   try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const o=JSON.parse(raw);
     o.d.recos.forEach(r=>{if(r.valid==null)r.valid='';});
+    enrichRecos(o.d.recos);
     splitElectroHouse(o.d.all);splitElectroHouse(o.d.trends);splitElectroHouse(o.d.news);splitElectroHouse(o.d.ours);
     return o;}catch(e){return null;}
 }
@@ -1169,7 +1243,7 @@ async function boot(){
   if(cache&&(!snap||cache.t>=snap.t)){best=cache;src='cache';}
   else if(snap){best=snap;src='snap';}
   if(best){
-    splitElectroHouse(best.d.all);splitElectroHouse(best.d.trends);splitElectroHouse(best.d.news);splitElectroHouse(best.d.ours);
+    splitElectroHouse(best.d.all);splitElectroHouse(best.d.trends);splitElectroHouse(best.d.news);splitElectroHouse(best.d.ours);enrichRecos(best.d.recos);
     DATA=best.d;SYNCED=best.t;
     document.getElementById('loader').classList.add('hide');
     setSync('load',(src==='snap'?'Daily snapshot · ':'Cached · ')+'trying live sync…');
@@ -1868,8 +1942,8 @@ function calHTML(rows,vt){
   const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
   const byDay={};rows.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
   const lg=[...new Set(rows.map(r=>r.genre).filter(Boolean))];
-  const legendV='<div class="cal-legend-v">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+'"></i>'+esc(g)+'</span>').join('')+'</div>';
-  let h='<div class="cal-shell">'+legendV+'<div class="cal-body">'+
+  const legendV='<div class="cal-legend-v">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+';--lgc:'+gcolor(g)+'66"></i>'+esc(g)+'</span>').join('')+'</div>';
+  let h='<div class="cal-shell"><div class="cal-body">'+
     '<div class="cal-nav">'+toggle+
     '<div class="cal-center"><button class="ctl-btn arrow" onclick="calShift(-1)" title="Previous month">‹</button>'+
     '<div class="cal-month">'+MFULL[m]+' '+y+'</div>'+
@@ -1886,7 +1960,7 @@ function calHTML(rows,vt){
       '</div></div>';
   }
   h+='</div></div>';
-  h+='</div></div>';
+  h+='</div>'+legendV+'</div>';
   return h;
 }
 function yearCalHTML(rows,y,toggle,vt){
@@ -1895,8 +1969,8 @@ function yearCalHTML(rows,y,toggle,vt){
   const key=d=>d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
   const byDay={};rows.forEach(r=>{const k=key(new Date(r.date));(byDay[k]=byDay[k]||[]).push(r);});
   const lg=[...new Set(rows.map(r=>r.genre).filter(Boolean))];
-  const legendV='<div class="cal-legend-v">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+'"></i>'+esc(g)+'</span>').join('')+'</div>';
-  let h='<div class="cal-shell">'+legendV+'<div class="cal-body">'+
+  const legendV='<div class="cal-legend-v">'+lg.map(g=>'<span><i style="background:'+gcolor(g)+';--lgc:'+gcolor(g)+'66"></i>'+esc(g)+'</span>').join('')+'</div>';
+  let h='<div class="cal-shell"><div class="cal-body">'+
     '<div class="cal-nav">'+toggle+
     '<div class="cal-center"><button class="ctl-btn arrow" onclick="calShift(-1)" title="Previous year">‹</button>'+
     '<div class="cal-month">'+y+'</div>'+
@@ -1922,7 +1996,7 @@ function yearCalHTML(rows,y,toggle,vt){
     h+='</div></div>';
   }
   h+='</div>';
-  h+='</div></div>';
+  h+='</div>'+legendV+'</div>';
   return h;
 }
 
@@ -2375,13 +2449,25 @@ function buildOptimProposal(o){
     const kws=missing.slice(0,2).join(' · ');
     hookSug=(o.title.replace(/[|:].*$/,'').trim())+' — '+kws+(ben?' '+ben:'')+'. '+(m.hook?'(remplace le début actuel : «'+m.hook.slice(0,60)+'…»)':'');
   }
-  const p={tags:dedup,tagsStr:dedup.join(', '),titleSug,hookSug,missTop:missing.slice(0,8),needTs:!m.ts};
+  // full suggested description: optimized hook + standard Lofi Girl boilerplate
+  const cleanT=o.title.replace(/[|:].*$/,'').trim();
+  const kwLine=missing.slice(0,4).join(', ');
+  const introSug=cleanT+(ben?' — '+ben:'')+'. '+(kwLine?('Perfect '+kwLine+'. '):'')+'Press play, settle in and let it run.';
+  const descSug=introSug+'\n\n'+
+    '🎼 | Listen on Spotify, Apple music and more →\nhttps://fanlink.tv/[a-completer]\n\n'+
+    '🎶 | Tracklist\n[00:00] [Artiste] - [Titre]\n[XX:XX] [Artiste] - [Titre]\n\n'+
+    '🌎 | Lofi Girl on all social media → https://link.lofigirl.com/m/Community\n'+
+    '🌐 | Our Websites → https://link.lofigirl.com/m/website\n'+
+    '👕 | Lofi Girl merch → https://link.lofigirlshop.com/shop\n'+
+    '🎮 | Our video games → https://link.lofigirl.com/m/games\n\n'+
+    '🙏 Thank you for listening\n❤️ All visuals and music in this video are 100% crafted by talented human artists';
+  const p={tags:dedup,tagsStr:dedup.join(', '),missAdd:missing.slice(0,40),titleSug,hookSug,descSug,missTop:missing.slice(0,8),needTs:!m.ts};
   OPTIM_REG[o.vid]=p;
   return p;
 }
 function copyOptim(vid,what,btn){
   const p=OPTIM_REG[vid];if(!p)return;
-  const txt=what==='tags'?p.tagsStr:what==='title'?p.titleSug:p.hookSug;
+  const txt=what==='tags'?p.tagsStr:what==='title'?p.titleSug:what==='desc'?p.descSug:p.hookSug;
   navigator.clipboard.writeText(txt||'').then(()=>{const o=btn.textContent;btn.textContent='✓ Copied';setTimeout(()=>btn.textContent=o,1400);});
 }
 function optimHTML(o,p){
@@ -2389,9 +2475,10 @@ function optimHTML(o,p){
   const fr=typeof LANG!=='undefined'&&LANG==='fr';
   let h='<div class="dw-sec" style="border:1px solid rgba(139,124,246,.35);border-radius:12px;padding:14px;background:rgba(139,124,246,.06)">';
   h+='<div class="k">🛠️ Optimization proposal (ready to paste into Studio)</div><div class="v">';
-  h+='<b style="color:var(--acc2)">Suggested tags ('+p.tags.length+', '+p.tagsStr.length+'/500 characters)</b> — brand + our tags that perform + top-genre tags:<br><span style="font-size:12px;color:var(--muted)">'+esc(p.tagsStr)+'</span><br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'tags\',this)">⧉ Copy tags</button>';
+  if(p.missAdd&&p.missAdd.length)h+='<b style="color:#34d399">Tags to add ('+p.missAdd.length+')</b> — used by top '+esc(o.gk||o.genre)+' videos but missing here:<br><div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px">'+p.missAdd.map(t=>'<span class="tag" style="background:rgba(52,211,153,.14);color:#34d399;border:1px solid rgba(52,211,153,.4)">'+esc(t)+'</span>').join('')+'</div>';
+  h+='<br><b style="color:var(--acc2)">Full suggested tag list ('+p.tags.length+' tags, '+p.tagsStr.length+'/500 characters)</b>:<br><span style="font-size:12px;color:#34d399;line-height:1.6">'+esc(p.tagsStr)+'</span><br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'tags\',this)">⧉ Copy all tags</button>';
   if(p.titleSug)h+='<br><br><b style="color:var(--acc2)">Suggested title</b> (adds the sought-after benefit):<br>'+esc(p.titleSug)+'<br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'title\',this)">⧉ Copy title</button>';
-  if(p.hookSug)h+='<br><br><b style="color:var(--acc2)">Suggested description hook</b> (the first 125 characters matter most):<br>'+esc(p.hookSug)+'<br><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'hook\',this)">⧉ Copy hook</button>';
+  if(p.descSug)h+='<br><br><b style="color:var(--acc2)">Suggested description</b> (keyword-rich hook + Lofi Girl boilerplate):<br><span style="font-size:11.5px;color:var(--muted);white-space:pre-wrap;line-height:1.55;display:block;margin-top:5px;max-height:150px;overflow:auto">'+esc(p.descSug)+'</span><button class="copybtn" onclick="copyOptim(\''+o.vid+'\',\'desc\',this)">⧉ Copy description</button>';
   if(p.needTs)h+='<br><br><b style="color:var(--amber)">⏱ Add the tracklist with timestamps</b> — generates “key moments” in Google/YouTube search.';
   h+='</div></div>';
   if(fr)h=frz(h);
@@ -2435,15 +2522,16 @@ function tipText(val,med,fmt){
 function anaStat(val,med,lbl,hl,fmt){
   const f=fmt||fmtN;
   const tip=tipText(val,med,f);
-  return '<div class="vstat'+(hl?' hl':'')+(tip?' tipw':'')+'"'+(tip?' data-tip="'+esc(tip)+'"':'')+'><b style="color:'+vsMed(val,med)+'">'+f(val)+'</b><span>'+lbl+'</span></div>';
+  const col=vsMed(val,med);
+  return '<div class="vstat'+(hl?' hl':'')+(tip?' tipw':'')+'"'+(tip?' data-tip="'+esc(tip)+'" style="--tipc:'+col+'"':'')+'><b style="color:'+col+'">'+f(val)+'</b><span>'+lbl+'</span></div>';
 }
 function anaCardHTML(o,i){
   const cmt=(window.CMT&&window.CMT[o.vid]!=null)?window.CMT[o.vid]:null;
-  return '<div class="vcard" onclick="openAnaIdx('+i+')">'+
+  return '<div class="vcard ana-c" onclick="openAnaIdx('+i+')">'+
     '<div class="thumbwrap"><img loading="lazy" src="'+thumb(o.vid)+'" onerror="this.style.visibility=\'hidden\'"></div>'+
     '<div class="vbody">'+
       '<div class="vtitle">'+esc(o.title)+'</div>'+
-      '<div class="vtags">'+gtag(o.genre)+(o.durH!=null?ghosttag(fmtDur(o.durH)):'')+'</div>'+
+      '<div class="vtags">'+gtag(o.genre)+(o.durH!=null?ghosttag(fmtDur(o.durH)):'')+(o.pub?'<span class="tag ghost">📅 '+fmtDateFull(o.pub)+'</span>':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:8px;margin:2px 0 10px"><div class="pbar"><i style="width:'+(o.pctCh==null?0:o.pctCh)+'%;background:'+pcol(o.pctCh)+'"></i></div></div>'+
       '<div class="vstats">'+
         anaStat(o.views,o.medViews,'views',true)+
@@ -2465,11 +2553,12 @@ function fillAnaLikes(){
     for(const vid in els){
       const el=els[vid],n=got[vid];
       if(n==null){el.textContent='—';continue;}
+      const col=vsMed(n,med);
       el.textContent=fmtN(n);
-      el.style.color=vsMed(n,med);
+      el.style.color=col;
       const tip=tipText(n,med,fmtN);
       const wrap=el.closest('[data-alikesw]');
-      if(tip&&wrap){wrap.setAttribute('data-tip',tip);wrap.classList.add('tipw');}
+      if(tip&&wrap){wrap.setAttribute('data-tip',tip);wrap.classList.add('tipw');wrap.style.setProperty('--tipc',col);}
     }
   }
 }
