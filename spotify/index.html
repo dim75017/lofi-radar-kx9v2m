@@ -1864,9 +1864,21 @@ function openArMessage(uuid){
   renderDraft();
   document.getElementById('ar-modal').style.display='flex';
 }
+function radarAiFilterHtml(){
+  return `<select id="radar-ai">
+    <option value="hide_high" ${S.radarAiRisk==='hide_high'?'selected':''}>Risque IA : masquer élevé</option>
+    <option value="all" ${S.radarAiRisk==='all'?'selected':''}>Risque IA : tous</option>
+    <option value="high_only" ${S.radarAiRisk==='high_only'?'selected':''}>Risque IA : élevé uniquement</option>
+  </select>`;
+}
+function bindRadarAiFilter(){
+  const select=document.getElementById('radar-ai');
+  if(select) select.addEventListener('change',event=>{S.radarAiRisk=event.target.value;renderRadar();});
+}
 function renderRadar(){
   if(!SC){
-    V.innerHTML=`<div class="page-head"><div><h2>${T('Radar A&R')}</h2><p>${T('Données Soundcharts non encore exportées.')}</p></div></div>`;
+    V.innerHTML=`<div class="page-head"><div><h2>${T('Opportunités A&R')}</h2><p>${T('Données Soundcharts non encore exportées.')}</p></div></div><div class="toolbar">${radarAiFilterHtml()}</div>`;
+    bindRadarAiFilter();
     return;
   }
   const all=arCandidates();
@@ -1893,11 +1905,7 @@ function renderRadar(){
       <button class="chip ${S.radarFilter==='all'?'on':''}" data-radar-filter="all">Tous (${fmtFull(aiFiltered.length)})</button>
       <button class="chip ${S.radarFilter==='qualified'?'on':''}" data-radar-filter="qualified">${T('Pépites à écouter')} (${fmtFull(qualified.length)})</button>
       <button class="chip ${S.radarFilter==='review'?'on':''}" data-radar-filter="review">${T('Prêt à contacter')} (${fmtFull(ready.length)})</button>
-      <select id="radar-ai">
-        <option value="hide_high" ${S.radarAiRisk==='hide_high'?'selected':''}>Risque IA : masquer élevé</option>
-        <option value="all" ${S.radarAiRisk==='all'?'selected':''}>Risque IA : tous</option>
-        <option value="high_only" ${S.radarAiRisk==='high_only'?'selected':''}>Risque IA : élevé uniquement</option>
-      </select>
+      ${radarAiFilterHtml()}
       <span class="spacer"></span><span class="result-count">${esc(state)}</span>
     </div>
     <div class="panel" style="padding:6px 14px 14px"><table><thead><tr><th>#</th><th>${T('Artiste')}</th><th>${T('Signal de découverte')}</th><th class="num">${T('Auditeurs mensuels')}</th><th>${T('Réseau Fans Also Like')}</th><th>Gates</th><th>${T('Contact')}</th><th>${T('Étape suivante')}</th></tr></thead><tbody>
@@ -1914,7 +1922,7 @@ function renderRadar(){
     </tbody></table>${rows.length===0?`<div class="empty">${T('Données insuffisantes')}</div>`:''}</div>
     <div class="analytics-section" style="margin-top:16px"><h4>${T('Filons confirmés')}</h4>${clusters.length?`<div class="contributors">${clusters.map(cluster=>`<div class="contributor"><span class="cn">${esc(cluster.genre)}</span><span class="cv">${cluster.artists} artistes · ${cluster.tracks} tracks</span></div>`).join('')}</div>`:`<div class="analytics-note">${T('Aucun filon confirmé')} · ${T('Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.')}</div>`}</div>`;
   document.querySelectorAll('[data-radar-filter]').forEach(button=>button.addEventListener('click',()=>{S.radarFilter=button.dataset.radarFilter;renderRadar();}));
-  document.getElementById('radar-ai').addEventListener('change',event=>{S.radarAiRisk=event.target.value;renderRadar();});
+  bindRadarAiFilter();
 }
 
 function renderWatch(){
