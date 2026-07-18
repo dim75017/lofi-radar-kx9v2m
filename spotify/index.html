@@ -1749,6 +1749,7 @@ function renderLabelModal(){
       <div style="min-width:0;flex:1">
         <h3>${esc(name)}</h3>
         <div class="tar" style="cursor:default">🏷️ Label · ${rows.length} tracks · ${nArt} ${T('artistes')} · ${lb?fmt(lb[3])+' streams':''}${lb&&lb[5]?' · '+T('Connu depuis')+' '+fmtDate(lb[5]):''}</div>
+        ${lb && lb[8] ? `<div style="margin-top:4px"><a href="mailto:${esc(lb[8])}" style="color:var(--cyan);font-size:12.5px">✉ ${esc(lb[8])}</a></div>` : ''}
       </div>
       <button class="tclose" onclick="closeArtistModal()">✕</button>
     </div>
