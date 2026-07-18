@@ -604,7 +604,7 @@ td.selc,th.selc{width:44px;padding-left:14px}
   </div>
   <nav class="nav" id="nav">
     <div class="nav-label" data-fr="Analyse">Analyse</div>
-    <button data-v="radar" data-fr="Pépites & filons"><span class="emo">💎</span>Pépites & filons<span class="count" id="c-radar"></span></button>
+    <button data-v="radar" data-fr="Opportunités A&R"><span class="emo">💎</span>Opportunités A&R<span class="count" id="c-radar"></span></button>
     <button data-v="opps" class="active" data-fr="Toutes les pistes"><span class="emo">🎶</span>Toutes les pistes<span class="count" id="c-opps"></span></button>
     <button data-v="artists" data-fr="Tous les artistes"><span class="emo">🎸</span>Tous les artistes<span class="count" id="c-art"></span></button>
     <button data-v="playlists" data-fr="Toutes les playlists"><span class="emo">📻</span>Toutes les playlists<span class="count" id="c-pl"></span></button>
@@ -656,7 +656,7 @@ let LANG = 'fr';
 try{ LANG = localStorage.getItem('sr_lang') || 'fr'; }catch(e){}
 const EN_MAP = {
   "Analyse":"Analysis","Vue d'ensemble":"Overview","Artistes":"Artists","Sorties récentes":"Recent releases","Découverte":"Discovery",
-  "Pépites & filons":"Gems & trends","Radar A&R":"A&R radar","Pépites à écouter":"Gems to review","Filons confirmés":"Confirmed trends","À enrichir":"Needs enrichment","Pré-sélection":"Pre-selection","Signal de découverte":"Discovery signal","Auditeurs mensuels":"Monthly listeners","Réseau Fans Also Like":"Fans Also Like network","Étape suivante":"Next step","Écoute + genre / IA / droits":"Listen + genre / AI / rights","Aucun filon confirmé":"No confirmed trend","Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.":"History building: a trend requires reliable genres, multiple artists and successive measurements.","Données Soundcharts non encore exportées.":"Soundcharts data has not been exported yet.","Prêt à contacter":"Ready to contact","À revoir":"Review","Données insuffisantes":"Insufficient data","Genre":"Genre","Instrumental":"Instrumental","Droits":"Rights","Contact":"Contact",
+  "Opportunités A&R":"A&R opportunities","Radar A&R":"A&R radar","Pépites à écouter":"Gems to review","Filons confirmés":"Confirmed trends","À enrichir":"Needs enrichment","Pré-sélection":"Pre-selection","Signal de découverte":"Discovery signal","Auditeurs mensuels":"Monthly listeners","Réseau Fans Also Like":"Fans Also Like network","Étape suivante":"Next step","Écoute + genre / IA / droits":"Listen + genre / AI / rights","Aucun filon confirmé":"No confirmed trend","Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.":"History building: a trend requires reliable genres, multiple artists and successive measurements.","Données Soundcharts non encore exportées.":"Soundcharts data has not been exported yet.","Prêt à contacter":"Ready to contact","À revoir":"Review","Données insuffisantes":"Insufficient data","Genre":"Genre","Instrumental":"Instrumental","Droits":"Rights","Contact":"Contact",
   "Catalogue hors Lofi Records des artistes du label : tout ce qu'ils ont sorti en indépendant ou chez d'autres labels, candidats à distribution, rachat ou avance. Données rafraîchies par le crawl automatique (veille hebdomadaire).":"Everything the label's artists have released outside Lofi Records, independently or on other labels: candidates for distribution, catalog acquisition or advances. Data refreshed automatically by the crawler (weekly watch).",
   "Artistes scannés":"Artists scanned","réguliers":"regulars","occasionnels":"occasional","hors label":"unsigned",
   "Tracks hors Lofi":"Tracks outside Lofi","catalogue analysé":"catalog analyzed",
@@ -1271,14 +1271,14 @@ function arKnownContact(name){
 /* ---------- état ---------- */
 const S = {
   view:'opps', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false, metricMode:'streams',
-  q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all', genres:new Set(), airisk:'hide_high',
+  q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all', genres:new Set(),
   sort:{k:3, dir:-1}, shown:100,
-  aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(), aairisk:'hide_high',
+  aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(),
   newDays:90, shownN:100,
   plq:'', plcur:'all', plsort:'followers', pldir:-1, plonly:false, shownPL:80, plview:'qualified', plmode:'table',
   amode:'table', omode:'table',
   lbq:'', lbsort:'streams', lbdir:-1, shownLB:80, lbmode:'table', labelKey:null, lbModalArtist:null,
-  radarFilter:'all',
+  radarFilter:'all', radarAiRisk:'hide_high',
 };
 
 /* ---------- navigation ---------- */
@@ -1316,7 +1316,6 @@ function rowsBeforePeriod(){
     if (S.statut==='other' && r[4]!==1) return false;
     if (S.min>0 && r[3]<S.min) return false;
     if (S.genres.size && !S.genres.has(classification.genre)) return false;
-    if (!riskPass(classification,S.airisk)) return false;
     if (q && !(r[1].toLowerCase().includes(q) || A[r[0]][0].toLowerCase().includes(q) || r[5].toLowerCase().includes(q))) return false;
     return true;
   });
@@ -1871,26 +1870,34 @@ function renderRadar(){
     return;
   }
   const all=arCandidates();
-  const candidates=all.filter(candidate=>S.radarFilter==='all'
+  const aiFiltered=all.filter(candidate=>S.radarAiRisk==='all'
+    || (S.radarAiRisk==='hide_high' && candidate.classification.ai!=='Élevé')
+    || (S.radarAiRisk==='high_only' && candidate.classification.ai==='Élevé'));
+  const candidates=aiFiltered.filter(candidate=>S.radarFilter==='all'
     || (S.radarFilter==='qualified' && candidate.qualifies)
     || (S.radarFilter==='review' && candidate.review));
-  const qualified=all.filter(candidate=>candidate.qualifies);
-  const ready=all.filter(candidate=>candidate.review);
+  const qualified=aiFiltered.filter(candidate=>candidate.qualifies);
+  const ready=aiFiltered.filter(candidate=>candidate.review);
   const clusters=arClusters();
   const freshness=SC.freshness&&SC.freshness.run;
   const rows=candidates.slice(0,150);
   const state=all.length?`Source Soundcharts · ${freshness&&freshness.finished_at?`dernier lot ${fmtDate(freshness.finished_at)}`:'mise à jour en cours'}`:'Aucun candidat exporté';
   V.innerHTML=`
-    <div class="page-head"><div><h2>${T('Pépites & filons')}</h2><p>Classement A&R automatique : réseau Fans Also Like, audience, proximité du signal et garde-fous de qualification. Il ne déclenche jamais une offre cash seul.</p></div></div>
+    <div class="page-head"><div><h2>${T('Opportunités A&R')}</h2><p>Classement A&R automatique : réseau Fans Also Like, audience, proximité du signal et garde-fous de qualification. Il ne déclenche jamais une offre cash seul.</p></div></div>
     <div class="ovgrid" style="margin-bottom:16px">
       <div class="panel ovp"><div class="ovh"><h3>💎 ${T('Pépites à écouter')}</h3></div><div class="ov-stats"><div class="ov-st"><div class="v">${fmtFull(qualified.length)}</div><div class="l">≥ 50k ${T('Auditeurs mensuels').toLowerCase()}</div></div><div class="ov-st"><div class="v">${fmtFull(all.length)}</div><div class="l">candidats dédupliqués</div></div></div></div>
       <div class="panel ovp"><div class="ovh"><h3>✅ ${T('Prêt à contacter')}</h3></div><div class="ov-stats"><div class="ov-st"><div class="v">${fmtFull(ready.length)}</div><div class="l">genre + instrumental + IA + droits assez renseignés</div></div></div></div>
       <div class="panel ovp"><div class="ovh"><h3>🌊 ${T('Filons confirmés')}</h3></div><div class="ov-stats"><div class="ov-st"><div class="v">${fmtFull(clusters.length)}</div><div class="l">clusters instrumentaux validés</div></div></div></div>
     </div>
     <div class="toolbar">
-      <button class="chip ${S.radarFilter==='all'?'on':''}" data-radar-filter="all">Tous (${fmtFull(all.length)})</button>
+      <button class="chip ${S.radarFilter==='all'?'on':''}" data-radar-filter="all">Tous (${fmtFull(aiFiltered.length)})</button>
       <button class="chip ${S.radarFilter==='qualified'?'on':''}" data-radar-filter="qualified">${T('Pépites à écouter')} (${fmtFull(qualified.length)})</button>
       <button class="chip ${S.radarFilter==='review'?'on':''}" data-radar-filter="review">${T('Prêt à contacter')} (${fmtFull(ready.length)})</button>
+      <select id="radar-ai">
+        <option value="hide_high" ${S.radarAiRisk==='hide_high'?'selected':''}>Risque IA : masquer élevé</option>
+        <option value="all" ${S.radarAiRisk==='all'?'selected':''}>Risque IA : tous</option>
+        <option value="high_only" ${S.radarAiRisk==='high_only'?'selected':''}>Risque IA : élevé uniquement</option>
+      </select>
       <span class="spacer"></span><span class="result-count">${esc(state)}</span>
     </div>
     <div class="panel" style="padding:6px 14px 14px"><table><thead><tr><th>#</th><th>${T('Artiste')}</th><th>${T('Signal de découverte')}</th><th class="num">${T('Auditeurs mensuels')}</th><th>${T('Réseau Fans Also Like')}</th><th>Gates</th><th>${T('Contact')}</th><th>${T('Étape suivante')}</th></tr></thead><tbody>
@@ -1907,6 +1914,7 @@ function renderRadar(){
     </tbody></table>${rows.length===0?`<div class="empty">${T('Données insuffisantes')}</div>`:''}</div>
     <div class="analytics-section" style="margin-top:16px"><h4>${T('Filons confirmés')}</h4>${clusters.length?`<div class="contributors">${clusters.map(cluster=>`<div class="contributor"><span class="cn">${esc(cluster.genre)}</span><span class="cv">${cluster.artists} artistes · ${cluster.tracks} tracks</span></div>`).join('')}</div>`:`<div class="analytics-note">${T('Aucun filon confirmé')} · ${T('Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.')}</div>`}</div>`;
   document.querySelectorAll('[data-radar-filter]').forEach(button=>button.addEventListener('click',()=>{S.radarFilter=button.dataset.radarFilter;renderRadar();}));
+  document.getElementById('radar-ai').addEventListener('change',event=>{S.radarAiRisk=event.target.value;renderRadar();});
 }
 
 function renderWatch(){
@@ -2036,11 +2044,6 @@ function renderOpps(){
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="f-q" placeholder="${T('Rechercher track, artiste, label…')}" value="${esc(S.q)}"></div>
     ${genreFilterHtml('f-genres',S.genres)}
-    <select id="f-ai">
-      <option value="hide_high" ${S.airisk==='hide_high'?'selected':''}>Risque IA : masquer élevé</option>
-      <option value="all" ${S.airisk==='all'?'selected':''}>Risque IA : tous</option>
-      <option value="high_only" ${S.airisk==='high_only'?'selected':''}>Risque IA : élevé uniquement</option>
-    </select>
     <select id="f-period">
       <option value="30" ${S.period==='30'?'selected':''}>🟢 ${T('1 dernier mois')} (${fmtFull(pcnt['30'])})</option>
       <option value="90" ${S.period==='90'?'selected':''}>🟡 ${T('3 derniers mois')} (${fmtFull(pcnt['90'])})</option>
@@ -2080,7 +2083,6 @@ function renderOpps(){
   document.getElementById('f-q').addEventListener('input', e=>{ S.q=e.target.value; S.shown=100; keepScroll(renderOpps); keepFocus('f-q'); });
   bindMetricModeToggle(renderOpps,V);
   bindGenreFilter('f-genres',S.genres,()=>{ S.shown=100; keepScroll(renderOpps); });
-  document.getElementById('f-ai').addEventListener('change', e=>{ S.airisk=e.target.value; S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-st').addEventListener('change', e=>{ S.statut=e.target.value; S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-min').addEventListener('change', e=>{ S.min=+e.target.value; S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-period').addEventListener('change', e=>{ S.period=e.target.value; S.shown=100; keepScroll(renderOpps); });
@@ -2126,8 +2128,7 @@ function renderArtists(){
     const classification=artistClassification(g);
     return (!q || g.name.toLowerCase().includes(q)) &&
       (S.aseg==='all' || seg(g)===S.aseg) &&
-      (!S.agenres.size || S.agenres.has(classification.genre)) &&
-      riskPass(classification,S.aairisk);
+      (!S.agenres.size || S.agenres.has(classification.genre));
   });
   const aSorters = {
     name:(a,b)=>a.name.localeCompare(b.name),
@@ -2215,11 +2216,6 @@ function renderArtists(){
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="a-q" placeholder="${T('Rechercher un artiste…')}" value="${esc(S.aq)}"></div>
     ${genreFilterHtml('a-genres',S.agenres)}
-    <select id="a-ai">
-      <option value="hide_high" ${S.aairisk==='hide_high'?'selected':''}>Risque IA : masquer élevé</option>
-      <option value="all" ${S.aairisk==='all'?'selected':''}>Risque IA : tous</option>
-      <option value="high_only" ${S.aairisk==='high_only'?'selected':''}>Risque IA : élevé uniquement</option>
-    </select>
     <select id="a-seg">
       <option value="all" ${S.aseg==='all'?'selected':''}>🌍 ${T('Tous')}</option>
       <option value="top" ${S.aseg==='top'?'selected':''}>🏆 Top artists</option>
@@ -2241,7 +2237,6 @@ function renderArtists(){
   bindMetricModeToggle(renderArtists,V);
   document.getElementById('a-q').addEventListener('input', e=>{ S.aq=e.target.value; S.shownA=60; keepScroll(renderArtists); keepFocus('a-q'); });
   bindGenreFilter('a-genres',S.agenres,()=>{ S.shownA=60; keepScroll(renderArtists); });
-  document.getElementById('a-ai').addEventListener('change', e=>{ S.aairisk=e.target.value; S.shownA=60; keepScroll(renderArtists); });
   document.getElementById('a-seg').addEventListener('change', e=>{ S.aseg=e.target.value; S.shownA=60; keepScroll(renderArtists); });
   document.querySelectorAll('th[data-asort]').forEach(h=>h.addEventListener('click', ()=>{
     const key=h.dataset.asort;
