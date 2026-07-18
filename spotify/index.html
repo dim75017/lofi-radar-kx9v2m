@@ -139,20 +139,25 @@ input,select{font-family:inherit;color:var(--text)}
 .panel h3 .hint{font-family:'Inter';font-weight:500;font-size:11.5px;color:var(--dim);margin-left:auto}
 .grid2{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
 @media(max-width:1100px){.grid2{grid-template-columns:1fr}}
-.ovgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.ovgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
 @media(max-width:1100px){.ovgrid{grid-template-columns:1fr}}
-.ovp .ovh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.ovp .ovh h3{margin:0}
-.ov-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:13px}
-.ov-st{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:10px 12px}
-.ov-st .v{font-family:'Sora';font-weight:700;font-size:16.5px;white-space:nowrap}
-.ov-st .l{font-size:10px;color:var(--dim);margin-top:3px;line-height:1.3}
+.ovp{display:flex;flex-direction:column;padding:22px 24px}
+.ovp .ovh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ovp .ovh h3{margin:0;font-size:16px}
+.ov-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:15px}
+.ov-st{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:13px 14px}
+.ov-st .v{font-family:'Sora';font-weight:700;font-size:19px;white-space:nowrap}
+.ov-st .l{font-size:10.5px;color:var(--dim);margin-top:4px;line-height:1.3}
+.ovp .top-row{padding:9px 6px}
 
 /* Top artistes (vue d'ensemble, liste verticale) */
 .top-row{display:flex;align-items:center;gap:14px;padding:10px 8px;border-bottom:1px solid rgba(150,214,170,.05);cursor:pointer;border-radius:12px;transition:background .13s}
 .top-row:hover{background:rgba(150,214,170,.05)}
 .top-row .rank{width:26px;text-align:center;font-family:'Sora';font-weight:700;font-size:14px;color:var(--dim);flex:none}
 .av-sm{width:46px;height:46px;border-radius:50%;position:relative;overflow:hidden;display:grid;place-items:center;font-family:'Sora';font-weight:700;font-size:16px;color:#052e12;background:linear-gradient(135deg,#4ade80,#67e8f9);flex:none}
+/* même vignette carrée que tracks/playlists/labels dans les mini-listes Overview (cohérence visuelle inter-panneaux) */
+.ov-cov{width:40px;height:40px;border-radius:9px;position:relative;overflow:hidden;display:grid;place-items:center;font-family:'Sora';font-weight:700;font-size:14px;color:#052e12;background:linear-gradient(135deg,#4ade80,#67e8f9);flex:none}
+.ov-cov .avp{border-radius:9px}
 .top-row .ti{flex:1;min-width:0}
 .top-row .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:18px}
 .top-row .nm .nmtxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -795,10 +800,11 @@ function renderOverview(){
   const maxY = Math.max(...Object.values(years),1);
   const pSelf = R.length ? Math.round(nSelf/R.length*100) : 0;
 
-  const topTracks = [...R].sort((a,b)=>b[3]-a[3]).slice(0,5);
-  const topLb = LBrows.slice().sort((a,b)=>b[4]-a[4]).slice(0,5);
-  const topPl = PLmeta ? PLrows.filter(r=>r[17]).slice().sort((a,b)=>b[4]-a[4]).slice(0,5) : [];
-  const top5 = top.slice(0,5);
+  const OVN = 9;
+  const topTracks = [...R].sort((a,b)=>b[3]-a[3]).slice(0,OVN);
+  const topLb = LBrows.slice().sort((a,b)=>b[4]-a[4]).slice(0,OVN);
+  const topPl = PLmeta ? PLrows.filter(r=>r[17]).slice().sort((a,b)=>b[4]-a[4]).slice(0,OVN) : [];
+  const top5 = top.slice(0,OVN);
 
   V.innerHTML = `
   <div class="page-head">
@@ -837,7 +843,7 @@ function renderOverview(){
       ${top5.map((g,ix)=>`
       <div class="top-row" onclick="goArtist(${g.i})">
         <span class="rank">${ix+1}</span>
-        <div class="av-sm">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div>
+        <div class="ov-cov">${esc(g.name[0]||'?').toUpperCase()}${avatarHtml(g)}</div>
         <div class="ti">
           <div class="nm"><span class="nmtxt">${esc(g.name)}</span> ${segBadge(g)}</div>
           <div class="sub">${g.n} tracks · <span style="color:var(--green)">${g.self} ${T('indé')}</span> · <span style="color:var(--cyan)">≈ ${money(g.mstreams*RATE)}/${T('mois')}</span></div>
@@ -1717,12 +1723,12 @@ function labelModalRows(rows){
       <td class="selc"><input type="checkbox" class="ck sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>
       <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
       <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span> ${wlStar('t',r[6])}</td>
+      <td><span class="ar" onclick="closeArtistModal();goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
       <td class="num" title="${fmtFull(r[3])}">${r[3]>=HOT?'<span class="badge hot">'+fmt(r[3])+'</span>':fmt(r[3])}</td>
       <td class="num">${fmt(perMonth(r))}</td>
       <td class="num" style="color:var(--cyan)">${perMonth(r)>0?money(perMonth(r)*RATE)+'/'+T('mo'):money(r[3]*RATE)}</td>
       <td class="num"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
       <td>${fmtDate(r[2])}</td>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dim);font-size:11px" title="${esc(r[5]||'')}">${esc(r[5]||'')}</td>
     </tr>`).join('');
   }
   return h;
@@ -1749,10 +1755,10 @@ function renderLabelModal(){
     ${offerHtml({}, selM, selN, rows.length)}
     <label class="selall" style="margin:2px 0 8px"><input type="checkbox" class="ck" id="am-sel-all" ${rows.length&&rows.every(r=>S.sel.has(r[6]))?'checked':''}> ${T('Tout sélectionner')}</label>
     <table><thead><tr>
-      <th class="selc"></th><th></th><th>Track</th>
+      <th class="selc"></th><th></th><th>Track</th><th>${T('Artiste')}</th>
       <th class="num">Streams</th><th class="num">${T('Streams/mois')}</th>
       <th class="num">${T('Revenu est.')}</th><th class="num">${T('Rachat')} ${S.palier}</th>
-      <th>${T('Sortie')}</th><th>Copyright</th>
+      <th>${T('Sortie')}</th>
     </tr></thead><tbody>${labelModalRows(rows)}</tbody></table>
     ${rows.length===0?'<div class="empty">'+T('Aucune track retrouvée pour ce label dans la base actuelle.')+'</div>':''}
   `;
