@@ -1302,7 +1302,7 @@ function loadCache(){
   try{const raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;const o=JSON.parse(raw);
     o.d.recos.forEach(r=>{if(r.valid==null)r.valid='';});
     enrichRecos(o.d.recos);
-    splitElectroHouse(o.d.all);splitElectroHouse(o.d.trends);splitElectroHouse(o.d.news);splitElectroHouse(o.d.ours);
+    normalizeExpandedGenre(o.d.all);normalizeExpandedGenre(o.d.trends);normalizeExpandedGenre(o.d.news);normalizeExpandedGenre(o.d.ours);
     return o;}catch(e){return null;}
 }
 async function refresh(){
@@ -1435,7 +1435,7 @@ async function boot(){
   if(cache&&(!snap||cache.t>=snap.t)){best=cache;src='cache';}
   else if(snap){best=snap;src='snap';}
   if(best){
-    splitElectroHouse(best.d.all);splitElectroHouse(best.d.trends);splitElectroHouse(best.d.news);splitElectroHouse(best.d.ours);enrichRecos(best.d.recos);
+    normalizeExpandedGenre(best.d.all);normalizeExpandedGenre(best.d.trends);normalizeExpandedGenre(best.d.news);normalizeExpandedGenre(best.d.ours);enrichRecos(best.d.recos);
     DATA=best.d;SYNCED=best.t;
     document.getElementById('loader').classList.add('hide');
     setSync('load',(src==='snap'?'Daily snapshot · ':'Cached · ')+'trying live sync…');
