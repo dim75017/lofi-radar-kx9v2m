@@ -11,7 +11,7 @@
 <script src="../Spotify_Radar_data.js"></script>
 <script src="../Spotify_Playlists_data.js"></script>
 <script src="../Spotify_Labels_data.js"></script>
-<script src="../Spotify_Soundcharts_data_20260719T1654.js"></script>
+<script src="../Spotify_Soundcharts_data_20260719T1935_clean.js"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
@@ -870,7 +870,13 @@ function paybackClass(months){
 /* ---------- préparation ---------- */
 // artists: [nom, nbLofi, flag, done, disco, origine, seedSrc]
 // rows:    [ai, track, date, streams, statut(0 self/1 autre), label, id, firstSeen]
-const A = D.artists, R = D.rows;
+const A = D.artists || [];
+/* a[4] marks rows imported by the retired discovery scraper. They are not
+   label catalogue rows; vetted Soundcharts candidates are re-added below. */
+const R = (D.rows || []).filter(row=>{
+  const artist=A[Number(row&&row[0])];
+  return artist && Number(artist[4]||0)!==1;
+});
 /* Raccord progressif aux historiques journaliers validés.
    Le dashboard ne lit jamais SQLite et ne promeut aucune table staging. Un export approuvé
    pourra définir window.SPOTIFY_PERFORMANCE avant ce script avec ce contrat :
@@ -895,11 +901,53 @@ const SC = window.SPOTIFY_SOUNDCHARTS || null;
 const SC_STAGING = {artists:0, tracks:0};
 function scField(row,schema,name){ const i=(schema||[]).indexOf(name); return i<0?null:row[i]; }
 function scKey(v){ return String(v||'').trim().toLowerCase(); }
+const SC_ALLOWED_GENRES = new Set([
+  'lofi_hip_hop','guitar','nature','jazz_jazzhop','classical','ambient','piano',
+  'halloween_lofi','christmas_lofi','dark_ambient','phonk_instrumental','dnb_instrumental'
+]);
+const SC_MIN_LISTENERS = 10000;
+const SC_MAX_LISTENERS = 750000;
+function scEditorialIndex(){
+  const out=new Map();
+  if(!SC||!SC.editorial||!Array.isArray(SC.editorial.artists)) return out;
+  const schema=SC.editorial.artist_schema||[];
+  for(const row of SC.editorial.artists){
+    const uuid=scField(row,schema,'soundcharts_uuid'); if(!uuid) continue;
+    out.set(uuid,{
+      uuid,
+      spotifyId:scField(row,schema,'spotify_id')||'',
+      name:scField(row,schema,'name')||'',
+      listeners:Number(scField(row,schema,'monthly_listeners'))||0,
+      qualifies:Number(scField(row,schema,'qualifies'))===1,
+      genre:String(scField(row,schema,'primary_genre')||''),
+      genreConfidence:Number(scField(row,schema,'genre_confidence')),
+      instrumental:String(scField(row,schema,'instrumental_status')||'').toLowerCase(),
+      instrumentalConfidence:Number(scField(row,schema,'instrumental_confidence')),
+      ai:String(scField(row,schema,'ai_risk')||'').toLowerCase(),
+      expansion:String(scField(row,schema,'expansion_status')||'review').toLowerCase()
+    });
+  }
+  return out;
+}
+const SC_EDITORIAL_BY_UUID=scEditorialIndex();
+function scScopeEligible(uuid,listeners,rights='unknown'){
+  const meta=SC_EDITORIAL_BY_UUID.get(uuid); if(!meta) return false;
+  const audience=Number(listeners||meta.listeners||0);
+  const normalizedRights=String(rights||'unknown').toLowerCase();
+  return meta.expansion==='eligible'
+    && meta.instrumental==='instrumental'
+    && Number.isFinite(meta.instrumentalConfidence) && meta.instrumentalConfidence>=0.5
+    && ['low','faible'].includes(meta.ai)
+    && SC_ALLOWED_GENRES.has(meta.genre)
+    && Number.isFinite(meta.genreConfidence) && meta.genreConfidence>=0.5
+    && audience>=SC_MIN_LISTENERS && audience<=SC_MAX_LISTENERS
+    && !['major','major_label','mixed'].includes(normalizedRights);
+}
 function mergeSoundchartsStaging(){
   if(!SC) return;
   const artistById=new Map(), artistByName=new Map();
   A.forEach((a,i)=>{ if(a[7]) artistById.set(a[7],i); if(a[0]) artistByName.set(scKey(a[0]),i); });
-  const addArtist=(name,id,meta={})=>{
+  const addArtist=(name,id,meta={},allowNew=false)=>{
     const mergeArtist=(i)=>{
       const artist=A[i];
       if(id&&!artist[7]) artist[7]=id;
@@ -909,29 +957,41 @@ function mergeSoundchartsStaging(){
     };
     if(id&&artistById.has(id)) return mergeArtist(artistById.get(id));
     const key=scKey(name); if(key&&artistByName.has(key)) return mergeArtist(artistByName.get(key));
-    if(!name) return -1;
+    if(!name||!allowNew) return -1;
     const row=[name,0,'sc',false,true,'soundcharts_staging','fans_also_like',id||'','','',''];
     row.sc=Object.assign({listeners:0,sources:0,rank:null,qualifies:false},meta);
     const i=A.push(row)-1; if(id)artistById.set(id,i); artistByName.set(key,i); SC_STAGING.artists++; return i;
   };
   const artistSchema=(SC.schemas&&SC.schemas.artists)||[];
-  for(const row of (SC.artists||[])) addArtist(
-    scField(row,artistSchema,'name'), scField(row,artistSchema,'spotify_id'), {
-      listeners:Number(scField(row,artistSchema,'monthly_listeners'))||0,
+  for(const row of (SC.artists||[])){
+    const uuid=scField(row,artistSchema,'soundcharts_uuid')||'';
+    const listeners=Number(scField(row,artistSchema,'monthly_listeners'))||0;
+    const eligible=scScopeEligible(uuid,listeners);
+    addArtist(scField(row,artistSchema,'name'),scField(row,artistSchema,'spotify_id'),{
+      listeners,
       qualifies:Number(scField(row,artistSchema,'qualifies'))===1,
-      uuid:scField(row,artistSchema,'soundcharts_uuid')||''
-    }
-  );
+      uuid,
+      scopeEligible:eligible
+    },eligible);
+  }
   const falSchema=(SC.schemas&&SC.schemas.fal)||[];
-  for(const row of (SC.fal||[])) addArtist(
-    scField(row,falSchema,'name'), scField(row,falSchema,'spotify_id'), {
-      listeners:Number(scField(row,falSchema,'monthly_listeners'))||0,
+  for(const row of (SC.fal||[])){
+    const uuid=scField(row,falSchema,'soundcharts_uuid')||'';
+    const listeners=Number(scField(row,falSchema,'monthly_listeners'))||0;
+    const rights=scField(row,falSchema,'rights_status')||'unknown';
+    const eligible=scScopeEligible(uuid,listeners,rights)
+      && ['self_released','independent_label','indie'].includes(String(rights).toLowerCase());
+    if(!eligible) continue;
+    addArtist(scField(row,falSchema,'name'),scField(row,falSchema,'spotify_id'),{
+      listeners,
       sources:Number(scField(row,falSchema,'source_count'))||0,
       rank:Number(scField(row,falSchema,'best_rank'))||null,
       qualifies:Number(scField(row,falSchema,'qualifies'))===1,
-      uuid:scField(row,falSchema,'soundcharts_uuid')||''
-    }
-  );
+      uuid,
+      rights,
+      scopeEligible:true
+    },true);
+  }
   const trackById=new Map(R.map(r=>[r[6],r]).filter(([id])=>Boolean(id)));
   const trackSchema=(SC.schemas&&SC.schemas.tracks)||[];
   for(const row of (SC.tracks||[])){
@@ -948,8 +1008,33 @@ function mergeSoundchartsStaging(){
         && Number.isFinite(delta24) ? delta24 : null;
       continue;
     }
-    const ai=addArtist(scField(row,trackSchema,'artist'),'',{}); if(ai<0) continue;
     const rights=String(scField(row,trackSchema,'rights_status')||'').toLowerCase();
+    /* `artist` is a display credit and may contain "A & B". Identity comes
+       exclusively from the structured Soundcharts/Spotify artist links. */
+    const structured=Array.isArray(scField(row,trackSchema,'artists'))
+      ? scField(row,trackSchema,'artists') : [];
+    const linked=[];
+    for(const person of structured){
+      const uuid=String(person&&person.soundcharts_uuid||'');
+      const id=String(person&&person.spotify_id||'');
+      const name=String(person&&person.name||'').trim();
+      const existingIndex=id&&artistById.has(id) ? artistById.get(id)
+        : (name&&artistByName.has(scKey(name)) ? artistByName.get(scKey(name)) : -1);
+      const known=existingIndex>=0 && Number(A[existingIndex][4]||0)!==1;
+      const meta=SC_EDITORIAL_BY_UUID.get(uuid);
+      const eligible=known||(scScopeEligible(uuid,meta&&meta.listeners,rights)
+        && ['self_released','independent_label','indie'].includes(rights));
+      if(!eligible) continue;
+      const index=addArtist(name,id,{
+        listeners:Number(meta&&meta.listeners)||0,
+        uuid,
+        role:String(person&&person.role||'unknown'),
+        scopeEligible:eligible
+      },eligible);
+      if(index>=0) linked.push({index,role:String(person&&person.role||'unknown')});
+    }
+    linked.sort((a,b)=>(a.role==='main'?-1:1)-(b.role==='main'?-1:1)||a.index-b.index);
+    const ai=linked[0]&&linked[0].index; if(ai==null||ai<0) continue;
     const label=scField(row,trackSchema,'label')||scField(row,trackSchema,'copyright')||'Soundcharts staging';
     const rawStreams=scField(row,trackSchema,'streams'), parsedStreams=Number(rawStreams);
     const streams=rawStreams==null||rawStreams===''||!Number.isFinite(parsedStreams)?-1:parsedStreams;
@@ -962,6 +1047,8 @@ function mergeSoundchartsStaging(){
     const track=[ai,scField(row,trackSchema,'title')||'Titre non renseigné',scField(row,trackSchema,'release_date')||'',streams,
       rights==='self_released'?0:1,label,id,scField(row,trackSchema,'observed_at')||''];
     track.sc=true;
+    track.scArtistIndexes=linked.map(item=>item.index);
+    track.scCredit=scField(row,trackSchema,'artist')||'';
     track.scDelta24=hasDailyBaseline&&Number.isFinite(delta24)?delta24:null;
     R.push(track); trackById.set(id,track); SC_STAGING.tracks++;
   }
@@ -990,15 +1077,19 @@ const AG = A.map((a,i)=>({i, name:a[0], lofi:a[1], flag:a[2], done:a[3], disco:a
   source:a.sc?'soundcharts_staging':'catalogue', listeners:a.sc&&a.sc.listeners||null, n:0, self:0, streams:0, streams24:null, streams7:null, streams30:null, mstreams:0, hot:0, last:'', top:null, perf:null}));
 const TRACKS_BY_ARTIST = new Map();
 for (const r of R){
-  const g = AG[r[0]];
-  if (!TRACKS_BY_ARTIST.has(r[0])) TRACKS_BY_ARTIST.set(r[0], []);
-  TRACKS_BY_ARTIST.get(r[0]).push(r);
-  g.n++; if (r[4]===0) g.self++;
-  if (r[3]>0) g.streams += r[3];
-  const pm = perMonth(r); if (pm>0) g.mstreams += pm;
-  if (r[3]>=HOT) g.hot++;
-  if (r[2] > g.last) g.last = r[2];
-  if (!g.top || r[3] > g.top[3]) g.top = r;
+  const artistIndexes=[...new Set(Array.isArray(r.scArtistIndexes)&&r.scArtistIndexes.length
+    ? r.scArtistIndexes : [r[0]])];
+  for(const artistIndex of artistIndexes){
+    const g = AG[artistIndex]; if(!g) continue;
+    if (!TRACKS_BY_ARTIST.has(artistIndex)) TRACKS_BY_ARTIST.set(artistIndex, []);
+    TRACKS_BY_ARTIST.get(artistIndex).push(r);
+    g.n++; if (r[4]===0) g.self++;
+    if (r[3]>0) g.streams += r[3];
+    const pm = perMonth(r); if (pm>0) g.mstreams += pm;
+    if (r[3]>=HOT) g.hot++;
+    if (r[2] > g.last) g.last = r[2];
+    if (!g.top || r[3] > g.top[3]) g.top = r;
+  }
 }
 for (const g of AG){
   const rows = TRACKS_BY_ARTIST.get(g.i) || [];
@@ -1007,7 +1098,8 @@ for (const g of AG){
   g.streams7 = g.perf[7].current;
   g.streams30 = g.perf[30].current;
 }
-const withTracks = AG.filter(g=>g.n>0 || g.source==='soundcharts_staging');
+const withTracks = AG.filter(g=>(g.n>0 || g.source==='soundcharts_staging')
+  && (!g.disco || (g.sc&&g.sc.scopeEligible===true)));
 const totStreams = withTracks.reduce((s,g)=>s+g.streams,0);
 const totMonthlyStreams = withTracks.reduce((s,g)=>s+g.mstreams,0);
 const totMonthlyRev = totMonthlyStreams*RATE;
@@ -1323,12 +1415,9 @@ function arTrackRights(name){
   if(rows.some(row=>['self_released','independent_label'].includes(String(scValue(row,schema,'rights_status')||'')))) return 'À confirmer';
   return 'À vérifier';
 }
-const AR_ALLOWED_GENRES = new Set([
-  'lofi_hip_hop','guitar','nature','jazz_jazzhop','classical','ambient','piano',
-  'halloween_lofi','christmas_lofi','dark_ambient','phonk_instrumental','dnb_instrumental'
-]);
-const AR_MIN_MONTHLY_LISTENERS = 10000;
-const AR_MAX_MONTHLY_LISTENERS = 750000;
+const AR_ALLOWED_GENRES = SC_ALLOWED_GENRES;
+const AR_MIN_MONTHLY_LISTENERS = SC_MIN_LISTENERS;
+const AR_MAX_MONTHLY_LISTENERS = SC_MAX_LISTENERS;
 function arClassification(uuid, name, candidateRights){
   const normalizedRights=String(candidateRights||'').toLowerCase();
   const rights=['major','major_label','mixed'].includes(normalizedRights)
