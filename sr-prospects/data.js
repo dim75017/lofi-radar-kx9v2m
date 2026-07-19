@@ -1,0 +1,1 @@
+window.SR_DATA_LOCKED = true;
