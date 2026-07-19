@@ -86,20 +86,22 @@
   var ROUTES = [
     { id: "overview", label: "Vue d’ensemble", icon: "📊" },
     { id: "prospects", label: "Tous les prospects", icon: "👥" },
-    { id: "approved", label: "Approuvés", icon: "✅" },
+    { id: "followups", label: "Plan d’envoi", icon: "📤" },
     { id: "messages", label: "Messages", icon: "💬" },
-    { id: "send", label: "Plan d’envoi", icon: "📤" },
-    { id: "sources", label: "Sources", icon: "📚" }
   ];
 
   var STATUS_OPTIONS = [
     "",
     "À qualifier",
     "À contacter",
+    "Envoyé",
+    "Ouvert",
     "Contacté",
     "Répondu",
     "Intéressé",
     "À relancer",
+    "Sans réponse",
+    "Spam / refus",
     "Non pertinent"
   ];
 
@@ -228,7 +230,7 @@
 
   MESSAGES.forEach(function (message) {
     if (!messageStats[message.id]) {
-      messageStats[message.id] = { sent: 0, replies: 0, interested: 0 };
+      messageStats[message.id] = { sent: 0, opened: 0, replies: 0, interested: 0, spam: 0 };
     }
   });
 
@@ -484,8 +486,8 @@
   function statusColor(status) {
     var value = normalize(status);
     if (value === "interesse" || value === "repondu") return "green";
-    if (value === "contacte" || value === "a relancer") return "blue";
-    if (value === "non pertinent") return "red";
+    if (value === "contacte" || value === "a relancer" || value === "envoye" || value === "ouvert" || value === "sans reponse") return "blue";
+    if (value === "non pertinent" || value === "spam refus") return "red";
     return "gold";
   }
 
@@ -498,9 +500,9 @@
   function routeCount(routeId) {
     if (routeId === "overview") return "";
     if (routeId === "prospects") return compactNumber(baseProspects.length);
-    if (routeId === "approved") {
-      return compactNumber(Object.keys(patches).filter(function (id) {
-        return normalize((patches[id] || {}).decision) === "approuve";
+    if (routeId === "followups") {
+      return compactNumber(allProspects().filter(function (item) {
+        return ["envoye", "ouvert", "contacte", "a relancer", "sans reponse"].includes(normalize(item.status));
       }).length);
     }
     return "";
@@ -514,9 +516,9 @@
 
   function filteredProspects(routeId) {
     var list = allProspects();
-    if (routeId === "approved") {
+    if (routeId === "followups") {
       list = list.filter(function (prospect) {
-        return normalize(prospect.decision) === "approuve";
+        return ["envoye", "ouvert", "contacte", "a relancer", "sans reponse"].includes(normalize(prospect.status));
       });
     }
 
@@ -677,8 +679,6 @@
   function renderView() {
     if (state.route === "overview") return renderOverview();
     if (state.route === "messages") return renderMessages();
-    if (state.route === "send") return renderSendPlan();
-    if (state.route === "sources") return renderSources();
     return renderProspectView(state.route);
   }
 
@@ -799,7 +799,7 @@
   function renderProspectView(routeId) {
     var config = {
       prospects: ["Base opérationnelle", "Tous les prospects", "Cherchez, filtrez et enrichissez chaque fiche. Les données ajoutées restent dans ce navigateur."],
-      approved: ["Sélection manuelle", "Prospects approuvés", "Uniquement les fiches que vous avez explicitement validées pour un futur lot de prospection."]
+      followups: ["Suivi commercial", "Plan d’envoi", "Toutes les fiches déjà envoyées, ouvertes ou sans réponse, à traiter avec une cadence humaine."]
     }[routeId] || ["Base opérationnelle", "Tous les prospects", "Cherchez, filtrez et enrichissez chaque fiche. Les données ajoutées restent dans ce navigateur."];
     var list = filteredProspects(routeId);
     var pageCount = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -872,7 +872,7 @@
             "<div class='prospect-sub'>SIREN " + escapeHtml(item.id) + (item.isHeadOffice ? " · siège" : "") + "</div></div></div></td>" +
           "<td>" + badge(item.segment, isCabinet(item) ? "gold" : "violet") + "</td>" +
           "<td>" + badge(item.confidence, confidenceColor(item.confidence)) + "</td>" +
-          "<td>" + badge(contactChannel(item).label, contactChannel(item).color) + "</td>" +
+          "<td>" + (firstDecisionMakerName(item) ? badge(firstDecisionMakerName(item), "blue") : badge("Associé à vérifier", "gold")) + "</td>" +
           "<td title='" + escapeHtml(item.address) + "'>" + escapeHtml(item.address) + "</td>" +
           "<td>" + escapeHtml(item.headcountCode === "NN" ? "Inconnu" : item.headcountLabel) + "</td>" +
           "<td>" + (item.likelyDomiciliation ? badge(number(item.sameAddressCount) + " · à vérifier", "red") : number(item.sameAddressCount)) + "</td>" +
@@ -897,7 +897,7 @@
           "<span class='score-bubble'>" + number(item.fitScore) + "</span></div>" +
         "<div class='card-address'>" + escapeHtml(item.address) + "</div>" +
         "<div class='card-tags'>" +
-          badge(contactChannel(item).label, contactChannel(item).color) +
+          (firstDecisionMakerName(item) ? badge(firstDecisionMakerName(item), "blue") : badge("Associé à vérifier", "gold")) +
           badge(item.segment, isCabinet(item) ? "gold" : "violet") +
           badge(item.confidence, confidenceColor(item.confidence)) +
           badge(item.status, statusColor(item.status)) +
@@ -938,7 +938,7 @@
       "<div class='notice' style='margin-bottom:18px'>Commencez par les trois approches marquées « À tester d’abord », sur des petits lots comparables. Mesurez surtout les réponses positives, pas seulement les ouvertures.</div>" +
       "<div class='message-grid'>" +
         MESSAGES.map(function (message) {
-          var stats = messageStats[message.id] || { sent: 0, replies: 0, interested: 0 };
+          var stats = messageStats[message.id] || { sent: 0, opened: 0, replies: 0, interested: 0, spam: 0 };
           var replyRate = Number(stats.sent) ? Math.round((Number(stats.replies) / Number(stats.sent)) * 100) : 0;
           return "<article class='message-card'>" +
             "<div class='message-card-head'><div style='display:flex;align-items:center;gap:10px'>" +
@@ -960,8 +960,10 @@
               "</div>" +
               "<div class='stats-strip'>" +
                 statInput(message.id, "sent", "Envoyés", stats.sent) +
+                statInput(message.id, "opened", "Ouverts", stats.opened) +
                 statInput(message.id, "replies", "Réponses", stats.replies) +
                 statInput(message.id, "interested", "Intéressés", stats.interested) +
+                statInput(message.id, "spam", "Spam / refus", stats.spam) +
               "</div>" +
             "</div>" +
           "</article>";
@@ -1135,7 +1137,7 @@
           "<div class='modal-column'>" +
             "<form id='prospectForm' data-prospect-id='" + escapeHtml(prospect.id) + "'>" +
               "<h3 class='section-title'>Qualification commerciale</h3>" +
-              contactLinksMarkup(prospect) +
+              decisionMakersMarkup(prospect) +
               "<div class='form-grid'>" +
                 formField("website", "Site officiel", "url", patch.website || prospect.website || "", "https://…") +
                 formField("email", "Email professionnel", "email", patch.email || prospect.email || "", "contact@…") +
@@ -1155,6 +1157,8 @@
                   return message ? message.name : "Approche";
                 }) +
                 formField("lastContact", "Dernier contact", "date", patch.lastContact || "", "") +
+                formField("lastOpen", "Dernière ouverture", "date", patch.lastOpen || "", "") +
+                formField("followUpDate", "Prochaine relance", "date", patch.followUpDate || "", "") +
                 textareaField("notes", "Notes internes", patch.notes || "", true) +
               "</div>" +
               "<div class='modal-actions'>" +
@@ -1223,6 +1227,16 @@
     return cleanText((people[0] || {}).role);
   }
 
+  function decisionMakersMarkup(prospect) {
+    var people = Array.isArray(prospect && prospect.decisionMakers) ? prospect.decisionMakers : [];
+    if (!people.length) return "<div class='notice red'>Aucun associé/fondateur vérifié pour le moment. Ne pas utiliser un nom déduit.</div>";
+    return "<div class='contact-links'><div class='section-title' style='margin:0 0 10px'>Associés / fondateurs vérifiés</div>" + people.map(function (person) {
+      var name = [cleanText(person.firstName), cleanText(person.lastName)].filter(Boolean).join(" ");
+      var source = safeImageUrl(person.sourceUrl);
+      return "<a class='contact-link' href='" + escapeHtml(source) + "' target='_blank' rel='noreferrer'><span>👤 " + escapeHtml(name) + "</span><small>" + escapeHtml(person.role) + "</small></a>";
+    }).join("") + "</div>";
+  }
+
   function saveProspect(decisionOverride) {
     var form = document.getElementById("prospectForm");
     if (!form) return;
@@ -1245,6 +1259,8 @@
       "sourceCheckedAt",
       "messageVariant",
       "lastContact",
+      "lastOpen",
+      "followUpDate",
       "notes"
     ].forEach(function (field) {
       patch[field] = cleanText(data.get(field));
@@ -1280,7 +1296,7 @@
     state.route = route;
     state.page = 1;
     state.mobileOpen = false;
-    if (!["overview", "messages", "send", "sources"].includes(route)) {
+    if (!["overview", "messages"].includes(route)) {
       state.sortKey = "fitScore";
       state.sortDir = "desc";
     }
@@ -1305,7 +1321,7 @@
   }
 
   function exportCsv() {
-    var route = ["prospects", "approved"].includes(state.route) ? state.route : "prospects";
+    var route = ["prospects", "followups"].includes(state.route) ? state.route : "prospects";
     var headers = [
       "SIREN", "SIRET", "Nom", "Segment", "Confiance", "Adresse", "Effectif",
       "Score", "Entités à l’adresse", "Statut", "Décision", "Site", "Email",
@@ -1512,7 +1528,7 @@
       state.page = 1;
       clearTimeout(searchTimer);
       searchTimer = setTimeout(function () {
-        if (state.search && !["prospects", "approved"].includes(state.route)) {
+        if (state.search && !["prospects", "followups"].includes(state.route)) {
           setRoute("prospects");
         } else {
           render(true);
