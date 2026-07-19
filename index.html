@@ -1260,7 +1260,9 @@ function scanDotColor(ms){
 function lastScanText(){
   if(!DATA)return '';
   const fr=typeof LANG!=='undefined'&&LANG==='fr';
-  const vT=maxHistTime(DATA.hist);
+  // The Sheet history can lag behind the GitHub snapshot.  The snapshot is
+  // what the hourly video collector actually refreshes and publishes.
+  const vT=Math.max(maxHistTime(DATA.hist)||0,Number(window.LOFI_DATA&&window.LOFI_DATA.t)||0)||null;
   const lT=maxHistTime(DATA.liveHourly)||maxHistTime(DATA.liveHist);
   const parts=[];
   const line=(ms,emo,labelEn,labelFr,descEn,descFr)=>{
@@ -3027,7 +3029,7 @@ function rerenderLives(){
 function openLiveIdx(i){const v=(window._page_live||[])[i];if(v)openLiveDrawer(v);}
 function openLiveDrawer(v){
   const all=liveSeries(v.vid);
-  let s=all.filter(p=>p[0]>=Date.now()-48*3600000);
+  let s=all.filter(p=>p[0]>=Date.now()-7*24*3600000);
   if(s.length<2)s=all;
   document.getElementById('drawer').innerHTML=
     '<button class="dw-close" onclick="closeDrawer()">✕</button>'+
@@ -3041,7 +3043,7 @@ function openLiveDrawer(v){
         '<div class="dw-stat"><b>'+fmtDate(v.started)+'</b><span>started</span></div>'+
         '<div class="dw-stat"><b>'+s.length+'</b><span>scans</span></div>'+
       '</div>'+
-      '<div class="dw-sec"><div class="k">📡 Concurrent viewers · last 48h</div>'+histChart(s,'viewers')+'</div>'+
+      '<div class="dw-sec"><div class="k">📡 Concurrent viewers · last 7 days</div>'+histChart(s,'viewers')+'</div>'+
       (v.disc?'<div class="dw-sec"><div class="k">🔎 Discovery keywords</div><div class="v">'+esc(v.disc)+'</div></div>':'')+
     '</div>';
   document.getElementById('drawer').classList.add('show');
