@@ -352,6 +352,18 @@
     "</div>";
   }
 
+  function personAvatarMarkup(person) {
+    var name = [cleanText(person && person.firstName), cleanText(person && person.lastName)].filter(Boolean).join(" ") || "Associé";
+    var photoUrl = safeImageUrl(person && (person.photoUrl || person.imageUrl));
+    return "<div class='person-avatar'>" +
+      "<span class='person-avatar-fallback' aria-hidden='true'>" + escapeHtml(initials(name)) + "</span>" +
+      (photoUrl
+        ? "<img class='person-avatar-image' data-person-image src='" + escapeHtml(photoUrl) + "' alt='Photo de " +
+          escapeHtml(name) + "' loading='lazy' decoding='async' referrerpolicy='no-referrer' />"
+        : "") +
+    "</div>";
+  }
+
   function contactChannel(prospect) {
     var preferred = normalize(prospect && prospect.preferredContactChannel);
     if (preferred === "contact form" && safeImageUrl(prospect && prospect.contactForm)) {
@@ -383,12 +395,14 @@
     if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       links.push({ label: "Email", value: email, href: "mailto:" + encodeURIComponent(email) });
     }
+    decisionMakers.forEach(function (person) {
+      var fullName = [cleanText(person.firstName), cleanText(person.lastName)].filter(Boolean).join(" ");
+      var linkedin = safeImageUrl(person.linkedin || person.linkedinUrl);
+      if (fullName && linkedin) links.push({ label: "LinkedIn · " + fullName, value: linkedin, href: linkedin });
+    });
     [
-      ["Site officiel", prospect.website],
-      ["LinkedIn", prospect.linkedin],
-      ["Formulaire", prospect.contactForm],
-      ["Preuve", prospect.evidenceUrl],
-      ["Source du logo", prospect.logoSourceUrl]
+      ["🌐 Site officiel", prospect.website],
+      ["📝 Formulaire", prospect.contactForm]
     ].forEach(function (entry) {
       var href = safeImageUrl(entry[1]);
       if (href) links.push({ label: entry[0], value: cleanText(entry[1]), href: href });
@@ -413,6 +427,17 @@
         if (parent) parent.classList.remove("has-image");
         image.remove();
       }
+      image.addEventListener("load", reveal, { once: true });
+      image.addEventListener("error", fallback, { once: true });
+      if (image.complete) {
+        if (image.naturalWidth > 0) reveal();
+        else fallback();
+      }
+    });
+    document.querySelectorAll("[data-person-image]").forEach(function (image) {
+      var parent = image.closest(".person-avatar");
+      function reveal() { if (parent) parent.classList.add("has-image"); }
+      function fallback() { if (parent) parent.classList.remove("has-image"); image.remove(); }
       image.addEventListener("load", reveal, { once: true });
       image.addEventListener("error", fallback, { once: true });
       if (image.complete) {
@@ -759,7 +784,6 @@
                 "<span class='score-bubble'>" + number(item.fitScore) + "</span>" +
                 "<span><span class='priority-name'>" + escapeHtml(item.name) + "</span>" +
                 "<span class='priority-meta'>" + escapeHtml(item.address) + "</span></span>" +
-                badge(item.confidence, confidenceColor(item.confidence)) +
               "</button>";
             }).join("") +
           "</div></div>" +
@@ -834,11 +858,9 @@
   function renderFilters(routeId, total) {
     var prospects = allProspects();
     var segments = unique(prospects.map(function (item) { return item.segment; }));
-    var confidences = unique(prospects.map(function (item) { return item.confidence; }));
     var headcounts = unique(prospects.map(function (item) { return item.headcountCode; }));
     return "<div class='toolbar'>" +
       selectFilter("segment", "Tous les segments", segments, state.segment) +
-      selectFilter("confidence", "Toutes les confiances", confidences, state.confidence) +
       selectFilter("status", "Tous les statuts", STATUS_OPTIONS.filter(Boolean), state.status) +
       selectFilter("decision", "Toutes les décisions", DECISION_OPTIONS.filter(Boolean), state.decision) +
       selectFilter("headcount", "Tous les effectifs", headcounts, state.headcount, function (code) {
@@ -870,7 +892,6 @@
       "<thead><tr>" +
         sortableHead("name", "Prospect") +
         sortableHead("segment", "Profil") +
-        sortableHead("confidence", "Confiance") +
         "<th>Contact</th>" +
         sortableHead("address", "Adresse") +
         sortableHead("headcountCode", "Effectif") +
@@ -885,7 +906,6 @@
             "<div><div class='prospect-name'>" + escapeHtml(item.name) + "</div>" +
             "<div class='prospect-sub'>SIREN " + escapeHtml(item.id) + (item.isHeadOffice ? " · siège" : "") + "</div></div></div></td>" +
           "<td>" + badge(item.segment, isCabinet(item) ? "gold" : "violet") + "</td>" +
-          "<td>" + badge(item.confidence, confidenceColor(item.confidence)) + "</td>" +
           "<td>" + (firstDecisionMakerName(item) ? badge(firstDecisionMakerName(item), "blue") : badge("Associé à vérifier", "gold")) + "</td>" +
           "<td title='" + escapeHtml(item.address) + "'>" + escapeHtml(item.address) + "</td>" +
           "<td>" + escapeHtml(item.headcountCode === "NN" ? "Inconnu" : item.headcountLabel) + "</td>" +
@@ -913,7 +933,6 @@
         "<div class='card-tags'>" +
           (firstDecisionMakerName(item) ? badge(firstDecisionMakerName(item), "blue") : badge("Associé à vérifier", "gold")) +
           badge(item.segment, isCabinet(item) ? "gold" : "violet") +
-          badge(item.confidence, confidenceColor(item.confidence)) +
           badge(item.status, statusColor(item.status)) +
           (item.likelyDomiciliation ? badge(number(item.sameAddressCount) + " à l’adresse", "red") : "") +
         "</div>" +
@@ -1121,14 +1140,11 @@
           "<div class='modal-column'>" +
             "<h3 class='section-title'>Identité SIRENE</h3>" +
             "<div class='info-grid'>" +
-              infoBox("SIRET", prospect.siret || "Non renseigné") +
-              infoBox("Forme juridique", prospect.legalCategoryLabel || prospect.legalCategory || "Non renseignée") +
-              infoBox("Adresse", prospect.address || "Non renseignée") +
-              infoBox("Établissements actifs", number(prospect.activeOffices || 0)) +
-              infoBox("Effectif", prospect.headcountCode === "NN" ? "Inconnu · pas zéro" : (prospect.headcountLabel || prospect.headcountCode)) +
-              infoBox("Création établissement", dateFr(prospect.created)) +
-              infoBox("Siège", prospect.isHeadOffice ? "Oui" : "Non") +
-              infoBox("Confiance", prospect.confidence || "Non renseignée") +
+              infoBox("🪪 SIRET", prospect.siret || "Non renseigné") +
+              infoBox("⚖️ Forme juridique", prospect.legalCategoryLabel || prospect.legalCategory || "Non renseignée") +
+              infoBox("📍 Adresse", prospect.address || "Non renseignée") +
+              infoBox("👥 Effectif", prospect.headcountCode === "NN" ? "Inconnu · pas zéro" : (prospect.headcountLabel || prospect.headcountCode)) +
+              infoBox("📅 Création entreprise", dateFr(prospect.companyCreated || prospect.created)) +
             "</div>" +
             (prospect.likelyDomiciliation
               ? "<div class='notice red' style='margin-bottom:18px'>" + number(prospect.sameAddressCount) +
@@ -1142,10 +1158,9 @@
             "</div>" +
             "<h3 class='section-title'>Source</h3>" +
             "<div class='info-grid'>" +
-              infoBox("Catégorisation", prospect.segmentReason || "Non renseignée") +
-              infoBox("Mise à jour SIRENE", dateFr(prospect.updated)) +
-              infoBox("Source officielle", "Ouvrir la source", prospect.source) +
-              infoBox("Entités à cette adresse", number(prospect.sameAddressCount)) +
+              infoBox("🏷️ Catégorisation", prospect.segmentReason || "Non renseignée") +
+              infoBox("🔄 Mise à jour SIRENE", dateFr(prospect.updated)) +
+              infoBox("🏢 Entités à cette adresse", number(prospect.sameAddressCount)) +
             "</div>" +
           "</div>" +
           "<div class='modal-column'>" +
@@ -1153,27 +1168,24 @@
               "<h3 class='section-title'>Qualification commerciale</h3>" +
               decisionMakersMarkup(prospect) +
               "<div class='form-grid'>" +
-                formField("website", "Site officiel", "url", patch.website || prospect.website || "", "https://…") +
-                formField("email", "Email professionnel", "email", patch.email || prospect.email || "", "contact@…") +
-                formField("linkedin", "LinkedIn cabinet / interlocuteur", "url", patch.linkedin || prospect.linkedin || "", "https://linkedin.com/…") +
-                formField("contactForm", "Formulaire de contact", "url", patch.contactForm || prospect.contactForm || "", "https://…") +
-                formField("evidenceUrl", "Preuve / URL source", "url", patch.evidenceUrl || prospect.evidenceUrl || "", "https://…") +
-                formField("logoUrl", "URL du logo", "url", patch.logoUrl || prospect.logoUrl || "", "https://…/logo.svg") +
-                formField("logoSourceUrl", "Source du logo", "url", patch.logoSourceUrl || prospect.logoSourceUrl || "", "https://site-du-cabinet.fr") +
-                formField("contactName", "Associé / fondateur", "text", patch.contactName || firstDecisionMakerName(prospect), "Prénom Nom") +
-                formField("contactRole", "Qualité", "text", patch.contactRole || firstDecisionMakerRole(prospect), "Associé, associé-fondateur…") +
-                formField("specialties", "Spécialités", "text", patch.specialties || "", "Fiscal, affaires, social…", true) +
-                selectField("status", "Statut", STATUS_OPTIONS, prospect.status) +
-                selectField("decision", "Décision", DECISION_OPTIONS, prospect.decision) +
-                formField("sourceCheckedAt", "Vérifié le", "date", patch.sourceCheckedAt || prospect.sourceCheckedAt || "", "") +
-                selectField("messageVariant", "Approche conseillée", MESSAGES.map(function (item) { return item.id; }), selectedMessage, function (id) {
+                formField("website", "🌐 Site officiel", "url", patch.website || prospect.website || "", "https://…") +
+                formField("email", "✉️ Email professionnel", "email", patch.email || prospect.email || "", "contact@…") +
+                formField("contactLinkedin", "💼 LinkedIn de l’interlocuteur", "url", patch.contactLinkedin || "", "https://linkedin.com/in/…") +
+                formField("contactForm", "📝 Formulaire de contact", "url", patch.contactForm || prospect.contactForm || "", "https://…") +
+                formField("contactName", "👤 Associé / fondateur", "text", patch.contactName || firstDecisionMakerName(prospect), "Prénom Nom") +
+                formField("contactRole", "⚖️ Qualité", "text", patch.contactRole || firstDecisionMakerRole(prospect), "Associé, associé-fondateur…") +
+                formField("specialties", "🎯 Spécialités", "text", patch.specialties || "", "Fiscal, affaires, social…", true) +
+                selectField("status", "📊 Statut", STATUS_OPTIONS, prospect.status) +
+                selectField("decision", "✅ Décision", DECISION_OPTIONS, prospect.decision) +
+                formField("sourceCheckedAt", "📆 Vérifié le", "date", patch.sourceCheckedAt || prospect.sourceCheckedAt || "", "") +
+                selectField("messageVariant", "💬 Approche conseillée", MESSAGES.map(function (item) { return item.id; }), selectedMessage, function (id) {
                   var message = MESSAGES.find(function (item) { return item.id === id; });
                   return message ? message.name : "Approche";
                 }) +
-                formField("lastContact", "Dernier contact", "date", patch.lastContact || "", "") +
-                formField("lastOpen", "Dernière ouverture", "date", patch.lastOpen || "", "") +
-                formField("followUpDate", "Prochaine relance", "date", patch.followUpDate || "", "") +
-                textareaField("notes", "Notes internes", patch.notes || "", true) +
+                formField("lastContact", "📨 Dernier contact", "date", patch.lastContact || "", "") +
+                formField("lastOpen", "👀 Dernière ouverture", "date", patch.lastOpen || "", "") +
+                formField("followUpDate", "🔔 Prochaine relance", "date", patch.followUpDate || "", "") +
+                textareaField("notes", "🗒️ Notes internes", patch.notes || "", true) +
               "</div>" +
               "<div class='modal-actions'>" +
                 "<button type='button' class='primary-btn' data-action='save-prospect'>Enregistrer la fiche</button>" +
@@ -1244,10 +1256,15 @@
   function decisionMakersMarkup(prospect) {
     var people = Array.isArray(prospect && prospect.decisionMakers) ? prospect.decisionMakers : [];
     if (!people.length) return "<div class='notice red'>Aucun associé/fondateur vérifié pour le moment. Ne pas utiliser un nom déduit.</div>";
-    return "<div class='contact-links'><div class='section-title' style='margin:0 0 10px'>Associés / fondateurs vérifiés</div>" + people.map(function (person) {
+    return "<div class='contact-links'><div class='section-title' style='margin:0 0 10px'>👤 Associés / fondateurs vérifiés</div>" + people.map(function (person) {
       var name = [cleanText(person.firstName), cleanText(person.lastName)].filter(Boolean).join(" ");
       var source = safeImageUrl(person.sourceUrl);
-      return "<a class='contact-link' href='" + escapeHtml(source) + "' target='_blank' rel='noreferrer'><span>👤 " + escapeHtml(name) + "</span><small>" + escapeHtml(person.role) + "</small></a>";
+      var linkedin = safeImageUrl(person.linkedin || person.linkedinUrl);
+      var href = linkedin || source;
+      var content = personAvatarMarkup(person) + "<span class='person-copy'><strong>" + escapeHtml(name) + "</strong><small>" + escapeHtml(person.role) + "</small></span>" + (linkedin ? "<b aria-hidden='true'>💼</b>" : "");
+      return href
+        ? "<a class='person-card' href='" + escapeHtml(href) + "' target='_blank' rel='noreferrer'>" + content + "</a>"
+        : "<div class='person-card'>" + content + "</div>";
     }).join("") + "</div>";
   }
 
@@ -1260,11 +1277,8 @@
     [
       "website",
       "email",
-      "linkedin",
       "contactForm",
-      "evidenceUrl",
-      "logoUrl",
-      "logoSourceUrl",
+      "contactLinkedin",
       "contactName",
       "contactRole",
       "specialties",
@@ -1295,7 +1309,6 @@
   function clearFilters() {
     state.search = "";
     state.segment = "";
-    state.confidence = "";
     state.status = "";
     state.decision = "";
     state.headcount = "";
@@ -1337,17 +1350,17 @@
   function exportCsv() {
     var route = ["prospects", "followups"].includes(state.route) ? state.route : "prospects";
     var headers = [
-      "SIREN", "SIRET", "Nom", "Segment", "Confiance", "Adresse", "Effectif",
+      "SIREN", "SIRET", "Nom", "Segment", "Adresse", "Effectif",
       "Score", "Entités à l’adresse", "Statut", "Décision", "Site", "Email",
-      "LinkedIn", "Formulaire", "Logo", "Source logo", "Spécialités", "Interlocuteur", "Fonction", "Preuve", "Vérifié le", "Notes"
+      "LinkedIn interlocuteur", "Formulaire", "Spécialités", "Interlocuteur", "Fonction", "Vérifié le", "Notes"
     ];
     var rows = filteredProspects(route).map(function (item) {
       return [
-        item.id, item.siret, item.name, item.segment, item.confidence, item.address,
+        item.id, item.siret, item.name, item.segment, item.address,
         item.headcountCode === "NN" ? "Inconnu" : item.headcountLabel,
         item.fitScore, item.sameAddressCount, item.status, item.decision,
-        item.website, item.email, item.linkedin, item.contactForm, item.logoUrl, item.logoSourceUrl, item.specialties,
-        item.contactName, item.contactRole, item.evidenceUrl, item.sourceCheckedAt, item.notes
+        item.website, item.email, item.contactLinkedin, item.contactForm, item.specialties,
+        item.contactName, item.contactRole, item.sourceCheckedAt, item.notes
       ];
     });
     var content = "\ufeff" + [headers].concat(rows).map(function (row) {
@@ -1463,7 +1476,7 @@
       if (state.sortKey === key) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
       else {
         state.sortKey = key;
-        state.sortDir = ["name", "segment", "confidence", "address", "status", "decision"].includes(key) ? "asc" : "desc";
+        state.sortDir = ["name", "segment", "address", "status", "decision"].includes(key) ? "asc" : "desc";
       }
       state.page = 1;
       render();
