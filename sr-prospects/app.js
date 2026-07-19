@@ -1129,22 +1129,24 @@
   function renderSendPlan() {
     var rows = planDemoRows();
     var actualCount = rows.filter(function (row) { return !row.demo; }).length;
+    var totals = MESSAGES.reduce(function (result, message) {
+      var stats = messageStats[message.id] || {};
+      result.sent += Number(stats.sent || 0);
+      result.opened += Number(stats.opened || 0);
+      result.replies += Number(stats.replies || 0);
+      return result;
+    }, { sent: 0, opened: 0, replies: 0 });
+    var openRate = totals.sent ? Math.round((totals.opened / totals.sent) * 100) + " %" : "—";
+    var replyRate = totals.sent ? Math.round((totals.replies / totals.sent) * 100) + " %" : "—";
     return "<section class='view'>" +
       viewHead("Pilotage commercial", "Plan d’envoi", "Les prospects choisis, leur message et leur suivi commercial au même endroit.") +
       "<div class='plan-summary'>" +
         infoBox("👥 Prospects sélectionnés", number(actualCount)) +
         infoBox("📤 À contacter", number(rows.filter(function (row) { return normalize(row.prospect.status) === "a contacter" || row.demo; }).length)) +
-        infoBox("💬 Approches à tester", number(Math.min(6, MESSAGES.length))) +
-        infoBox("📈 Suivi", "Du premier contact à l’intérêt") +
+        infoBox("📬 Taux d’ouverture", openRate) +
+        infoBox("💬 Taux de réponse", replyRate) +
       "</div>" +
-      "<div class='plan-list'>" + rows.map(renderPlanCard).join("") + "</div>" +
-      "<div class='panel plan-learning' style='margin-top:16px'><div class='panel-head'><div><div class='panel-title'>🧠 Messages qui performent</div><div class='panel-note'>Le meilleur message sera privilégié ; les prochains tests partiront de ce qui génère réellement des réponses.</div></div></div>" +
-        "<div class='panel-body'><div class='info-grid'>" +
-          infoBox("📬 Taux d’ouverture", "À connecter") +
-          infoBox("💬 Taux de réponse", "À connecter") +
-          infoBox("✨ Intérêts confirmés", "À connecter") +
-          infoBox("🎯 Logique", "Tester · mesurer · améliorer") +
-        "</div><p class='plan-learning-note'>Les résultats seront comparés par message et par métier afin de recommander la prochaine meilleure approche, sans envoyer automatiquement à grande échelle.</p></div></div>" +
+      "<div class='plan-list'>" + rows.map(renderPlanCard).join("") +
     "</section>";
   }
 
