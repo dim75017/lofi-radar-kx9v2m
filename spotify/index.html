@@ -11,7 +11,7 @@
 <script src="../Spotify_Radar_data.js"></script>
 <script src="../Spotify_Playlists_data.js"></script>
 <script src="../Spotify_Labels_data.js"></script>
-<script src="../Spotify_Soundcharts_data_20260719T2030_scopefix.js?v=2030scopefix"></script>
+<script src="../Spotify_Soundcharts_data_20260719T2115_trackopps.js?v=2115trackopps"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
@@ -421,6 +421,43 @@ td.selc,th.selc{width:44px;padding-left:14px}
 @media(max-width:760px){.ar-track-row{grid-template-columns:34px minmax(0,1fr) 70px;gap:8px;padding:10px}.ar-track-row .ar-track-num{display:none}.ar-track-score{font-size:10px}.ar-player{grid-template-columns:1fr;padding:12px}.ar-player iframe{height:80px}}
 @media(max-width:760px){.ar-composer .ar-head{padding:20px 18px 16px}.ar-composer .ar-body{grid-template-columns:1fr;padding:14px 18px 20px}.ar-composer #ar-draft{min-height:300px!important}.ar-composer .ar-actions{flex-wrap:wrap}.ar-composer .ar-actions .hint{width:100%;margin-left:0;text-align:left}}
 @media(max-width:760px){.ar-composer{display:block;padding:14px 18px 20px!important}.ar-composer>.thd{margin:-14px -18px 14px!important;padding:20px 18px 16px}.ar-composer>.analytics-section{margin:12px 0!important}}
+/* Opportunités A&R : une décision par track, l'artiste reste un contexte. */
+.ar-radar-intro{max-width:980px;color:var(--muted);font-size:13px;line-height:1.65;margin-top:6px}
+.ar-kpi-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.ar-kpi-action{appearance:none;text-align:left;min-height:108px;padding:16px 17px;border-radius:15px;border:1px solid var(--border);background:linear-gradient(155deg,var(--panel),var(--bg2));color:var(--text);cursor:pointer;transition:transform .16s,border-color .16s,background .16s,box-shadow .16s}
+.ar-kpi-action:hover{transform:translateY(-2px);border-color:rgba(30,215,96,.48);box-shadow:0 10px 28px rgba(0,0,0,.24)}
+.ar-kpi-action.on{border-color:rgba(30,215,96,.68);background:linear-gradient(145deg,rgba(30,215,96,.14),rgba(10,17,15,.92));box-shadow:inset 0 0 0 1px rgba(30,215,96,.12)}
+.ar-kpi-action .ar-kpi-label{display:block;font-size:11px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;color:var(--muted)}
+.ar-kpi-action.on .ar-kpi-label{color:var(--acc)}
+.ar-kpi-action .ar-kpi-value{display:block;font-family:'Sora';font-size:27px;font-weight:800;margin:8px 0 3px}
+.ar-kpi-action .ar-kpi-help{display:block;font-size:11px;line-height:1.4;color:var(--dim)}
+.ar-filterbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ar-filterbar .search{min-width:210px;flex:1 1 240px}
+.ar-filterbar .ar-filter-spacer{flex:1}
+.ar-data-note{display:flex;align-items:flex-start;gap:9px;padding:11px 13px;border:1px solid rgba(94,234,212,.16);border-radius:12px;background:rgba(94,234,212,.035);color:var(--muted);font-size:11.5px;line-height:1.5;margin-bottom:14px}
+.ar-data-note strong{color:#dffdf0}
+.ar-player-shell{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:center;padding:16px 18px;margin-bottom:14px;border:1px solid rgba(30,215,96,.32);border-radius:16px;background:radial-gradient(520px 170px at 0 0,rgba(30,215,96,.13),transparent 72%),var(--panel)}
+.ar-player-shell iframe{width:100%;height:80px;border:0;border-radius:12px;background:#000}
+.ar-player-kicker{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--acc);font-weight:800}
+.ar-player-title{font-family:'Sora';font-size:17px;font-weight:800;margin:5px 0 4px}.ar-player-meta{font-size:12px;color:var(--muted)}
+.ar-opportunity-list{display:grid;gap:10px}
+.ar-opportunity-card{display:grid;grid-template-columns:52px minmax(230px,1.25fr) minmax(260px,1.3fr) minmax(310px,1.1fr) 92px;gap:14px;align-items:center;padding:14px 15px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(150deg,rgba(18,21,34,.98),rgba(9,13,18,.98));cursor:pointer;transition:border-color .15s,transform .15s,background .15s;position:relative}
+.ar-opportunity-card:hover,.ar-opportunity-card:focus-visible{outline:none;border-color:rgba(30,215,96,.48);background:linear-gradient(150deg,rgba(21,29,35,.98),rgba(9,15,17,.98));transform:translateY(-1px)}
+.ar-opportunity-card.playing{border-color:rgba(30,215,96,.72);box-shadow:inset 3px 0 0 var(--acc)}
+.ar-rank-play{display:flex;align-items:center;gap:8px}.ar-rank{width:18px;text-align:right;font-family:'Sora';font-size:10px;color:var(--dim)}
+.ar-play-main{width:32px;height:32px;border-radius:50%;border:1px solid rgba(30,215,96,.42);background:rgba(30,215,96,.12);color:var(--acc);display:grid;place-items:center;cursor:pointer;font-size:11px;transition:.14s}
+.ar-play-main:hover{background:var(--acc);color:#052e12;transform:scale(1.04)}
+.ar-opp-title{font-family:'Sora';font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ar-opp-artist{font-size:11.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar-opp-tags,.ar-reason-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.ar-mini-tag{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;border:1px solid rgba(148,163,184,.16);background:rgba(148,163,184,.06);font-size:9.5px;font-weight:700;color:#b9c5d4}.ar-mini-tag.good{color:#86efac;border-color:rgba(30,215,96,.25);background:rgba(30,215,96,.08)}.ar-mini-tag.known{color:#67e8f9;border-color:rgba(34,211,238,.22);background:rgba(34,211,238,.07)}
+.ar-why-label{font-size:9.5px;font-weight:800;letter-spacing:.55px;text-transform:uppercase;color:var(--acc);margin-bottom:5px}.ar-why-text{font-size:11.5px;line-height:1.5;color:#d5dfda}.ar-why-proof{font-size:10px;color:var(--dim);margin-top:5px}
+.ar-opp-metrics{display:grid;grid-template-columns:repeat(4,minmax(58px,1fr));gap:6px}.ar-opp-metric{min-width:0;padding:8px 7px;border-radius:10px;background:rgba(255,255,255,.025);border:1px solid rgba(148,163,184,.08);text-align:right}.ar-opp-metric .l{font-size:8.5px;text-transform:uppercase;letter-spacing:.35px;color:var(--dim)}.ar-opp-metric .v{font-family:'Sora';font-size:11.5px;font-weight:750;margin-top:4px;white-space:nowrap}.ar-opp-metric .v.up{color:#86efac}
+.ar-score-box{text-align:center}.ar-score-value{width:58px;height:58px;margin:auto;border-radius:50%;display:grid;place-items:center;border:3px solid rgba(30,215,96,.65);background:rgba(30,215,96,.08);font-family:'Sora';font-size:14px;font-weight:800}.ar-score-confidence{font-size:9px;color:var(--dim);margin-top:5px}.ar-open-detail{display:inline-flex;margin-top:7px;padding:5px 8px;border-radius:8px;border:1px solid rgba(30,215,96,.24);background:transparent;color:var(--acc);font-size:9.5px;font-weight:750;cursor:pointer}
+.ar-empty-state{padding:34px 20px;text-align:center;border:1px dashed var(--border2);border-radius:15px;color:var(--muted);line-height:1.6}
+.ar-detail-player{margin:14px 0}.ar-detail-player iframe{width:100%;height:152px;border:0;border-radius:13px;background:#000}.ar-detail-reasons{display:grid;gap:8px}.ar-detail-reason{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;border-radius:11px;background:rgba(30,215,96,.055);border:1px solid rgba(30,215,96,.13);font-size:12px;line-height:1.45}.ar-detail-reason:before{content:'✓';color:var(--acc);font-weight:900}
+.ar-score-breakdown{display:grid;gap:9px}.ar-score-line{display:grid;grid-template-columns:100px 1fr 40px;gap:9px;align-items:center;font-size:11px}.ar-score-track{height:7px;border-radius:999px;background:rgba(148,163,184,.1);overflow:hidden}.ar-score-fill{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#1ed760,#67e8f9)}.ar-score-line .n{text-align:right;font-family:'Sora';font-weight:700}
+@media(max-width:1180px){.ar-opportunity-card{grid-template-columns:48px minmax(220px,1fr) minmax(240px,1.15fr) 280px 80px}.ar-opp-metric:nth-child(2),.ar-opp-metric:nth-child(3){display:none}.ar-opp-metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.ar-kpi-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.ar-player-shell{grid-template-columns:1fr}.ar-opportunity-card{grid-template-columns:46px minmax(0,1fr) 74px}.ar-opportunity-card>.ar-why,.ar-opportunity-card>.ar-opp-metrics{grid-column:2/-1}.ar-opportunity-card>.ar-score-box{grid-column:3;grid-row:1}.ar-opp-metrics{grid-template-columns:repeat(4,1fr)}.ar-opp-metric:nth-child(n){display:block}}
+@media(max-width:620px){.ar-kpi-actions{grid-template-columns:1fr 1fr;gap:8px}.ar-kpi-action{min-height:95px;padding:13px}.ar-kpi-action .ar-kpi-value{font-size:22px}.ar-opportunity-card{padding:12px 11px;gap:10px}.ar-opportunity-card>.ar-why,.ar-opportunity-card>.ar-opp-metrics{grid-column:1/-1}.ar-rank{display:none}.ar-opp-metrics{grid-template-columns:repeat(2,1fr)}.ar-score-value{width:50px;height:50px;font-size:12px}.ar-filterbar .search{min-width:100%;flex-basis:100%}}
 .wl-star{background:none;border:none;color:#fbbf24;font-size:20px;cursor:pointer;padding:0 4px;line-height:1;vertical-align:middle;opacity:.55;transition:opacity .12s,transform .12s ease}
 .wl-star:hover{opacity:1}
 .wl-star:active{transform:scale(1.3)}
@@ -1512,10 +1549,6 @@ function arClusters(){
     .filter(group=>group.artists>=5 && group.tracks>=10)
     .sort((a,b)=>b.artists-a.artists||b.tracks-a.tracks);
 }
-function arGateBadge(label,value){
-  const bad=['Élevé','Vocal'].includes(value), good=['Faible','Instrumental'].includes(value);
-  return `<span class="badge ${bad?'other':(good?'self':'new')}">${esc(label)} · ${esc(value)}</span>`;
-}
 function arKnownContact(name){
   const match=AG.find(artist=>artist.name.toLowerCase()===String(name||'').toLowerCase() && artist.email);
   return match ? match.email : null;
@@ -1531,7 +1564,7 @@ const S = {
   plq:'', plcur:'all', plsort:'followers', pldir:-1, plonly:false, shownPL:80, plview:'qualified', plmode:'table',
   amode:'table', omode:'table',
   lbq:'', lbsort:'streams', lbdir:-1, shownLB:80, lbmode:'table', labelKey:null, lbModalArtist:null,
-  radarFilter:'priority', radarAiRisk:'hide_high', radarLimit:100, radarTrackId:'',
+  radarFilter:'priority', radarLimit:100, radarTrackId:'', radarQ:'', radarGenre:'all', radarSort:'score',
 };
 
 /* ---------- navigation ---------- */
@@ -2135,7 +2168,7 @@ function bindRadarAiFilter(){
   const select=document.getElementById('radar-ai');
   if(select) select.addEventListener('change',event=>{S.radarAiRisk=event.target.value;renderRadar();});
 }
-function renderRadar(){
+function renderRadarLegacy(){
   if(!SC){
     V.innerHTML=`<div class="page-head"><div><h2>${T('Opportunités A&R')}</h2><p>${T('Données Soundcharts non encore exportées.')}</p></div></div><div class="toolbar">${radarAiFilterHtml()}</div>`;
     bindRadarAiFilter();
@@ -2171,14 +2204,13 @@ function renderRadar(){
       <select id="radar-limit"><option value="100" ${S.radarLimit===100?'selected':''}>Top 100 / jour</option><option value="500" ${S.radarLimit===500?'selected':''}>Top 500 / jour</option></select>
       ${radarAiFilterHtml()}
     </div>
-    <div class="panel" style="padding:6px 14px 14px"><table><thead><tr><th>#</th><th>${T('Artiste')}</th><th>${T('Signal de découverte')}</th><th class="num">${T('Auditeurs mensuels')}</th><th>${T('Réseau Fans Also Like')}</th><th>Gates</th><th>${T('Contact')}</th><th>${T('Étape suivante')}</th></tr></thead><tbody>
+    <div class="panel" style="padding:6px 14px 14px"><table><thead><tr><th>#</th><th>${T('Artiste')}</th><th>${T('Signal de découverte')}</th><th class="num">${T('Auditeurs mensuels')}</th><th>${T('Réseau Fans Also Like')}</th><th>${T('Contact')}</th><th>${T('Étape suivante')}</th></tr></thead><tbody>
       ${rows.map((candidate,index)=>{const contact=arKnownContact(candidate.name);return `<tr>
         <td class="num">${index+1}</td>
         <td><a class="ar" href="${artistSearch(candidate.name)}" target="_blank" rel="noopener">${esc(candidate.name)}</a></td>
         <td><span class="badge ${candidate.score>=70?'self':'new'}">${candidate.score}/100</span><div class="genre-sub">${candidate.qualifies?'pré-sélection ≥50k':'audience à confirmer'}</div></td>
         <td class="num">${fmtFull(candidate.listeners)}</td>
         <td>${candidate.sources} source${candidate.sources>1?'s':''}${candidate.rank?` · rang ${candidate.rank}`:''}</td>
-        <td><div style="display:flex;gap:4px;flex-wrap:wrap">${arGateBadge('Genre',candidate.classification.genre)}${arGateBadge('Inst.',candidate.classification.instrumental)}${arGateBadge('IA',candidate.classification.ai)}${arGateBadge('Droits',candidate.classification.rights)}</div></td>
         <td>${contact?`<a href="mailto:${esc(contact)}" class="ar">${esc(contact)}</a>`:'<span class="genre-sub">À enrichir</span>'}</td>
         <td>${candidate.qualifies?`<button class="chip ${candidate.review?'on':''}" onclick="openArMessage('${esc(candidate.uuid)}')">Préparer message</button>`:`<span class="genre-sub">${T('Écoute + genre / IA / droits')}</span>`}</td>
       </tr>`;}).join('')}
@@ -2200,6 +2232,241 @@ function renderRadar(){
   document.querySelectorAll('[data-radar-filter]').forEach(button=>button.addEventListener('click',()=>{S.radarFilter=button.dataset.radarFilter;renderRadar();}));
   document.getElementById('radar-limit').addEventListener('change',event=>{S.radarLimit=+event.target.value;S.radarFilter='priority';renderRadar();});
   bindRadarAiFilter();
+}
+
+/* ---------- Opportunités A&R v2 : track-first, explicable et actionnable ---------- */
+let AR_OPPORTUNITY_CACHE=null;
+let AR_TRACK_ROW_CACHE=null;
+function arNullableNumber(value){
+  if(value==null || value==='') return null;
+  const number=Number(value);
+  return Number.isFinite(number)?number:null;
+}
+function arTrackRowById(spotifyId){
+  if(!AR_TRACK_ROW_CACHE) AR_TRACK_ROW_CACHE=new Map(R.filter(row=>row&&row[6]).map(row=>[String(row[6]),row]));
+  return AR_TRACK_ROW_CACHE.get(String(spotifyId||''))||null;
+}
+function arOpportunityRows(){
+  if(AR_OPPORTUNITY_CACHE) return AR_OPPORTUNITY_CACHE;
+  if(!SC || !Array.isArray(SC.opportunities)) return [];
+  const schema=SC.schemas&&SC.schemas.opportunities||[];
+  AR_OPPORTUNITY_CACHE=SC.opportunities.map(row=>{
+    const spotifyId=String(scValue(row,schema,'spotify_id')||'');
+    const structured=Array.isArray(scValue(row,schema,'artists'))?scValue(row,schema,'artists'):[];
+    const reasons=Array.isArray(scValue(row,schema,'reasons'))?scValue(row,schema,'reasons').filter(Boolean):[];
+    const reasonCodes=Array.isArray(scValue(row,schema,'reason_codes'))?scValue(row,schema,'reason_codes').filter(Boolean):[];
+    const labels=Array.isArray(scValue(row,schema,'labels'))?scValue(row,schema,'labels').filter(Boolean):[];
+    const rosterRelationship=scValue(row,schema,'roster_relationship');
+    const knownRoster=rosterRelationship&&typeof rosterRelationship==='object'
+      ? rosterRelationship.status==='existing'
+      : Number(rosterRelationship)===1 || rosterRelationship===true;
+    const relationshipArtists=rosterRelationship&&typeof rosterRelationship==='object'&&Array.isArray(rosterRelationship.artists)
+      ? rosterRelationship.artists.filter(Boolean)
+      : [];
+    const credit=String(scValue(row,schema,'credit_name')||structured.map(artist=>artist&&artist.name).filter(Boolean).join(' & ')||'Artiste non renseigné');
+    return {
+      status:String(scValue(row,schema,'opportunity_status')||'verified'),
+      spotifyId,
+      soundchartsUuid:String(scValue(row,schema,'soundcharts_uuid')||''),
+      title:String(scValue(row,schema,'title')||'Titre non renseigné'),
+      credit,
+      artists:structured,
+      releaseDate:String(scValue(row,schema,'release_date')||''),
+      genre:String(scValue(row,schema,'primary_genre')||'other'),
+      subgenres:Array.isArray(scValue(row,schema,'subgenres'))?scValue(row,schema,'subgenres'):[],
+      genreConfidence:arNullableNumber(scValue(row,schema,'genre_confidence')),
+      instrumental:String(scValue(row,schema,'instrumental_status')||'unknown'),
+      instrumentalConfidence:arNullableNumber(scValue(row,schema,'instrumental_confidence')),
+      aiRisk:String(scValue(row,schema,'ai_risk')||'unknown'),
+      aiRiskScore:arNullableNumber(scValue(row,schema,'ai_risk_score')),
+      rights:String(scValue(row,schema,'rights_status')||'unknown'),
+      label:String(scValue(row,schema,'label')||labels[0]||''),
+      labels,
+      copyright:String(scValue(row,schema,'copyright')||''),
+      distributor:String(scValue(row,schema,'distributor')||''),
+      streams:arNullableNumber(scValue(row,schema,'streams')),
+      streamsSourceDate:String(scValue(row,schema,'streams_source_date')||''),
+      streamsObservedAt:String(scValue(row,schema,'streams_observed_at')||''),
+      delta24:arNullableNumber(scValue(row,schema,'streams_delta_24h')),
+      deltaPreviousDate:String(scValue(row,schema,'delta_previous_source_date')||''),
+      deltaWindowHours:arNullableNumber(scValue(row,schema,'delta_window_hours')),
+      playlistCount:arNullableNumber(scValue(row,schema,'editorial_placement_count'))||0,
+      bestPosition:arNullableNumber(scValue(row,schema,'editorial_best_position')),
+      playlistFollowers:arNullableNumber(scValue(row,schema,'editorial_followers_total')),
+      playlistFollowersKnown:arNullableNumber(scValue(row,schema,'editorial_followers_known_count'))||0,
+      topPlaylist:String(scValue(row,schema,'editorial_top_playlist')||''),
+      firstPlaylistSeen:String(scValue(row,schema,'editorial_first_seen_at')||''),
+      lastPlaylistSeen:String(scValue(row,schema,'editorial_last_seen_at')||''),
+      knownRoster,
+      relationshipArtists,
+      score:arNullableNumber(scValue(row,schema,'score'))||0,
+      scoreMomentum:arNullableNumber(scValue(row,schema,'score_momentum'))||0,
+      scoreEditorial:arNullableNumber(scValue(row,schema,'score_editorial'))||0,
+      scoreTraction:arNullableNumber(scValue(row,schema,'score_traction'))||0,
+      scoreRecency:arNullableNumber(scValue(row,schema,'score_recency'))||0,
+      scoreRelationship:arNullableNumber(scValue(row,schema,'score_relationship'))||0,
+      scoreConfidence:arNullableNumber(scValue(row,schema,'score_confidence')),
+      reasonCodes,
+      reasons,
+      metadataUpdatedAt:String(scValue(row,schema,'metadata_updated_at')||''),
+    };
+  }).filter(item=>item.spotifyId && item.title);
+  return AR_OPPORTUNITY_CACHE;
+}
+function arGenreLabel(genre){
+  return ({lofi_hip_hop:'Lofi hip-hop',guitar:'Guitare',nature:'Nature',jazz_jazzhop:'Jazz / jazzhop',classical:'Classique',ambient:'Ambient',piano:'Piano',halloween_lofi:'Halloween lofi',christmas_lofi:'Christmas lofi',dark_ambient:'Dark ambient',phonk_instrumental:'Phonk instrumental',dnb_instrumental:'DnB instrumental'})[genre]||String(genre||'À classifier').replaceAll('_',' ');
+}
+function arRightsLabel(rights){
+  return rights==='self_released'?'Self-release confirmé':(['indie','independent_label'].includes(rights)?'Label indépendant':'Droits à vérifier');
+}
+function arConfidenceLabel(value){
+  if(value==null) return 'preuve en construction';
+  if(value>=.8) return 'confiance haute';
+  if(value>=.55) return 'confiance moyenne';
+  return 'à confirmer';
+}
+function arReleaseAgeDays(opportunity){
+  if(!/^\d{4}-\d{2}-\d{2}/.test(opportunity.releaseDate)) return null;
+  const value=Math.floor((TODAY-new Date(opportunity.releaseDate.slice(0,10)+'T00:00:00'))/864e5);
+  return Number.isFinite(value)?Math.max(0,value):null;
+}
+function arOpportunityMetric(opportunity,days){
+  if(days===1&&opportunity.delta24!=null) return opportunity.delta24;
+  const track=arTrackRowById(opportunity.spotifyId);
+  if(track){
+    const window=trackWindow(track,days);
+    if(window&&window.currentReady&&window.current!=null) return window.current;
+  }
+  return null;
+}
+function arOpportunityTotal(opportunity){
+  if(opportunity.streams!=null) return opportunity.streams;
+  const track=arTrackRowById(opportunity.spotifyId);
+  return track&&Number(track[3])>=0?Number(track[3]):null;
+}
+function arStrongEditorial(opportunity){
+  return opportunity.playlistCount>=2 || (opportunity.bestPosition!=null&&opportunity.bestPosition<=30) || (opportunity.playlistFollowers!=null&&opportunity.playlistFollowers>=100000);
+}
+function arOpportunityReasons(opportunity){
+  const reasonRank=code=>/^streams_24h_/.test(code)?0
+    : code==='streams_observed'?1
+    : code==='current_editorial_placement'?2
+    : code==='editorial_followers_observed'?3
+    : code==='editorial_best_position'?4
+    : code==='recent_release'?5
+    : code==='existing_roster_relationship'?6
+    : code==='self_released_confirmed'||code==='indie_rights_confirmed'?7
+    : /instrumental/.test(code)?8
+    : /genre/.test(code)?9
+    : 20;
+  const reasons=opportunity.reasons.map((reason,index)=>({reason,index,rank:reasonRank(opportunity.reasonCodes[index]||'')}))
+    .sort((a,b)=>a.rank-b.rank||a.index-b.index).map(item=>item.reason);
+  const delta=arOpportunityMetric(opportunity,1), total=arOpportunityTotal(opportunity), age=arReleaseAgeDays(opportunity);
+  if(!reasons.length){
+    if(delta!=null&&delta>0) reasons.push(`+${fmt(Math.round(delta))} streams sur 24 h`);
+    if(opportunity.playlistCount>0) reasons.push(`${fmtFull(opportunity.playlistCount)} placement${opportunity.playlistCount>1?'s':''} éditorial${opportunity.playlistCount>1?'ux':''}`);
+    if(opportunity.bestPosition!=null) reasons.push(`meilleure position #${Math.round(opportunity.bestPosition)}`);
+    if(total!=null&&total>0) reasons.push(`${fmt(total)} streams total`);
+    if(age!=null&&age<=180) reasons.push(`sortie il y a ${age} jours`);
+  }
+  if(opportunity.status==='needs_listen'&&!reasons.some(reason=>/instrumental/i.test(reason))) reasons.push('instrumental à valider par écoute');
+  if(opportunity.knownRoster&&!reasons.some(reason=>/relation|connu/i.test(reason))) reasons.push('artiste déjà en relation avec Lofi');
+  return reasons.length?reasons:['Découverte éditoriale qualifiée · historique performance en construction'];
+}
+function arMetricCompact(value,signed=false){
+  if(value==null) return '—';
+  return signed?signedFull(Math.round(value)):fmt(value);
+}
+function arOpportunityFiltered(all){
+  const query=S.radarQ.trim().toLowerCase();
+  let rows=all.filter(opportunity=>{
+    if(S.radarGenre!=='all'&&opportunity.genre!==S.radarGenre) return false;
+    if(query&&!`${opportunity.title} ${opportunity.credit} ${opportunity.genre} ${opportunity.label}`.toLowerCase().includes(query)) return false;
+    if(S.radarFilter==='rising') return (arOpportunityMetric(opportunity,1)||0)>0;
+    if(S.radarFilter==='editorial') return arStrongEditorial(opportunity);
+    if(S.radarFilter==='recent') { const age=arReleaseAgeDays(opportunity); return age!=null&&age<=180; }
+    if(S.radarFilter==='verified') return opportunity.status==='verified';
+    if(S.radarFilter==='needs_listen') return opportunity.status==='needs_listen';
+    if(S.radarFilter==='known') return opportunity.knownRoster;
+    return true;
+  });
+  rows.sort((a,b)=>{
+    if(S.radarSort==='momentum') return (arOpportunityMetric(b,1)||-Infinity)-(arOpportunityMetric(a,1)||-Infinity)||b.score-a.score;
+    if(S.radarSort==='streams') return (arOpportunityTotal(b)||-Infinity)-(arOpportunityTotal(a)||-Infinity)||b.score-a.score;
+    if(S.radarSort==='editorial') return (b.playlistFollowers||0)-(a.playlistFollowers||0)||b.playlistCount-a.playlistCount||b.score-a.score;
+    if(S.radarSort==='recent') return (arReleaseAgeDays(a)??Infinity)-(arReleaseAgeDays(b)??Infinity)||b.score-a.score;
+    return b.score-a.score||(b.scoreConfidence||0)-(a.scoreConfidence||0)||a.title.localeCompare(b.title);
+  });
+  return rows;
+}
+function arKpiButton(filter,label,value,help){
+  return `<button class="ar-kpi-action ${S.radarFilter===filter?'on':''}" data-radar-filter="${filter}" data-radar-kpi="1"><span class="ar-kpi-label">${esc(label)}</span><span class="ar-kpi-value">${fmtFull(value)}</span><span class="ar-kpi-help">${esc(help)}</span></button>`;
+}
+function arOpportunityCard(opportunity,index){
+  const total=arOpportunityTotal(opportunity), d30=arOpportunityMetric(opportunity,30), d7=arOpportunityMetric(opportunity,7), d1=arOpportunityMetric(opportunity,1);
+  const reasons=arOpportunityReasons(opportunity), genre=arGenreLabel(opportunity.genre);
+  const proof=`${arRightsLabel(opportunity.rights)} · ${genre} · ${opportunity.status==='verified'?'instrumental vérifié':'instrumental à écouter'}`;
+  return `<article class="ar-opportunity-card ${S.radarTrackId===opportunity.spotifyId?'playing':''}" tabindex="0" data-ar-card="${esc(opportunity.spotifyId)}">
+    <div class="ar-rank-play"><span class="ar-rank">${index+1}</span><button class="ar-play-main" data-ar-play="${esc(opportunity.spotifyId)}" title="Écouter ${esc(opportunity.title)}">${S.radarTrackId===opportunity.spotifyId?'❚❚':'▶'}</button></div>
+    <div class="ar-opp-main"><div class="ar-opp-title">${esc(opportunity.title)}</div><div class="ar-opp-artist">${esc(opportunity.credit)}</div><div class="ar-opp-tags"><span class="ar-mini-tag good">${esc(arRightsLabel(opportunity.rights))}</span><span class="ar-mini-tag">${esc(genre)}</span>${opportunity.knownRoster?'<span class="ar-mini-tag known">Relation existante</span>':''}${opportunity.status==='needs_listen'?'<span class="ar-mini-tag">À valider à l’écoute</span>':''}</div></div>
+    <div class="ar-why"><div class="ar-why-label">Pourquoi elle est ici</div><div class="ar-why-text">${esc(reasons.slice(0,2).join(' · '))}</div><div class="ar-why-proof">${esc(proof)}</div></div>
+    <div class="ar-opp-metrics"><div class="ar-opp-metric"><div class="l">Total</div><div class="v">${arMetricCompact(total)}</div></div><div class="ar-opp-metric"><div class="l">30 jours</div><div class="v">${arMetricCompact(d30)}</div></div><div class="ar-opp-metric"><div class="l">7 jours</div><div class="v">${arMetricCompact(d7)}</div></div><div class="ar-opp-metric"><div class="l">24 heures</div><div class="v ${d1!=null&&d1>0?'up':''}">${arMetricCompact(d1,true)}</div></div></div>
+    <div class="ar-score-box"><div class="ar-score-value">${Math.round(opportunity.score)}</div><div class="ar-score-confidence">${esc(arConfidenceLabel(opportunity.scoreConfidence))}</div><button class="ar-open-detail" data-ar-open="${esc(opportunity.spotifyId)}">Pourquoi ?</button></div>
+  </article>`;
+}
+function arScoreLine(label,value,max){
+  const width=Math.max(0,Math.min(100,(Number(value)||0)/max*100));
+  return `<div class="ar-score-line"><span>${esc(label)}</span><span class="ar-score-track"><span class="ar-score-fill" style="width:${width}%"></span></span><span class="n">${Math.round(Number(value)||0)}/${max}</span></div>`;
+}
+function openArOpportunity(spotifyId){
+  const opportunity=arOpportunityRows().find(item=>item.spotifyId===spotifyId); if(!opportunity) return;
+  S.radarTrackId=spotifyId;
+  const box=document.getElementById('ar-body'), reasons=arOpportunityReasons(opportunity);
+  const total=arOpportunityTotal(opportunity), d30=arOpportunityMetric(opportunity,30), d7=arOpportunityMetric(opportunity,7), d1=arOpportunityMetric(opportunity,1);
+  const track=arTrackRowById(spotifyId), confidence=arConfidenceLabel(opportunity.scoreConfidence);
+  box.className='tmbox ambox';
+  box.innerHTML=`<div class="thd"><div class="av-sm">♫</div><div style="min-width:0;flex:1"><h3>${esc(opportunity.title)}</h3><div class="tar" style="cursor:default">${esc(opportunity.credit)} · opportunité de track</div></div><button class="tclose" onclick="closeArModal()">✕</button></div>
+    <div class="ar-detail-player"><iframe title="Spotify player · ${esc(opportunity.title)}" src="https://open.spotify.com/embed/track/${esc(spotifyId)}?utm_source=generator" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>
+    <div class="perf-grid">${totalMetricCardHtml('Streams',total,true)}${perfCardHtml(streamMetricLabel(30),{current:d30,currentReady:d30!=null,comparisonReady:false,total:1},true)}${perfCardHtml(streamMetricLabel(7),{current:d7,currentReady:d7!=null,comparisonReady:false,total:1},true)}${perfCardHtml(streamMetricLabel(1),{current:d1,currentReady:d1!=null,comparisonReady:false,total:1},true)}</div>
+    <div class="analytics-section"><h4>Pourquoi cette musique est dans la liste</h4><div class="ar-detail-reasons">${reasons.map(reason=>`<div class="ar-detail-reason">${esc(reason)}</div>`).join('')}</div></div>
+    <div class="analytics-section"><h4>Score track <span class="analytics-note">${Math.round(opportunity.score)}/100 · ${esc(confidence)}</span></h4><div class="ar-score-breakdown">${arScoreLine('Momentum',opportunity.scoreMomentum,35)}${arScoreLine('Signal éditorial',opportunity.scoreEditorial,20)}${arScoreLine('Traction',opportunity.scoreTraction,25)}${arScoreLine('Récence',opportunity.scoreRecency,15)}${arScoreLine('Relation',opportunity.scoreRelationship,5)}</div></div>
+    <div class="tgrid"><div class="tg"><div class="l">Genre</div><div class="v" style="font-size:13px">${esc(arGenreLabel(opportunity.genre))}</div></div><div class="tg"><div class="l">Droits</div><div class="v" style="font-size:13px">${esc(arRightsLabel(opportunity.rights))}</div></div><div class="tg"><div class="l">Playlists éditoriales</div><div class="v">${fmtFull(opportunity.playlistCount)}</div><div class="genre-sub">${opportunity.bestPosition==null?'position —':'meilleure #'+Math.round(opportunity.bestPosition)}</div></div><div class="tg"><div class="l">Followers cumulés</div><div class="v">${opportunity.playlistFollowers==null?'—':fmt(opportunity.playlistFollowers)}</div><div class="genre-sub">${opportunity.topPlaylist?esc(opportunity.topPlaylist):'source en construction'}</div></div><div class="tg"><div class="l">Sortie</div><div class="v">${opportunity.releaseDate?fmtDate(opportunity.releaseDate.slice(0,10)):'—'}</div></div><div class="tg"><div class="l">Label / distributeur</div><div class="v" style="font-size:12px;line-height:1.4">${esc(opportunity.label||opportunity.distributor||'—')}</div></div><div class="tg"><div class="l">© / ℗</div><div class="v" style="font-size:11px;line-height:1.4">${esc(opportunity.copyright||'—')}</div></div><div class="tg"><div class="l">Relation</div><div class="v" style="font-size:13px">${opportunity.knownRoster?'Artiste déjà connu':'Nouvelle relation'}</div></div></div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px"><a class="btn-back" style="margin:0;text-decoration:none" href="${trackUrl(spotifyId)}" target="_blank" rel="noopener">▶ Ouvrir sur Spotify</a>${track?`<button class="chip" id="ar-open-full-track">Fiche analytics complète</button>`:''}</div>
+    <div class="tnote">Les valeurs 24 h / 7 j / 30 j restent à « — » tant qu’aucune vraie baseline n’existe. Le score ne fabrique aucune croissance manquante.</div>`;
+  if(track) document.getElementById('ar-open-full-track').addEventListener('click',()=>{closeArModal();openTrack(spotifyId);});
+  document.getElementById('ar-modal').style.display='flex';
+}
+function renderRadar(){
+  const all=arOpportunityRows();
+  if(!SC || !Array.isArray(SC.opportunities)){
+    V.innerHTML=`<div class="page-head"><div><h2>Opportunités de tracks A&R</h2><p class="ar-radar-intro">Le nouvel export track-centric n’est pas encore disponible. Aucune ancienne liste artistes n’est affichée à sa place.</p></div></div><div class="ar-empty-state">Export Soundcharts des opportunités de tracks en préparation.</div>`;
+    return;
+  }
+  const rising=all.filter(item=>(arOpportunityMetric(item,1)||0)>0), editorial=all.filter(arStrongEditorial), recent=all.filter(item=>{const age=arReleaseAgeDays(item);return age!=null&&age<=180;});
+  const verified=all.filter(item=>item.status==='verified'), needsListen=all.filter(item=>item.status==='needs_listen'), known=all.filter(item=>item.knownRoster);
+  const filtered=arOpportunityFiltered(all), rows=filtered.slice(0,S.radarLimit), selected=all.find(item=>item.spotifyId===S.radarTrackId)||null;
+  const genres=[...new Set(all.map(item=>item.genre).filter(Boolean))].sort((a,b)=>arGenreLabel(a).localeCompare(arGenreLabel(b)));
+  V.innerHTML=`<div class="page-head"><div><h2>Opportunités de tracks A&R</h2><p class="ar-radar-intro">Chaque ligne est une musique potentiellement achetable. Le classement porte sur la track : momentum réel, traction, signal des playlists éditoriales, récence et relation existante. Les droits sont validés avant l’admission. L’artiste n’est qu’un contexte — y compris lorsqu’il travaille déjà avec nous.</p></div></div>
+    <div class="ar-kpi-actions">${arKpiButton('priority','À écouter d’abord',Math.min(S.radarLimit,all.length),'Les meilleurs scores track, triés par preuve disponible.')}${arKpiButton('rising','En hausse sur 24 h',rising.length,'Uniquement quand deux mesures réelles existent.')}${arKpiButton('editorial','Signal éditorial fort',editorial.length,'Placements, positions et audience des playlists.')}${arKpiButton('recent','Sorties récentes',recent.length,'Tracks sorties depuis moins de 180 jours.')}</div>
+    <div class="ar-data-note"><span>ⓘ</span><span><strong>Pourquoi une track apparaît :</strong> self-release ou indé, niche instrumentale ciblée, IA faible et aucune preuve major/mixed. « À valider à l’écoute » signifie que la traction est intéressante mais que le caractère instrumental de la track doit encore être confirmé humainement.</span></div>
+    <div class="ar-filterbar"><button class="chip ${S.radarFilter==='verified'?'on':''}" data-radar-filter="verified">Vérifiées (${fmtFull(verified.length)})</button><button class="chip ${S.radarFilter==='needs_listen'?'on':''}" data-radar-filter="needs_listen">À valider à l’écoute (${fmtFull(needsListen.length)})</button><button class="chip ${S.radarFilter==='known'?'on':''}" data-radar-filter="known">Relation existante (${fmtFull(known.length)})</button><button class="chip ${S.radarFilter==='all'?'on':''}" data-radar-filter="all">Toutes (${fmtFull(all.length)})</button><input class="search" id="radar-q" value="${esc(S.radarQ)}" placeholder="Rechercher une track, un artiste, un genre…"><select id="radar-genre"><option value="all">Tous les genres</option>${genres.map(genre=>`<option value="${esc(genre)}" ${S.radarGenre===genre?'selected':''}>${esc(arGenreLabel(genre))}</option>`).join('')}</select><select id="radar-sort"><option value="score" ${S.radarSort==='score'?'selected':''}>Trier : priorité</option><option value="momentum" ${S.radarSort==='momentum'?'selected':''}>Trier : 24 h</option><option value="streams" ${S.radarSort==='streams'?'selected':''}>Trier : streams total</option><option value="editorial" ${S.radarSort==='editorial'?'selected':''}>Trier : signal éditorial</option><option value="recent" ${S.radarSort==='recent'?'selected':''}>Trier : récence</option></select><select id="radar-limit"><option value="100" ${S.radarLimit===100?'selected':''}>Afficher 100</option><option value="250" ${S.radarLimit===250?'selected':''}>Afficher 250</option><option value="500" ${S.radarLimit===500?'selected':''}>Afficher 500</option></select></div>
+    ${selected?`<div class="ar-player-shell"><div><div class="ar-player-kicker">Lecture en cours</div><div class="ar-player-title">${esc(selected.title)}</div><div class="ar-player-meta">${esc(selected.credit)} · ${esc(arGenreLabel(selected.genre))} · score ${Math.round(selected.score)}/100</div></div><iframe title="Spotify player · ${esc(selected.title)}" src="https://open.spotify.com/embed/track/${esc(selected.spotifyId)}?utm_source=generator" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>`:''}
+    <div class="ar-opportunity-list">${rows.map(arOpportunityCard).join('')}</div>${rows.length===0?`<div class="ar-empty-state">Aucune track ne correspond à ce filtre. Les critères restent stricts et aucune donnée manquante n’est inventée.</div>`:''}${filtered.length>rows.length?`<div class="analytics-note" style="text-align:center;margin-top:12px">${fmtFull(rows.length)} affichées sur ${fmtFull(filtered.length)} · augmente « Afficher » pour voir la suite.</div>`:''}`;
+  document.querySelectorAll('[data-radar-filter]').forEach(button=>button.addEventListener('click',()=>{
+    S.radarFilter=button.dataset.radarFilter; S.radarTrackId='';
+    if(button.dataset.radarKpi){
+      S.radarQ=''; S.radarGenre='all';
+      S.radarSort=({priority:'score',rising:'momentum',editorial:'editorial',recent:'recent'})[S.radarFilter]||'score';
+    }
+    renderRadar();
+  }));
+  document.querySelectorAll('[data-ar-play]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();const id=button.dataset.arPlay;S.radarTrackId=S.radarTrackId===id?'':id;renderRadar();}));
+  document.querySelectorAll('[data-ar-open]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();openArOpportunity(button.dataset.arOpen);}));
+  document.querySelectorAll('[data-ar-card]').forEach(card=>{const open=event=>{if(event.target.closest('button,a,input,select')) return;openArOpportunity(card.dataset.arCard);};card.addEventListener('click',open);card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openArOpportunity(card.dataset.arCard);}});});
+  document.getElementById('radar-q').addEventListener('input',event=>{S.radarQ=event.target.value;renderRadar();keepFocus('radar-q');});
+  document.getElementById('radar-genre').addEventListener('change',event=>{S.radarGenre=event.target.value;renderRadar();});
+  document.getElementById('radar-sort').addEventListener('change',event=>{S.radarSort=event.target.value;renderRadar();});
+  document.getElementById('radar-limit').addEventListener('change',event=>{S.radarLimit=Number(event.target.value)||100;renderRadar();});
 }
 
 function renderWatch(){
@@ -3181,7 +3448,7 @@ function render(){
 
 /* ---------- init ---------- */
 document.getElementById('c-opps').textContent = fmt(R.length);
-(() => { const c=document.getElementById('c-radar'); if(c) c.textContent=SC&&Array.isArray(SC.fal)?fmt(arCandidates().filter(item=>item.qualifies).length):''; })();
+(() => { const c=document.getElementById('c-radar'); if(c) c.textContent=SC&&Array.isArray(SC.opportunities)?fmt(SC.opportunities.length):''; })();
 document.getElementById('c-art').textContent = withTracks.length;
 (function(){ const c=document.getElementById('c-pl'); if(c && PLmeta) c.textContent = fmt(PLmeta.playlists_10k_plus); })();
 (function(){ const c=document.getElementById('c-lb'); if(c && LBmeta) c.textContent = fmt(LBrows.length); })();
