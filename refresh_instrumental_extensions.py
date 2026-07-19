@@ -30,7 +30,9 @@ MIN_ALL_VIEWS = 1_000_000
 MIN_TREND_VIEWS = 500_000
 # Explore beyond the first handful of results. The job remains bounded and
 # runs hourly, while a wider query corpus builds a genuinely useful niche map.
-MAX_RESULTS = 10
+# Cover the actual YouTube search space instead of taking only the first page.
+# The strict format / vocal / title gates below keep this wider intake clean.
+MAX_RESULTS = 100
 THREAD = threading.local()
 MAX_WORKERS = 4
 
@@ -45,6 +47,7 @@ VOCAL = re.compile(
 
 QUERIES = {
     "Chill house": [
+        "chill house", "chill house music", "chill house mix",
         "lofi house instrumental mix", "chill house instrumental mix",
         "chill house mix no vocals", "deep house instrumental mix",
         "deep house for work instrumental", "deep house for study instrumental",
@@ -55,6 +58,7 @@ QUERIES = {
         "house music for focus instrumental", "house music for coding instrumental",
     ],
     "Phonk": [
+        "phonk", "phonk music", "phonk mix",
         "phonk instrumental mix", "phonk mix no vocals",
         "chill phonk instrumental mix", "chill phonk no vocals mix",
         "lofi phonk instrumental", "ambient phonk instrumental mix",
@@ -64,6 +68,7 @@ QUERIES = {
         "dark phonk instrumental mix", "phonk background music instrumental",
     ],
     "Drum & Bass": [
+        "drum and bass", "drum and bass music", "dnb", "dnb music",
         "drum and bass instrumental mix", "dnb instrumental mix",
         "liquid drum and bass instrumental mix", "liquid dnb instrumental mix",
         "liquid drum and bass mix no vocals", "atmospheric drum and bass instrumental",
