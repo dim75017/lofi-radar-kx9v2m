@@ -11,7 +11,7 @@
 <script src="../Spotify_Radar_data.js"></script>
 <script src="../Spotify_Playlists_data.js"></script>
 <script src="../Spotify_Labels_data.js"></script>
-<script src="../Spotify_Soundcharts_data_20260719T2129_editorial.js?v=2129editorial"></script>
+<script src="../Spotify_Soundcharts_data_20260719T2256_xxl_strict.js?v=2256xxlstrict"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
@@ -799,7 +799,7 @@ const EN_MAP = {
   "Non estimée":"Not estimated","Estimation":"Estimate","Estimation, pas une date certaine":"Estimate, not a firm date","confiance":"confidence",
   "Détail pas encore récupéré":"Detail not yet retrieved","en attente":"pending",
   "Aucune playlist ne correspond à ces filtres.":"No playlist matches these filters.","Aucune donnée playlists chargée pour le moment.":"No playlist data loaded yet.",
-  "Dernier scan le":"Last scan:","artistes scannés":"artists scanned",
+  "Dernier scan le":"Last scan:","artistes scannés":"artists scanned","staging Soundcharts strict":"strict Soundcharts staging","artistes éligibles":"eligible artists","Export Soundcharts le":"Soundcharts export:",
   "Revenu mensuel est.":"Est. monthly revenue","catalogue hors Lofi":"catalog outside Lofi","cumulé":"lifetime",
   "Revenus estimés à":"Revenue estimated at","all-in Spotify, fourchette":"all-in Spotify, range","source Duetti / Loud & Clear 2025-26":"source Duetti / Loud & Clear 2025-26",
   "Revenu est.":"Est. revenue","mois":"mo","mo":"mo","lifetime":"lifetime",
@@ -907,13 +907,15 @@ function paybackClass(months){
 /* ---------- préparation ---------- */
 // artists: [nom, nbLofi, flag, done, disco, origine, seedSrc]
 // rows:    [ai, track, date, streams, statut(0 self/1 autre), label, id, firstSeen]
-const A = D.artists || [];
+const A = (D.artists || []).map(artist=>Array.isArray(artist)?artist.slice():artist);
 /* a[4] marks rows imported by the retired discovery scraper. They are not
-   label catalogue rows; vetted Soundcharts candidates are re-added below. */
-const R = (D.rows || []).filter(row=>{
+   label catalogue rows. Keep the source intact, but never expose legacy rows
+   directly: only verified, structured Soundcharts tracks are rebuilt below. */
+const LEGACY_R = (D.rows || []).filter(row=>{
   const artist=A[Number(row&&row[0])];
   return artist && Number(artist[4]||0)!==1;
 });
+const R = [];
 /* Raccord progressif aux historiques journaliers validés.
    Le dashboard ne lit jamais SQLite et ne promeut aucune table staging. Un export approuvé
    pourra définir window.SPOTIFY_PERFORMANCE avant ce script avec ce contrat :
@@ -944,6 +946,33 @@ const SC_ALLOWED_GENRES = new Set([
 ]);
 const SC_MIN_LISTENERS = 10000;
 const SC_MAX_LISTENERS = 750000;
+function scVerifiedOpportunityIndex(){
+  const out=new Map();
+  if(!SC||!Array.isArray(SC.opportunities)) return out;
+  const schema=(SC.schemas&&SC.schemas.opportunities)||[];
+  for(const row of SC.opportunities){
+    const spotifyId=String(scField(row,schema,'spotify_id')||'');
+    const status=String(scField(row,schema,'opportunity_status')||'').toLowerCase();
+    const genre=String(scField(row,schema,'primary_genre')||'');
+    const genreConfidence=Number(scField(row,schema,'genre_confidence'));
+    const instrumental=String(scField(row,schema,'instrumental_status')||'').toLowerCase();
+    const instrumentalConfidence=Number(scField(row,schema,'instrumental_confidence'));
+    const ai=String(scField(row,schema,'ai_risk')||'').toLowerCase();
+    const rights=String(scField(row,schema,'rights_status')||'').toLowerCase();
+    const artists=Array.isArray(scField(row,schema,'artists'))?scField(row,schema,'artists'):[];
+    const structured=artists.length>0&&artists.every(artist=>
+      String(artist&&artist.spotify_id||'')&&String(artist&&artist.soundcharts_uuid||''));
+    if(!spotifyId||status!=='verified'||!SC_ALLOWED_GENRES.has(genre)
+      ||instrumental!=='instrumental'||!Number.isFinite(instrumentalConfidence)||instrumentalConfidence<0.5
+      ||!Number.isFinite(genreConfidence)||genreConfidence<0.5
+      ||!['low','faible'].includes(ai)
+      ||!['self_released','independent_label','indie'].includes(rights)
+      ||!structured) continue;
+    out.set(spotifyId,{row,genre,genreConfidence,instrumental,instrumentalConfidence,ai,rights,artists});
+  }
+  return out;
+}
+const SC_VERIFIED_OPPORTUNITIES=scVerifiedOpportunityIndex();
 function scEditorialIndex(){
   const out=new Map();
   if(!SC||!SC.editorial||!Array.isArray(SC.editorial.artists)) return out;
@@ -982,34 +1011,53 @@ function scScopeEligible(uuid,listeners,rights='unknown'){
 }
 function mergeSoundchartsStaging(){
   if(!SC) return;
-  const artistById=new Map(), artistByName=new Map();
-  A.forEach((a,i)=>{ if(a[7]) artistById.set(a[7],i); if(a[0]) artistByName.set(scKey(a[0]),i); });
+  const artistById=new Map(), artistByUuid=new Map();
+  A.forEach((a,i)=>{ if(a[7]) artistById.set(a[7],i); });
   const addArtist=(name,id,meta={},allowNew=false)=>{
     const mergeArtist=(i)=>{
       const artist=A[i];
       if(id&&!artist[7]) artist[7]=id;
       artist.sc=Object.assign({listeners:0,sources:0,rank:null,qualifies:false},artist.sc||{},meta);
       if(id) artistById.set(id,i);
+      if(meta.uuid) artistByUuid.set(String(meta.uuid),i);
       return i;
     };
+    const uuid=String(meta.uuid||'');
+    if(uuid&&artistByUuid.has(uuid)) return mergeArtist(artistByUuid.get(uuid));
     if(id&&artistById.has(id)) return mergeArtist(artistById.get(id));
-    const key=scKey(name); if(key&&artistByName.has(key)) return mergeArtist(artistByName.get(key));
-    if(!name||!allowNew) return -1;
+    /* Never resolve an identity from a display name. A missing structured ID
+       keeps the artist in staging quarantine and prevents composite credits. */
+    if(!name||!id||!allowNew) return -1;
     const row=[name,0,'sc',false,true,'soundcharts_staging','fans_also_like',id||'','','',''];
     row.sc=Object.assign({listeners:0,sources:0,rank:null,qualifies:false},meta);
-    const i=A.push(row)-1; if(id)artistById.set(id,i); artistByName.set(key,i); SC_STAGING.artists++; return i;
+    const i=A.push(row)-1; artistById.set(id,i); if(uuid)artistByUuid.set(uuid,i); SC_STAGING.artists++; return i;
   };
+  /* Editorial profiles are the strict public artist allowlist: instrumental,
+     in-scope genre, low AI risk and bounded audience. */
+  for(const profile of SC_EDITORIAL_BY_UUID.values()){
+    if(!scScopeEligible(profile.uuid,profile.listeners)) continue;
+    addArtist(profile.name,profile.spotifyId,{
+      listeners:profile.listeners,
+      qualifies:profile.qualifies,
+      uuid:profile.uuid,
+      scopeEligible:true,
+      classification:{genre:profile.genre,genre_confidence:profile.genreConfidence,genre_source:'soundcharts_strict',instrumental:profile.instrumental,instrumental_confidence:profile.instrumentalConfidence,ai_risk:profile.ai,ai_risk_source:'soundcharts_strict'}
+    },true);
+  }
   const artistSchema=(SC.schemas&&SC.schemas.artists)||[];
   for(const row of (SC.artists||[])){
     const uuid=scField(row,artistSchema,'soundcharts_uuid')||'';
     const listeners=Number(scField(row,artistSchema,'monthly_listeners'))||0;
     const eligible=scScopeEligible(uuid,listeners);
+    if(!eligible) continue;
+    const profile=SC_EDITORIAL_BY_UUID.get(uuid);
     addArtist(scField(row,artistSchema,'name'),scField(row,artistSchema,'spotify_id'),{
       listeners,
       qualifies:Number(scField(row,artistSchema,'qualifies'))===1,
       uuid,
-      scopeEligible:eligible
-    },eligible);
+      scopeEligible:true,
+      classification:{genre:profile.genre,genre_confidence:profile.genreConfidence,genre_source:'soundcharts_strict',instrumental:profile.instrumental,instrumental_confidence:profile.instrumentalConfidence,ai_risk:profile.ai,ai_risk_source:'soundcharts_strict'}
+    },true);
   }
   const falSchema=(SC.schemas&&SC.schemas.fal)||[];
   for(const row of (SC.fal||[])){
@@ -1026,7 +1074,8 @@ function mergeSoundchartsStaging(){
       qualifies:Number(scField(row,falSchema,'qualifies'))===1,
       uuid,
       rights,
-      scopeEligible:true
+      scopeEligible:true,
+      classification:{genre:SC_EDITORIAL_BY_UUID.get(uuid).genre,genre_confidence:SC_EDITORIAL_BY_UUID.get(uuid).genreConfidence,genre_source:'soundcharts_strict',instrumental:SC_EDITORIAL_BY_UUID.get(uuid).instrumental,instrumental_confidence:SC_EDITORIAL_BY_UUID.get(uuid).instrumentalConfidence,ai_risk:SC_EDITORIAL_BY_UUID.get(uuid).ai,ai_risk_source:'soundcharts_strict'}
     },true);
   }
   const trackById=new Map(R.map(r=>[r[6],r]).filter(([id])=>Boolean(id)));
@@ -1034,6 +1083,7 @@ function mergeSoundchartsStaging(){
   for(const row of (SC.tracks||[])){
     const id=scField(row,trackSchema,'spotify_id')||('soundcharts:'+String(scField(row,trackSchema,'soundcharts_uuid')||''));
     if(id==='soundcharts:') continue;
+    const opportunity=SC_VERIFIED_OPPORTUNITIES.get(String(id))||null;
     if(trackById.has(id)){
       const existing=trackById.get(id); if(!existing.sc){existing.sc=true; SC_STAGING.tracks++;}
       const delta24=Number(scField(row,trackSchema,'delta'));
@@ -1051,23 +1101,29 @@ function mergeSoundchartsStaging(){
     const structured=Array.isArray(scField(row,trackSchema,'artists'))
       ? scField(row,trackSchema,'artists') : [];
     const linked=[];
+    let trackClassificationMeta=opportunity?{genre:opportunity.genre,genreConfidence:opportunity.genreConfidence,instrumental:opportunity.instrumental,instrumentalConfidence:opportunity.instrumentalConfidence,ai:opportunity.ai,source:'soundcharts_verified_opportunity'}:null;
     for(const person of structured){
       const uuid=String(person&&person.soundcharts_uuid||'');
       const id=String(person&&person.spotify_id||'');
       const name=String(person&&person.name||'').trim();
-      const existingIndex=id&&artistById.has(id) ? artistById.get(id)
-        : (name&&artistByName.has(scKey(name)) ? artistByName.get(scKey(name)) : -1);
-      const known=existingIndex>=0 && Number(A[existingIndex][4]||0)!==1;
+      if(!id||!uuid) continue;
       const meta=SC_EDITORIAL_BY_UUID.get(uuid);
-      const eligible=known||(scScopeEligible(uuid,meta&&meta.listeners,rights)
-        && ['self_released','independent_label','indie'].includes(rights));
+      /* SC.tracks is already the exporter's strict track allowlist. If an
+         editorial profile exists it must still pass the artist gate; otherwise
+         the structured export membership is the evidence. Major/mixed never pass. */
+      const eligible=!['major','major_label','mixed'].includes(rights)
+        && (!meta||scScopeEligible(uuid,meta.listeners,rights));
       if(!eligible) continue;
-      const index=addArtist(name,id,{
+      if(!trackClassificationMeta&&meta) trackClassificationMeta={genre:meta.genre,genreConfidence:meta.genreConfidence,instrumental:meta.instrumental,instrumentalConfidence:meta.instrumentalConfidence,ai:meta.ai,source:'soundcharts_strict'};
+      const artistMeta={
         listeners:Number(meta&&meta.listeners)||0,
         uuid,
         role:String(person&&person.role||'unknown'),
-        scopeEligible:eligible
-      },eligible);
+        scopeEligible:true
+      };
+      const classificationSource=meta||opportunity;
+      if(classificationSource) artistMeta.classification={genre:classificationSource.genre,genre_confidence:classificationSource.genreConfidence,genre_source:meta?'soundcharts_strict':'soundcharts_verified_opportunity',instrumental:classificationSource.instrumental, instrumental_confidence:classificationSource.instrumentalConfidence,ai_risk:classificationSource.ai,ai_risk_source:meta?'soundcharts_strict':'soundcharts_verified_opportunity'};
+      const index=addArtist(name,id,artistMeta,true);
       if(index>=0) linked.push({index,role:String(person&&person.role||'unknown')});
     }
     linked.sort((a,b)=>(a.role==='main'?-1:1)-(b.role==='main'?-1:1)||a.index-b.index);
@@ -1086,6 +1142,7 @@ function mergeSoundchartsStaging(){
     track.sc=true;
     track.scArtistIndexes=linked.map(item=>item.index);
     track.scCredit=scField(row,trackSchema,'artist')||'';
+    if(trackClassificationMeta) track.scClassification={genre:trackClassificationMeta.genre,genre_confidence:trackClassificationMeta.genreConfidence,genre_source:trackClassificationMeta.source,instrumental:trackClassificationMeta.instrumental,instrumental_confidence:trackClassificationMeta.instrumentalConfidence,ai_risk:trackClassificationMeta.ai,ai_risk_source:trackClassificationMeta.source};
     track.scDelta24=hasDailyBaseline&&Number.isFinite(delta24)?delta24:null;
     R.push(track); trackById.set(id,track); SC_STAGING.tracks++;
   }
@@ -1169,7 +1226,10 @@ function fmt(n){
 function fmtFull(n){ return n===-1?'?':n.toLocaleString('fr-FR'); }
 function monthsSince(d){
   if(!d) return null;
-  const days = (TODAY - new Date(d+'T00:00:00'))/864e5;
+  const raw=String(d);
+  const parsed=new Date(raw.includes('T')?raw:raw+'T00:00:00');
+  if(!Number.isFinite(parsed.getTime())) return null;
+  const days = (TODAY - parsed)/864e5;
   return days<0 ? null : Math.max(days/30.4368,1);
 }
 function perMonth(r){
@@ -1354,8 +1414,8 @@ function classificationFromEntry(entry){
     aiRiskSource:c.ai_risk_source||null
   };
 }
-function trackClassification(r){ return classificationFromEntry(trackPerfEntry(r)); }
-function artistClassification(g){ return classificationFromEntry(artistPerfEntry(g)); }
+function trackClassification(r){ return classificationFromEntry(Object.assign({},r.scClassification||{},trackPerfEntry(r))); }
+function artistClassification(g){ return classificationFromEntry(Object.assign({},g.sc&&g.sc.classification||{},artistPerfEntry(g))); }
 function riskPass(c,mode){
   if(mode==='high_only') return c.aiRisk==='élevé';
   if(mode==='hide_high') return c.aiRisk!=='élevé';
@@ -1557,7 +1617,7 @@ function arKnownContact(name){
 /* ---------- état ---------- */
 const S = {
   view:'opps', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false, metricMode:'streams',
-  q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all', genres:new Set(),
+  q:'', statut:'all', min:0, period:'all', artist:-1, rel:'all', genres:new Set(),
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(),
   newDays:90, shownN:100,
@@ -2257,12 +2317,13 @@ function arOpportunityRows(){
     const reasonCodes=Array.isArray(scValue(row,schema,'reason_codes'))?scValue(row,schema,'reason_codes').filter(Boolean):[];
     const labels=Array.isArray(scValue(row,schema,'labels'))?scValue(row,schema,'labels').filter(Boolean):[];
     const rosterRelationship=scValue(row,schema,'roster_relationship');
-    const knownRoster=rosterRelationship&&typeof rosterRelationship==='object'
-      ? rosterRelationship.status==='existing'
-      : Number(rosterRelationship)===1 || rosterRelationship===true;
     const relationshipArtists=rosterRelationship&&typeof rosterRelationship==='object'&&Array.isArray(rosterRelationship.artists)
       ? rosterRelationship.artists.filter(Boolean)
       : [];
+    /* A legacy numeric/boolean roster flag is not enough to assert a Lofi
+       relationship publicly. Require the structured relationship evidence. */
+    const knownRoster=Boolean(rosterRelationship&&typeof rosterRelationship==='object'
+      && rosterRelationship.status==='existing'&&relationshipArtists.length);
     const credit=String(scValue(row,schema,'credit_name')||structured.map(artist=>artist&&artist.name).filter(Boolean).join(' & ')||'Artiste non renseigné');
     return {
       status:String(scValue(row,schema,'opportunity_status')||'verified'),
@@ -3454,7 +3515,12 @@ document.getElementById('c-art').textContent = withTracks.length;
 (function(){ const c=document.getElementById('c-lb'); if(c && LBmeta) c.textContent = fmt(LBrows.length); })();
 (function(){ const w=wlGet(); const c=document.getElementById('c-watch'); if(c) c.textContent = (w.t.length+w.a.length)||''; })();
 function fmtTs(ts){
-  const m = (''+ts).match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
+  const raw=''+(ts||'');
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)){
+    const date=new Date(raw);
+    if(!Number.isNaN(date.getTime())) return new Intl.DateTimeFormat(LANG==='fr'?'fr-FR':'en-GB',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(date).replace(',',LANG==='fr'?' à':'');
+  }
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}:\d{2}))?/);
   if (!m) return ts;
   // format européen (jour/mois/année) dans les deux langues, jamais le format américain
   if (LANG==='fr') return m[3]+'/'+m[2]+'/'+m[1] + (m[4] ? ' à '+m[4] : '');
@@ -3465,8 +3531,9 @@ function updateFooter(){
   const trRow = document.getElementById('sync-row-tr');
   const trTxt = document.getElementById('sync-txt-tr');
   const trDetail = document.getElementById('sync-detail-tr');
-  trTxt.innerHTML = '🎶 '+esc(fmtTs(D.ts||D.t));
-  trDetail.innerHTML = `<b>${T('Tracks')}</b><br>${fmtFull(R.length)} tracks · ${AG.filter(g=>g.done).length} ${T('artistes scannés')}<br>${T('Dernier scan le')} ${esc(fmtTs(D.ts||D.t))}`;
+  const strictTimestamp=SC&&(SC.generated_at||(SC.freshness&&SC.freshness.tracks_at))||D.ts||D.t;
+  trTxt.innerHTML = '🎶 '+esc(fmtTs(strictTimestamp));
+  trDetail.innerHTML = `<b>${T('Tracks')} · ${T('staging Soundcharts strict')}</b><br>${fmtFull(R.length)} tracks · ${fmtFull(withTracks.length)} ${T('artistes éligibles')}<br>${T('Export Soundcharts le')} ${esc(fmtTs(strictTimestamp))}`;
   const plRow = document.getElementById('sync-row-pl');
   const plTxt = document.getElementById('sync-txt-pl');
   const plDot = document.getElementById('sync-dot-pl');
