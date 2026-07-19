@@ -9,9 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="Lofi_Radar_data.js"></script>
 <script>
-window.__radarDataReady=window.LOFI_DATA?Promise.resolve(window.LOFI_DATA):fetch('Lofi_Radar_data.js?payload=1')
+/* Always fetch the snapshot fresh. GitHub Pages and a previous script tag may
+   otherwise keep an old radar timestamp in the browser cache. */
+window.__radarDataReady=fetch('Lofi_Radar_data.js?payload='+Date.now(),{cache:'no-store'})
   .then(r=>{if(!r.ok)throw new Error('Snapshot HTTP '+r.status);return r.text();})
   .then(src=>{Function(src)();return window.LOFI_DATA;});
 </script>
@@ -725,7 +726,7 @@ const SHEET_ID='1XE_M9pQWn8w2Qu83vV_tv9sEFDFQ13fTePseG6mh1vI';
 const XLSX_URL='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=xlsx';
 // Bump when classification rules change: stale browser caches must not keep
 // showing videos previously assigned to a genre by a broad keyword match.
-const CACHE_KEY='lofiradar_v2';
+const CACHE_KEY='lofiradar_v3';
 
 const ICONS={
  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
