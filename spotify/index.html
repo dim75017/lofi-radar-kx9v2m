@@ -799,7 +799,7 @@ const EN_MAP = {
   "Non estimée":"Not estimated","Estimation":"Estimate","Estimation, pas une date certaine":"Estimate, not a firm date","confiance":"confidence",
   "Détail pas encore récupéré":"Detail not yet retrieved","en attente":"pending",
   "Aucune playlist ne correspond à ces filtres.":"No playlist matches these filters.","Aucune donnée playlists chargée pour le moment.":"No playlist data loaded yet.",
-  "Dernier scan le":"Last scan:","artistes scannés":"artists scanned","staging Soundcharts strict":"strict Soundcharts staging","artistes éligibles":"eligible artists","Export Soundcharts le":"Soundcharts export:",
+  "Dernier scan le":"Last scan:","artistes scannés":"artists scanned","staging Soundcharts strict":"strict Soundcharts staging","Catalogue + staging Soundcharts strict":"Catalog + strict Soundcharts staging","artistes éligibles":"eligible artists","artistes visibles":"visible artists","tracks Soundcharts strictes intégrées":"strict Soundcharts tracks included","Export Soundcharts le":"Soundcharts export:",
   "Revenu mensuel est.":"Est. monthly revenue","catalogue hors Lofi":"catalog outside Lofi","cumulé":"lifetime",
   "Revenus estimés à":"Revenue estimated at","all-in Spotify, fourchette":"all-in Spotify, range","source Duetti / Loud & Clear 2025-26":"source Duetti / Loud & Clear 2025-26",
   "Revenu est.":"Est. revenue","mois":"mo","mo":"mo","lifetime":"lifetime",
@@ -908,14 +908,27 @@ function paybackClass(months){
 // artists: [nom, nbLofi, flag, done, disco, origine, seedSrc]
 // rows:    [ai, track, date, streams, statut(0 self/1 autre), label, id, firstSeen]
 const A = (D.artists || []).map(artist=>Array.isArray(artist)?artist.slice():artist);
-/* a[4] marks rows imported by the retired discovery scraper. They are not
-   label catalogue rows. Keep the source intact, but never expose legacy rows
-   directly: only verified, structured Soundcharts tracks are rebuilt below. */
+/* Explicit quarantine requested by Dim for mainstream/vocal identities. This
+   applies to the general views as well as to future Soundcharts merges. */
+const GENERAL_VIEW_QUARANTINED_ARTISTS = new Set([
+  'powfu','metallica','michael jackson','justin bieber','dua lipa','black eyed peas',
+  'sean paul','jennifer lopez','ellie goulding','bring me the horizon','a$ap rocky','asap rocky',
+  'sarcastic sounds','rxseboy','sody'
+]);
+function generalArtistKey(value){ return String(value||'').trim().toLowerCase(); }
+/* Preserve the historical catalogue. If its existing discriminator explicitly
+   marks a retired discovery row, or the artist is in the reviewed vocal/
+   mainstream quarantine above, keep the source data but hide it from the
+   instrumental general views. */
 const LEGACY_R = (D.rows || []).filter(row=>{
   const artist=A[Number(row&&row[0])];
-  return artist && Number(artist[4]||0)!==1;
+  return artist && Number(artist[4]||0)!==1
+    && !GENERAL_VIEW_QUARANTINED_ARTISTS.has(generalArtistKey(artist[0]));
 });
-const R = [];
+/* Keep the reviewed historical catalogue in the general views, then merge only
+   the strict Soundcharts additions below. A&R and FAL expansion still use the
+   stricter structured Soundcharts gates and never inherit from this array. */
+const R = LEGACY_R.map(row=>Array.isArray(row)?row.slice():row);
 /* Raccord progressif aux historiques journaliers validés.
    Le dashboard ne lit jamais SQLite et ne promeut aucune table staging. Un export approuvé
    pourra définir window.SPOTIFY_PERFORMANCE avant ce script avec ce contrat :
@@ -1014,6 +1027,7 @@ function mergeSoundchartsStaging(){
   const artistById=new Map(), artistByUuid=new Map();
   A.forEach((a,i)=>{ if(a[7]) artistById.set(a[7],i); });
   const addArtist=(name,id,meta={},allowNew=false)=>{
+    if(GENERAL_VIEW_QUARANTINED_ARTISTS.has(generalArtistKey(name))) return -1;
     const mergeArtist=(i)=>{
       const artist=A[i];
       if(id&&!artist[7]) artist[7]=id;
@@ -3533,7 +3547,7 @@ function updateFooter(){
   const trDetail = document.getElementById('sync-detail-tr');
   const strictTimestamp=SC&&(SC.generated_at||(SC.freshness&&SC.freshness.tracks_at))||D.ts||D.t;
   trTxt.innerHTML = '🎶 '+esc(fmtTs(strictTimestamp));
-  trDetail.innerHTML = `<b>${T('Tracks')} · ${T('staging Soundcharts strict')}</b><br>${fmtFull(R.length)} tracks · ${fmtFull(withTracks.length)} ${T('artistes éligibles')}<br>${T('Export Soundcharts le')} ${esc(fmtTs(strictTimestamp))}`;
+  trDetail.innerHTML = `<b>${T('Tracks')} · ${T('Catalogue + staging Soundcharts strict')}</b><br>${fmtFull(R.length)} tracks · ${fmtFull(withTracks.length)} ${T('artistes visibles')}<br>${fmtFull(SC_STAGING.tracks)} ${T('tracks Soundcharts strictes intégrées')} · ${T('Export Soundcharts le')} ${esc(fmtTs(strictTimestamp))}`;
   const plRow = document.getElementById('sync-row-pl');
   const plTxt = document.getElementById('sync-txt-pl');
   const plDot = document.getElementById('sync-dot-pl');
