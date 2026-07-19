@@ -722,7 +722,9 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 /* ================= CONFIG ================= */
 const SHEET_ID='1XE_M9pQWn8w2Qu83vV_tv9sEFDFQ13fTePseG6mh1vI';
 const XLSX_URL='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=xlsx';
-const CACHE_KEY='lofiradar_v1';
+// Bump when classification rules change: stale browser caches must not keep
+// showing videos previously assigned to a genre by a broad keyword match.
+const CACHE_KEY='lofiradar_v2';
 
 const ICONS={
  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
@@ -936,10 +938,12 @@ function parseOurs(ws){
 }
 function normalizeExpandedGenre(rows){
   (rows||[]).forEach(v=>{
-    const text=[v.genre,v.title,v.kw].join(' ').toLowerCase();
-    if(/\bphonk\b/.test(text))v.genre='Phonk';
-    else if(/\b(?:drum\s*(?:and|&|n)\s*bass|dnb|d&b|liquid|jungle)\b/.test(text))v.genre='Drum & Bass';
-    else if(v.genre==='Electronic / house'||/\b(?:lo[- ]?fi|chill|deep|ambient|downtempo|melodic|organic|balearic|lounge)\s+house\b/.test(text))v.genre='Chill house';
+    // Genre comes from the curated scan classification.  Do not infer it from
+    // discovery keywords: terms such as “liquid” or “jungle” also occur in
+    // ambient contexts and previously created false Drum & Bass entries.
+    if(v.genre==='Phonk')v.genre='Phonk';
+    else if(v.genre==='Drum & Bass')v.genre='Drum & Bass';
+    else if(v.genre==='Chill house')v.genre='Chill house';
   });
   return rows;
 }
@@ -1677,10 +1681,16 @@ function videosHTML(kind){
     });
     ageSel=xdd('c-period',curAgeLabel,ageOpts);
   }
-  const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>all.filter(v=>v.genre===b).length-all.filter(v=>v.genre===a).length);
+  // The genre menu is contextual: its counts always match the selected
+  // period, so a genre with all-time videos cannot misleadingly look present
+  // in “last 3 / 6 / 12 months”.
+  const periodRows=(kind==='mix'&&st.age!=='all')?all.filter(v=>inAge(v,st.age)):all;
+  const genres=[...new Set(all.map(v=>v.genre).filter(Boolean))].sort((a,b)=>
+    periodRows.filter(v=>v.genre===b).length-periodRows.filter(v=>v.genre===a).length||a.localeCompare(b)
+  );
   const sortKeys=kind==='news'?['added','vpm','views','newest','dur']:(kind==='mix'?['vpm','views','newest','oldest','dur','subs','added']:['vpm','views','newest','oldest','dur','subs']);
   const genreOpts=[{label:'🎵 All genres',sel:!st.genre,onclick:'VS.'+kind+'.genre=\'\';VS.'+kind+'.limit=60;render()'}].concat(
-    genres.map(g=>({label:genreEmoji(g)+' '+esc(g)+' · '+all.filter(v=>v.genre===g).length,sel:st.genre===g,onclick:'VS.'+kind+'.genre='+jsq(g)+';VS.'+kind+'.limit=60;render()'}))
+    genres.map(g=>({label:genreEmoji(g)+' '+esc(g)+' · '+periodRows.filter(v=>v.genre===g).length,sel:st.genre===g,onclick:'VS.'+kind+'.genre='+jsq(g)+';VS.'+kind+'.limit=60;render()'}))
   );
   const genreLabel=st.genre?(genreEmoji(st.genre)+' '+esc(st.genre)):'🎵 All genres';
   const sortOpts=sortKeys.map(k=>({label:(SORTS[k].emoji||'⚡')+' Sort · '+SORTS[k].lbl,sel:st.sort===k,onclick:'VS.'+kind+'.sort='+jsq(k)+';rerenderList('+jsq(kind)+')'}));
