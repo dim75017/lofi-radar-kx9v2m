@@ -11,7 +11,7 @@
 <script src="../Spotify_Radar_data.js"></script>
 <script src="../Spotify_Playlists_data.js"></script>
 <script src="../Spotify_Labels_data.js"></script>
-<script src="../Spotify_Soundcharts_data_20260719T1414.js"></script>
+<script src="../Spotify_Soundcharts_data_20260719T1505.js"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
@@ -937,15 +937,33 @@ function mergeSoundchartsStaging(){
   for(const row of (SC.tracks||[])){
     const id=scField(row,trackSchema,'spotify_id')||('soundcharts:'+String(scField(row,trackSchema,'soundcharts_uuid')||''));
     if(id==='soundcharts:') continue;
-    if(trackById.has(id)){ const existing=trackById.get(id); if(!existing.sc){existing.sc=true; SC_STAGING.tracks++;} continue; }
+    if(trackById.has(id)){
+      const existing=trackById.get(id); if(!existing.sc){existing.sc=true; SC_STAGING.tracks++;}
+      const delta24=Number(scField(row,trackSchema,'delta'));
+      const previousSourceDate=String(scField(row,trackSchema,'previous_source_date')||'').slice(0,10);
+      const sourceDate=String(scField(row,trackSchema,'source_date')||'').slice(0,10);
+      existing.scDelta24=/^\d{4}-\d{2}-\d{2}$/.test(previousSourceDate)
+        && /^\d{4}-\d{2}-\d{2}$/.test(sourceDate)
+        && dayGap(previousSourceDate,sourceDate)>=1
+        && Number.isFinite(delta24) ? delta24 : null;
+      continue;
+    }
     const ai=addArtist(scField(row,trackSchema,'artist'),'',{}); if(ai<0) continue;
     const rights=String(scField(row,trackSchema,'rights_status')||'').toLowerCase();
     const label=scField(row,trackSchema,'label')||scField(row,trackSchema,'copyright')||'Soundcharts staging';
     const rawStreams=scField(row,trackSchema,'streams'), parsedStreams=Number(rawStreams);
     const streams=rawStreams==null||rawStreams===''||!Number.isFinite(parsedStreams)?-1:parsedStreams;
+    const delta24=Number(scField(row,trackSchema,'delta'));
+    const previousSourceDate=String(scField(row,trackSchema,'previous_source_date')||'').slice(0,10);
+    const sourceDate=String(scField(row,trackSchema,'source_date')||'').slice(0,10);
+    const hasDailyBaseline=/^\d{4}-\d{2}-\d{2}$/.test(previousSourceDate)
+      && /^\d{4}-\d{2}-\d{2}$/.test(sourceDate)
+      && dayGap(previousSourceDate,sourceDate)>=1;
     const track=[ai,scField(row,trackSchema,'title')||'Titre non renseigné',scField(row,trackSchema,'release_date')||'',streams,
       rights==='self_released'?0:1,label,id,scField(row,trackSchema,'observed_at')||''];
-    track.sc=true; R.push(track); trackById.set(id,track); SC_STAGING.tracks++;
+    track.sc=true;
+    track.scDelta24=hasDailyBaseline&&Number.isFinite(delta24)?delta24:null;
+    R.push(track); trackById.set(id,track); SC_STAGING.tracks++;
   }
 }
 mergeSoundchartsStaging();
@@ -1079,6 +1097,9 @@ function aggregateWindowForRows(rows,days){
 function performanceForRows(rows){ return {1:aggregateWindowForRows(rows,1),7:aggregateWindowForRows(rows,7),30:aggregateWindowForRows(rows,30)}; }
 function trackWindow(r,days){
   const w=counterWindow(HIST[r[6]]||[],days);
+  if(days===1 && !w.currentReady && r.sc && Number.isFinite(r.scDelta24)){
+    return Object.assign(w,{current:r.scDelta24,currentReady:true,currentCount:1,partial:false,source:'soundcharts_daily_delta'});
+  }
   return Object.assign(w,{currentCount:w.currentReady?1:0,comparisonCount:w.comparisonReady?1:0,total:1,partial:!w.currentReady,comparisonPartial:!w.comparisonReady});
 }
 function dailyFlowSeries(raw){
