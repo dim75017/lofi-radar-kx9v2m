@@ -9,8 +9,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="Lofi_Radar_data.js"></script>
 <script>
-window.__radarDataReady=fetch('Lofi_Radar_data.js?payload=1')
+window.__radarDataReady=window.LOFI_DATA?Promise.resolve(window.LOFI_DATA):fetch('Lofi_Radar_data.js?payload=1')
   .then(r=>{if(!r.ok)throw new Error('Snapshot HTTP '+r.status);return r.text();})
   .then(src=>{Function(src)();return window.LOFI_DATA;});
 </script>
