@@ -120,6 +120,17 @@
   ];
 
   var DECISION_OPTIONS = ["", "Approuvé", "Exclu"];
+  var PROFESSION_OPTIONS = [
+    "Avocat",
+    "Notaire",
+    "Dentiste",
+    "Architecte",
+    "Expert-comptable",
+    "Médecin",
+    "Conseil en gestion de patrimoine",
+    "Commissaire de justice",
+    "Juridique à qualifier"
+  ];
   var PAGE_SIZE = 60;
   var patches = readJson(STORAGE.patches, {});
   var messageStats = readJson(STORAGE.messageStats, {});
@@ -128,6 +139,7 @@
     route: routeFromHash(),
     search: "",
     segment: "",
+    profession: "",
     confidence: "",
     status: "",
     decision: "",
@@ -451,6 +463,17 @@
     return normalize(prospect.segment).indexOf("cabinet d avocat") !== -1;
   }
 
+  function professionOf(prospect) {
+    var explicit = cleanText(prospect && prospect.profession);
+    if (explicit) return explicit;
+    var segment = normalize(prospect && prospect.segment);
+    var name = normalize(prospect && prospect.name);
+    if (segment.indexOf("notarial") !== -1 || name.indexOf("notaire") !== -1) return "Notaire";
+    if (segment.indexOf("commissaire de justice") !== -1 || name.indexOf("huissier") !== -1) return "Commissaire de justice";
+    if (segment.indexOf("avocat") !== -1 || name.indexOf("avocat") !== -1) return "Avocat";
+    return "Juridique à qualifier";
+  }
+
   function isPriority(prospect) {
     var segment = normalize(prospect.segment);
     return isCabinet(prospect) ||
@@ -569,6 +592,7 @@
           prospect.address,
           prospect.physicalAddress,
           prospect.segment,
+          professionOf(prospect),
           prospect.siret,
           prospect.id,
           prospect.website,
@@ -587,6 +611,7 @@
       });
     }
     if (state.segment) list = list.filter(function (item) { return item.segment === state.segment; });
+    if (state.profession) list = list.filter(function (item) { return professionOf(item) === state.profession; });
     if (state.confidence) list = list.filter(function (item) { return item.confidence === state.confidence; });
     if (state.status) list = list.filter(function (item) { return item.status === state.status; });
     if (state.decision) list = list.filter(function (item) { return item.decision === state.decision; });
@@ -607,6 +632,7 @@
     if (key === "fitScore" || key === "activeOffices" || key === "sameAddressCount") {
       return Number(item[key]) || 0;
     }
+    if (key === "profession") return professionOf(item);
     return cleanText(item[key]);
   }
 
@@ -857,10 +883,9 @@
 
   function renderFilters(routeId, total) {
     var prospects = allProspects();
-    var segments = unique(prospects.map(function (item) { return item.segment; }));
     var headcounts = unique(prospects.map(function (item) { return item.headcountCode; }));
     return "<div class='toolbar'>" +
-      selectFilter("segment", "Tous les segments", segments, state.segment) +
+      selectFilter("profession", "Tous les métiers", PROFESSION_OPTIONS, state.profession) +
       selectFilter("status", "Tous les statuts", STATUS_OPTIONS.filter(Boolean), state.status) +
       selectFilter("decision", "Toutes les décisions", DECISION_OPTIONS.filter(Boolean), state.decision) +
       selectFilter("headcount", "Tous les effectifs", headcounts, state.headcount, function (code) {
@@ -891,7 +916,7 @@
     return "<div class='table-wrap'><table class='data-table'>" +
       "<thead><tr>" +
         sortableHead("name", "Prospect") +
-        sortableHead("segment", "Profil") +
+        sortableHead("profession", "Métier") +
         "<th>Contact</th>" +
         sortableHead("address", "Adresse") +
         sortableHead("headcountCode", "Effectif") +
@@ -904,8 +929,8 @@
         return "<tr data-open='" + escapeHtml(item.id) + "'>" +
           "<td><div class='prospect-cell'>" + avatarMarkup(item) +
             "<div><div class='prospect-name'>" + escapeHtml(item.name) + "</div>" +
-            "<div class='prospect-sub'>SIREN " + escapeHtml(item.id) + (item.isHeadOffice ? " · siège" : "") + "</div></div></div></td>" +
-          "<td>" + badge(item.segment, isCabinet(item) ? "gold" : "violet") + "</td>" +
+            "<div class='prospect-sub'>SIREN " + escapeHtml(item.id) + "</div></div></div></td>" +
+          "<td>" + badge(professionOf(item), professionOf(item) === "Avocat" ? "gold" : "violet") + "</td>" +
           "<td>" + (firstDecisionMakerName(item) ? badge(firstDecisionMakerName(item), "blue") : badge("Associé à vérifier", "gold")) + "</td>" +
           "<td title='" + escapeHtml(item.address) + "'>" + escapeHtml(item.address) + "</td>" +
           "<td>" + escapeHtml(item.headcountCode === "NN" ? "Inconnu" : item.headcountLabel) + "</td>" +
@@ -932,7 +957,7 @@
         "<div class='card-address'>" + escapeHtml(item.address) + "</div>" +
         "<div class='card-tags'>" +
           (firstDecisionMakerName(item) ? badge(firstDecisionMakerName(item), "blue") : badge("Associé à vérifier", "gold")) +
-          badge(item.segment, isCabinet(item) ? "gold" : "violet") +
+          badge(professionOf(item), professionOf(item) === "Avocat" ? "gold" : "violet") +
           badge(item.status, statusColor(item.status)) +
           (item.likelyDomiciliation ? badge(number(item.sameAddressCount) + " à l’adresse", "red") : "") +
         "</div>" +
@@ -1132,7 +1157,7 @@
         "<div class='modal-head'>" +
           avatarMarkup(prospect, "avatar-large") +
           "<div class='modal-title'><h2>" + escapeHtml(prospect.name) + "</h2><p>SIREN " + escapeHtml(prospect.id) +
-            " · " + escapeHtml(prospect.segment) + "</p></div>" +
+            " · " + escapeHtml(professionOf(prospect)) + "</p></div>" +
           "<div class='modal-score' title='Score de pertinence indicatif'>" + number(prospect.fitScore) + "</div>" +
           "<button class='icon-btn' data-action='close-modal' aria-label='Fermer'><span aria-hidden='true'>✖️</span></button>" +
         "</div>" +
@@ -1174,6 +1199,7 @@
                 formField("contactForm", "📝 Formulaire de contact", "url", patch.contactForm || prospect.contactForm || "", "https://…") +
                 formField("contactName", "👤 Associé / fondateur", "text", patch.contactName || firstDecisionMakerName(prospect), "Prénom Nom") +
                 formField("contactRole", "⚖️ Qualité", "text", patch.contactRole || firstDecisionMakerRole(prospect), "Associé, associé-fondateur…") +
+                selectField("profession", "🧭 Métier", PROFESSION_OPTIONS, patch.profession || professionOf(prospect)) +
                 formField("specialties", "🎯 Spécialités", "text", patch.specialties || "", "Fiscal, affaires, social…", true) +
                 selectField("status", "📊 Statut", STATUS_OPTIONS, prospect.status) +
                 selectField("decision", "✅ Décision", DECISION_OPTIONS, prospect.decision) +
@@ -1281,6 +1307,7 @@
       "contactLinkedin",
       "contactName",
       "contactRole",
+      "profession",
       "specialties",
       "status",
       "decision",
@@ -1309,6 +1336,7 @@
   function clearFilters() {
     state.search = "";
     state.segment = "";
+    state.profession = "";
     state.status = "";
     state.decision = "";
     state.headcount = "";
@@ -1476,7 +1504,7 @@
       if (state.sortKey === key) state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
       else {
         state.sortKey = key;
-        state.sortDir = ["name", "segment", "address", "status", "decision"].includes(key) ? "asc" : "desc";
+        state.sortDir = ["name", "segment", "profession", "address", "status", "decision"].includes(key) ? "asc" : "desc";
       }
       state.page = 1;
       render();
