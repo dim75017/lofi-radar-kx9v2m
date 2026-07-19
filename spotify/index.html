@@ -11,7 +11,7 @@
 <script src="../Spotify_Radar_data.js"></script>
 <script src="../Spotify_Playlists_data.js"></script>
 <script src="../Spotify_Labels_data.js"></script>
-<script src="../Spotify_Soundcharts_data_20260719T0909.js"></script>
+<script src="../Spotify_Soundcharts_data.js"></script>
 <style>
 :root{
   --bg:#07080d; --bg2:#0b0d15; --panel:#10131e; --panel2:#141828; --card:#12152233;
@@ -900,13 +900,28 @@ function mergeSoundchartsStaging(){
   const artistById=new Map(), artistByName=new Map();
   A.forEach((a,i)=>{ if(a[7]) artistById.set(a[7],i); if(a[0]) artistByName.set(scKey(a[0]),i); });
   const addArtist=(name,id,meta={})=>{
-    if(id&&artistById.has(id)) return artistById.get(id);
-    const key=scKey(name); if(key&&artistByName.has(key)) return artistByName.get(key);
+    const mergeArtist=(i)=>{
+      const artist=A[i];
+      if(id&&!artist[7]) artist[7]=id;
+      artist.sc=Object.assign({listeners:0,sources:0,rank:null,qualifies:false},artist.sc||{},meta);
+      if(id) artistById.set(id,i);
+      return i;
+    };
+    if(id&&artistById.has(id)) return mergeArtist(artistById.get(id));
+    const key=scKey(name); if(key&&artistByName.has(key)) return mergeArtist(artistByName.get(key));
     if(!name) return -1;
     const row=[name,0,'sc',false,true,'soundcharts_staging','fans_also_like',id||'','','',''];
     row.sc=Object.assign({listeners:0,sources:0,rank:null,qualifies:false},meta);
     const i=A.push(row)-1; if(id)artistById.set(id,i); artistByName.set(key,i); SC_STAGING.artists++; return i;
   };
+  const artistSchema=(SC.schemas&&SC.schemas.artists)||[];
+  for(const row of (SC.artists||[])) addArtist(
+    scField(row,artistSchema,'name'), scField(row,artistSchema,'spotify_id'), {
+      listeners:Number(scField(row,artistSchema,'monthly_listeners'))||0,
+      qualifies:Number(scField(row,artistSchema,'qualifies'))===1,
+      uuid:scField(row,artistSchema,'soundcharts_uuid')||''
+    }
+  );
   const falSchema=(SC.schemas&&SC.schemas.fal)||[];
   for(const row of (SC.fal||[])) addArtist(
     scField(row,falSchema,'name'), scField(row,falSchema,'spotify_id'), {
@@ -1753,6 +1768,7 @@ function renderArtistModal(){
       <div style="min-width:0;flex:1">
         <h3>${esc(g.name)}</h3>
         <div class="tar" style="cursor:default">${T('Fiche Analytics')} · ${segBadge(g)} · ${rows.length} ${T('tracks indé')} (${T('sur')} ${g.n} ${T('hors Lofi')})</div>
+        <a class="chip" style="display:inline-flex;margin-top:8px;text-decoration:none" href="${g.id?'https://open.spotify.com/artist/'+encodeURIComponent(g.id):artistSearch(g.name)}" target="_blank" rel="noopener">▶ ${T('Ouvrir sur Spotify')}</a>
       </div>
       <button class="tclose" onclick="closeArtistModal()">✕</button>
     </div>
