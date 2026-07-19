@@ -16,6 +16,7 @@ window.__radarDataReady=window.LOFI_DATA?Promise.resolve(window.LOFI_DATA):fetch
   .then(src=>{Function(src)();return window.LOFI_DATA;});
 </script>
 <script src="Lofi_Radar_channel_avatars.js"></script>
+<script src="Lofi_Radar_new_channel_avatars.js"></script>
 <script src="Lofi_Radar_studio.js"></script>
 <script src="Lofi_Radar_chx.js"></script>
 <script src="Lofi_Radar_subs2.js"></script>
@@ -3073,7 +3074,8 @@ function vChanAva(v,size){
   let src=(uc&&channels[uc])||(v.vid&&videos[v.vid])||'';
   if(!src&&c&&c.av)src='https://yt3.googleusercontent.com/'+c.av;
   if(src){
-    src=String(src).replace(/=(?:w|s)\d+.*$/,'')+'=s'+(size*2)+'-c-k-c0x00ffffff-no-rj';
+    src=String(src);
+    if(!/^https?:\/\//i.test(src))src=src.replace(/=(?:w|s)\d+.*$/,'')+'=s'+(size*2)+'-c-k-c0x00ffffff-no-rj';
   }
   return '<span class="ch-ava yt-ava" style="width:'+size+'px;height:'+size+'px" title="'+esc(v.channel||'YouTube channel')+'">'+
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M21.6 7.2a2.7 2.7 0 0 0-1.9-1.9C18 4.8 12 4.8 12 4.8s-6 0-7.7.5a2.7 2.7 0 0 0-1.9 1.9A28 28 0 0 0 2 12a28 28 0 0 0 .4 4.8 2.7 2.7 0 0 0 1.9 1.9c1.7.5 7.7.5 7.7.5s6 0 7.7-.5a2.7 2.7 0 0 0 1.9-1.9A28 28 0 0 0 22 12a28 28 0 0 0-.4-4.8ZM10 15.2V8.8l5.5 3.2-5.5 3.2Z"/></svg>'+
