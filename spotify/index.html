@@ -941,7 +941,9 @@ function mergeSoundchartsStaging(){
     const ai=addArtist(scField(row,trackSchema,'artist'),'',{}); if(ai<0) continue;
     const rights=String(scField(row,trackSchema,'rights_status')||'').toLowerCase();
     const label=scField(row,trackSchema,'label')||scField(row,trackSchema,'copyright')||'Soundcharts staging';
-    const track=[ai,scField(row,trackSchema,'title')||'Titre non renseigné',scField(row,trackSchema,'release_date')||'',Number(scField(row,trackSchema,'streams'))||0,
+    const rawStreams=scField(row,trackSchema,'streams'), parsedStreams=Number(rawStreams);
+    const streams=rawStreams==null||rawStreams===''||!Number.isFinite(parsedStreams)?-1:parsedStreams;
+    const track=[ai,scField(row,trackSchema,'title')||'Titre non renseigné',scField(row,trackSchema,'release_date')||'',streams,
       rights==='self_released'?0:1,label,id,scField(row,trackSchema,'observed_at')||''];
     track.sc=true; R.push(track); trackById.set(id,track); SC_STAGING.tracks++;
   }
@@ -1744,7 +1746,7 @@ function artistTableRows(rows){
       <td class="num">${streamStackHtml(w30.current,false,false)}</td>
       <td class="num">${streamStackHtml(w7.current,false,false)}</td>
       <td class="num">${streamStackHtml(w1.current,false,false)}</td>
-      <td class="num"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
+      <td class="num"><span style="color:var(--acc2);font-weight:600">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</span></td>
       <td>${fmtDate(r[2])}</td>
       <td><span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span></td>
     </tr>`;}).join('');
@@ -2075,7 +2077,7 @@ function renderWatch(){
       <td class="num">${streamStackHtml(w30.current,false,false)}</td>
       <td class="num">${streamStackHtml(w7.current,false,false)}</td>
       <td class="num">${streamStackHtml(w1.current,false,false)}</td>
-      <td class="num"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
+      <td class="num"><span style="color:var(--acc2);font-weight:600">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</span></td>
       <td>${fmtDate(r[2])}</td></tr>`;}).join('');
     h+='</tbody></table></div>';
   } else {
@@ -2140,7 +2142,7 @@ function renderOpps(){
           <td class="num" title="${T('Streams des 30 derniers jours')} · ${T('Aucune extrapolation')}">${streamStackHtml(w30.current,false,false)}</td>
           <td class="num" title="${T('Streams des 7 derniers jours')} · ${T('Aucune extrapolation')}">${streamStackHtml(w7.current,false,false)}</td>
           <td class="num" title="${T('Streams des dernières 24 h')} · ${T('Aucune extrapolation')}">${streamStackHtml(w1.current,false,false)}</td>
-          <td class="num" title="${T('Payback')} ${paybackTxt(payback(Math.max(perMonth(r),0)))}"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
+          <td class="num" title="${perMonth(r)<0?'':T('Payback')+' '+paybackTxt(payback(perMonth(r)))}"><span style="color:var(--acc2);font-weight:600">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</span></td>
           <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[2])}</td>
           <td><span class="badge ${r[4]===0?'self':'other'}">${r[4]===0?T('Indé'):'Label'}</span></td>
           <td><span class="lb" title="${esc(r[5])}">${esc(r[5])}</span></td>
@@ -2169,7 +2171,7 @@ function renderOpps(){
         <div class="st"><div class="v">${streamStackHtml(w1.current,false,false)}</div><div class="l">${streamMetricLabel(1)}</div></div>
       </div>
       <div class="stats stats2">
-        <div class="st" style="grid-column:1/-1"><div class="v" style="color:var(--acc2)">${eur(advance(Math.max(perMonth(r),0)))}</div><div class="l">${T('Rachat')}</div></div>
+        <div class="st" style="grid-column:1/-1"><div class="v" style="color:var(--acc2)">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</div><div class="l">${T('Rachat')}</div></div>
       </div>
     </div>`;}).join('')}
   </div>
@@ -2865,7 +2867,7 @@ function labelModalRows(rows){
       <td class="num">${streamStackHtml(w30.current,false,false)}</td>
       <td class="num">${streamStackHtml(w7.current,false,false)}</td>
       <td class="num">${streamStackHtml(w1.current,false,false)}</td>
-      <td class="num"><span style="color:var(--acc2);font-weight:600">${eur(advance(Math.max(perMonth(r),0)))}</span></td>
+      <td class="num"><span style="color:var(--acc2);font-weight:600">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</span></td>
       <td>${fmtDate(r[2])}</td>
     </tr>`;}).join('');
 }
