@@ -927,6 +927,56 @@ a {
   padding: 22px;
 }
 
+.contact-choice-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.contact-choice-head > div { display: grid; gap: 5px; }
+.contact-choice-head strong { color: var(--text); font-size: 14px; }
+
+.text-btn {
+  border: 0;
+  padding: 7px 0;
+  background: transparent;
+  color: var(--gold-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.message-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.message-option {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.015);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+
+.message-option:hover { border-color: var(--gold); transform: translateY(-1px); }
+.message-option.selected { border-color: var(--gold); background: var(--gold-soft); box-shadow: inset 0 0 0 1px rgba(212,164,80,.18); }
+.message-option-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: rgba(255,255,255,.06); font-size: 17px; }
+.message-option > span:last-child { min-width: 0; display: grid; gap: 4px; }
+.message-option strong { overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.message-option small { color: var(--muted); font-size: 10px; line-height: 1.35; }
+
 .contact-preview {
   display: grid;
   gap: 9px;
@@ -2040,6 +2090,8 @@ textarea:focus-visible,
 
   .contact-modal-body { padding: 16px; }
   .contact-modal-actions { align-items: flex-start; flex-direction: column; }
+  .message-option-grid { grid-template-columns: 1fr; }
+  .contact-choice-head { align-items: flex-start; flex-direction: column; }
 
   .plan-card-title span {
     white-space: normal;

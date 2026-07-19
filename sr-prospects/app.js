@@ -149,6 +149,8 @@
     viewMode: safeStorageGet(STORAGE.viewMode) === "grid" ? "grid" : "list",
     modalId: null,
     contactId: null,
+    contactSet: 0,
+    contactMessageId: "",
     mobileOpen: false
   };
 
@@ -1210,7 +1212,17 @@
       state.contactId = null;
       return "";
     }
-    var message = personalizeMessage(MESSAGES[0].id, prospect);
+    var sets = [
+      ["voisins", "curiosite", "projection", "budget"],
+      ["accueil", "personnalite", "associe", "comptable"],
+      ["evolutive", "orientation", "timing", "trois-reponses"]
+    ];
+    var proposed = sets[state.contactSet % sets.length].map(function (id) {
+      return MESSAGES.find(function (item) { return item.id === id; });
+    }).filter(Boolean);
+    var selectedId = proposed.some(function (item) { return item.id === state.contactMessageId; }) ? state.contactMessageId : proposed[0].id;
+    var selected = MESSAGES.find(function (item) { return item.id === selectedId; }) || proposed[0];
+    var message = personalizeMessage(selected.id, prospect);
     var email = cleanText(prospect.email);
     var mailto = email ? "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent(message.subject) + "&body=" + encodeURIComponent(message.body) : "";
     return "<div class='modal-backdrop' data-action='close-contact'>" +
@@ -1220,9 +1232,12 @@
           "<button class='icon-btn' data-action='close-contact' aria-label='Fermer'><span aria-hidden='true'>✖️</span></button>" +
         "</div>" +
         "<div class='modal-scroll contact-modal-body'>" +
-          "<label class='field full'><span>💬 Approche à envoyer</span><select id='contactMessageSelect' data-contact-message='" + escapeHtml(prospect.id) + "'>" +
-            MESSAGES.slice(0, 10).map(function (item, index) { return "<option value='" + escapeHtml(item.id) + "'" + (index === 0 ? " selected" : "") + ">" + escapeHtml(item.emoji + " " + item.name) + "</option>"; }).join("") +
-          "</select></label>" +
+          "<div class='contact-choice-head'><div><div class='contact-preview-label'>4 approches recommandées</div><strong>Choisis celle qui sonne le plus juste</strong></div><button class='text-btn' data-action='rotate-contact-messages'>↻ Autres propositions</button></div>" +
+          "<div class='message-option-grid'>" + proposed.map(function (item) {
+            return "<button class='message-option" + (item.id === selected.id ? " selected" : "") + "' data-action='select-contact-message' data-message-id='" + escapeHtml(item.id) + "'>" +
+              "<span class='message-option-icon'>" + escapeHtml(item.emoji) + "</span><span><strong>" + escapeHtml(item.name) + "</strong><small>" + escapeHtml(item.audience) + "</small></span>" +
+            "</button>";
+          }).join("") + "</div>" +
           "<div class='contact-preview'><div class='contact-preview-label'>Objet</div><strong id='contactSubject'>" + escapeHtml(message.subject) + "</strong><div class='contact-preview-label'>Message</div><pre id='contactBody'>" + escapeHtml(message.body) + "</pre></div>" +
           (email
             ? "<a class='primary-btn' id='contactMailLink' href='" + escapeHtml(mailto) + "'>✉️ Préparer l’email à " + escapeHtml(email) + "</a>"
@@ -1608,10 +1623,20 @@
       render();
     } else if (actionName === "open-contact") {
       state.contactId = action.getAttribute("data-contact-id");
+      state.contactSet = 0;
+      state.contactMessageId = "";
+      render();
+    } else if (actionName === "select-contact-message") {
+      state.contactMessageId = action.getAttribute("data-message-id") || "";
+      render();
+    } else if (actionName === "rotate-contact-messages") {
+      state.contactSet += 1;
+      state.contactMessageId = "";
       render();
     } else if (actionName === "close-contact") {
       if (action.classList.contains("modal-backdrop") && event.target !== action) return;
       state.contactId = null;
+      state.contactMessageId = "";
       render();
     } else if (actionName === "clear-filters") {
       clearFilters();
@@ -1630,6 +1655,7 @@
         safeStorageSet(STORAGE.patches, JSON.stringify(patches));
       }
       state.contactId = null;
+      state.contactMessageId = "";
       render();
       showToast("Prospect marqué comme envoyé");
     }
@@ -1674,20 +1700,6 @@
       safeStorageSet(STORAGE.messageStats, JSON.stringify(messageStats));
       showToast("Résultat du test enregistré");
       return;
-    }
-    var contactMessageId = event.target.getAttribute("data-contact-message");
-    if (contactMessageId) {
-      var contactProspect = getProspect(contactMessageId);
-      var selectedMessage = MESSAGES.find(function (item) { return item.id === event.target.value; }) || MESSAGES[0];
-      var personalized = personalizeMessage(selectedMessage.id, contactProspect);
-      var subjectNode = document.getElementById("contactSubject");
-      var bodyNode = document.getElementById("contactBody");
-      var mailLink = document.getElementById("contactMailLink");
-      if (subjectNode) subjectNode.textContent = personalized.subject;
-      if (bodyNode) bodyNode.textContent = personalized.body;
-      if (mailLink && contactProspect && contactProspect.email) {
-        mailLink.href = "mailto:" + encodeURIComponent(contactProspect.email) + "?subject=" + encodeURIComponent(personalized.subject) + "&body=" + encodeURIComponent(personalized.body);
-      }
     }
   });
 
