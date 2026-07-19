@@ -1366,7 +1366,7 @@ const S = {
   view:'opps', back:null, palier:'100/0', sel:new Set(), wltab:'tracks', publishing:false, metricMode:'streams',
   q:'', statut:'all', min:0, period:'30', artist:-1, rel:'all', genres:new Set(),
   sort:{k:3, dir:-1}, shown:100,
-  aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(), sourceTracks:'all', sourceArtists:'all',
+  aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(),
   newDays:90, shownN:100,
   plq:'', plcur:'all', plsort:'followers', pldir:-1, plonly:false, shownPL:80, plview:'qualified', plmode:'table',
   amode:'table', omode:'table',
@@ -1409,8 +1409,6 @@ function rowsBeforePeriod(){
   return R.filter(r=>{
     const classification=trackClassification(r);
     if (S.artist>=0 && r[0]!==S.artist) return false;
-    if (S.sourceTracks==='soundcharts' && !r.sc) return false;
-    if (S.sourceTracks==='catalogue' && r.sc) return false;
     if (S.rel!=='all' && seg(AG[r[0]])!==S.rel) return false;
     if (S.statut==='self' && r[4]!==0) return false;
     if (S.statut==='other' && r[4]!==1) return false;
@@ -2123,7 +2121,7 @@ function renderOpps(){
           ${ag?`<td class="selc"><input type="checkbox" class="ck sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>`:''}
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span> ${wlStar('t',r[6])}${r[7]?' <span class="badge new">'+T('détectée')+' '+r[7].slice(5)+'</span>':''}</td>
-          <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span>${r.sc?' <span class="badge new">Soundcharts · staging</span>':''}</td>
+          <td><span class="ar" onclick="goArtist(${r[0]})">${esc(A[r[0]][0])}</span></td>
           <td>${classificationCellHtml(classification)}</td>
           <td class="num" title="${fmtFull(r[3])}">${streamStackHtml(r[3]>=0?r[3]:null,false,false)}</td>
           <td class="num" title="${T('Streams des 30 derniers jours')} · ${T('Aucune extrapolation')}">${streamStackHtml(w30.current,false,false)}</td>
@@ -2185,11 +2183,6 @@ function renderOpps(){
       <option value="self" ${S.statut==='self'?'selected':''}>🎛️ Self-released</option>
       <option value="other" ${S.statut==='other'?'selected':''}>🏷️ ${T('Autre label')}</option>
     </select>
-    <select id="f-source">
-      <option value="all" ${S.sourceTracks==='all'?'selected':''}>Source : catalogue + Soundcharts</option>
-      <option value="soundcharts" ${S.sourceTracks==='soundcharts'?'selected':''}>Soundcharts · staging (${fmtFull(SC_STAGING.tracks)})</option>
-      <option value="catalogue" ${S.sourceTracks==='catalogue'?'selected':''}>Catalogue historique</option>
-    </select>
     <select id="f-min">
       <option value="0" ${S.min===0?'selected':''}>📊 ${T('Streams : tous')}</option>
       <option value="100000" ${S.min===100000?'selected':''}>🔥 ≥ 100k</option>
@@ -2218,7 +2211,6 @@ function renderOpps(){
   bindMetricModeToggle(renderOpps,V);
   bindGenreFilter('f-genres',S.genres,()=>{ S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-st').addEventListener('change', e=>{ S.statut=e.target.value; S.shown=100; keepScroll(renderOpps); });
-  document.getElementById('f-source').addEventListener('change', e=>{ S.sourceTracks=e.target.value; S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-min').addEventListener('change', e=>{ S.min=+e.target.value; S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-period').addEventListener('change', e=>{ S.period=e.target.value; S.shown=100; keepScroll(renderOpps); });
   document.getElementById('f-rel').addEventListener('change', e=>{ S.rel=e.target.value; S.shown=100; keepScroll(renderOpps); });
@@ -2262,7 +2254,6 @@ function renderArtists(){
   let list = withTracks.filter(g=>{
     const classification=artistClassification(g);
     return (!q || g.name.toLowerCase().includes(q)) &&
-      (S.sourceArtists==='all' || (S.sourceArtists==='soundcharts' && g.source==='soundcharts_staging') || (S.sourceArtists==='catalogue' && g.source!=='soundcharts_staging')) &&
       (S.aseg==='all' || seg(g)===S.aseg) &&
       (!S.agenres.size || S.agenres.has(classification.genre));
   });
@@ -2325,7 +2316,7 @@ function renderArtists(){
         return `
         <tr onclick="goArtist(${g.i})" style="cursor:pointer">
           <td class="covtd">${artistCoverHtml(g)}</td>
-          <td>${esc(g.name)} ${wlStar('a',g.name)}${g.source==='soundcharts_staging'?' <span class="badge new">Soundcharts · staging</span>':''}</td>
+          <td>${esc(g.name)} ${wlStar('a',g.name)}</td>
           <td>${classificationCellHtml(classification)}</td>
           <td style="white-space:nowrap"><div>${segBadge(g)}</div><div style="font-size:11px;color:var(--dim);margin-top:3px">${g.lofi||0} ${T('tracks chez Lofi')}</div></td>
           <td class="num">${streamStackHtml(g.streams,false,false)}</td>
@@ -2359,11 +2350,6 @@ function renderArtists(){
       <option value="occ" ${S.aseg==='occ'?'selected':''}>🎲 ${T('Occasionnels')}</option>
       <option value="ext" ${S.aseg==='ext'?'selected':''}>🚫 ${T('Jamais')}</option>
     </select>
-    <select id="a-source">
-      <option value="all" ${S.sourceArtists==='all'?'selected':''}>Source : catalogue + Soundcharts</option>
-      <option value="soundcharts" ${S.sourceArtists==='soundcharts'?'selected':''}>Soundcharts · staging (${fmtFull(SC_STAGING.artists)})</option>
-      <option value="catalogue" ${S.sourceArtists==='catalogue'?'selected':''}>Catalogue historique</option>
-    </select>
     ${metricModeToggleHtml()}
     <span class="spacer"></span>
     <span class="result-count">${list.length} ${T('artistes')}</span>
@@ -2379,7 +2365,6 @@ function renderArtists(){
   document.getElementById('a-q').addEventListener('input', e=>{ S.aq=e.target.value; S.shownA=60; keepScroll(renderArtists); keepFocus('a-q'); });
   bindGenreFilter('a-genres',S.agenres,()=>{ S.shownA=60; keepScroll(renderArtists); });
   document.getElementById('a-seg').addEventListener('change', e=>{ S.aseg=e.target.value; S.shownA=60; keepScroll(renderArtists); });
-  document.getElementById('a-source').addEventListener('change', e=>{ S.sourceArtists=e.target.value; S.shownA=60; keepScroll(renderArtists); });
   document.querySelectorAll('th[data-asort]').forEach(h=>h.addEventListener('click', ()=>{
     const key=h.dataset.asort;
     if (S.asort===key) S.adir*=-1;
