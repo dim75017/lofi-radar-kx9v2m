@@ -1136,8 +1136,7 @@
     var statuses = ["À contacter", "Envoyé", "Ouvert", "Répondu", "Intéressé"];
     var normalStatus = normalize(item.status);
     var active = normalStatus === "interesse" ? 4 : normalStatus === "repondu" ? 3 : normalStatus === "ouvert" ? 2 : normalStatus === "envoye" || normalStatus === "contacte" ? 1 : 0;
-    var contact = firstDecisionMakerName(item) || cleanText(item.email) || "Contact à confirmer";
-    var contactRole = firstDecisionMakerRole(item) || "Interlocuteur du cabinet";
+    var contact = firstDecisionMakerName(item) || "Interlocuteur à confirmer";
     var contactEmail = cleanText(item.email) || "Email à confirmer";
     var contactProfession = professionOf(item);
     var specialty = cleanText(item.specialties);
@@ -1149,12 +1148,12 @@
       "</div>" +
       "<div class='plan-layout'>" +
         "<div class='plan-prospect-info'>" +
-          "<div class='plan-profession'>" + escapeHtml(professionOf(item)) + "</div>" +
-          "<div class='plan-profile-copy'>" + escapeHtml(specialty || "Cabinet / structure professionnelle à qualifier") + "</div>" +
+          "<div class='plan-identity'><div class='plan-profession'>" + escapeHtml(professionOf(item)) + "</div>" +
+          "<div class='plan-profile-copy'>" + escapeHtml(specialty || "Cabinet / structure professionnelle à qualifier") + "</div></div>" +
           "<div class='plan-facts'><span><b>Effectif</b> " + escapeHtml(headcount) + "</span><span><b>Adresse</b> " + escapeHtml(item.address || "Adresse non renseignée") + "</span></div>" +
           "<div class='plan-contact-target'><span class='plan-contact-kicker'>INTERLOCUTEUR CIBLÉ</span>" +
             "<div class='plan-contact-details'>" +
-              "<div><small>Nom</small><strong>" + escapeHtml(contact) + "</strong><em>" + escapeHtml(contactRole) + "</em></div>" +
+              "<div><small>Nom</small><strong>" + escapeHtml(contact) + "</strong></div>" +
               "<div><small>Email</small><strong class='plan-contact-email'>" + escapeHtml(contactEmail) + "</strong></div>" +
               "<div><small>Profession</small><strong>" + escapeHtml(contactProfession) + "</strong></div>" +
             "</div>" +
@@ -1277,17 +1276,17 @@
           "<button class='icon-btn' data-action='close-contact' aria-label='Fermer'><span aria-hidden='true'>✖️</span></button>" +
         "</div>" +
         "<div class='modal-scroll contact-modal-body'>" +
-          "<div class='contact-choice-head'><div><div class='contact-preview-label'>4 approches recommandées</div><strong>Choisis celle qui sonne le plus juste</strong></div><button class='text-btn' data-action='rotate-contact-messages'>↻ Autres propositions</button></div>" +
+          "<div class='contact-choice-head'><div><div class='contact-preview-label'>4 approches recommandées</div><strong>Choisis celle qui sonne le plus juste</strong></div></div>" +
           "<div class='message-option-grid'>" + proposed.map(function (item) {
             return "<button class='message-option" + (item.id === selected.id ? " selected" : "") + "' data-action='select-contact-message' data-message-id='" + escapeHtml(item.id) + "'>" +
               "<span class='message-option-icon'>" + escapeHtml(item.emoji) + "</span><span><strong>" + escapeHtml(item.name) + "</strong><small>" + escapeHtml(item.audience) + "</small></span>" +
             "</button>";
           }).join("") + "</div>" +
           "<div class='contact-preview'><div class='contact-preview-label'>Objet</div><strong id='contactSubject'>" + escapeHtml(message.subject) + "</strong><div class='contact-preview-label'>Message</div><pre id='contactBody'>" + escapeHtml(message.body) + "</pre></div>" +
-          (email
-            ? "<button class='send-email-btn' data-action='send-email' data-contact-id='" + escapeHtml(prospect.id) + "' data-mailto='" + escapeHtml(mailto) + "'><span>✉️</span><span><b>Envoyer l’email</b><small>À " + escapeHtml(email) + "</small></span><i>↗</i></button>"
-            : "<div class='notice red'>Aucun email professionnel renseigné pour ce prospect. Complétez la fiche avant l’envoi.</div>") +
-          "<div class='contact-modal-actions'><span>Le statut passe automatiquement à « Envoyé » lors de l’ouverture de l’email.</span></div>" +
+          (email ? "" : "<div class='notice red'>Aucun email professionnel renseigné pour ce prospect. Complétez la fiche avant l’envoi.</div>") +
+          "<div class='contact-modal-actions'><button class='other-message-btn' data-action='rotate-contact-messages'>↻ Autres propositions</button>" +
+            (email ? "<button class='send-email-btn' data-action='send-email' data-contact-id='" + escapeHtml(prospect.id) + "' data-mailto='" + escapeHtml(mailto) + "'>Envoyer l’email <span>→</span></button>" : "") +
+          "</div>" +
         "</div>" +
       "</section>" +
     "</div>";
@@ -1388,7 +1387,8 @@
   function firstDecisionMakerName(prospect) {
     var people = Array.isArray(prospect && prospect.decisionMakers) ? prospect.decisionMakers : [];
     var person = people[0] || {};
-    return [cleanText(person.firstName), cleanText(person.lastName)].filter(Boolean).join(" ") || cleanText(prospect && prospect.contactName);
+    var name = [cleanText(person.firstName), cleanText(person.lastName)].filter(Boolean).join(" ") || cleanText(prospect && prospect.contactName);
+    return name.indexOf("@") === -1 ? name : "";
   }
 
   function firstDecisionMakerRole(prospect) {
