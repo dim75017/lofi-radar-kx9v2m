@@ -1,0 +1,135 @@
+name: Apply daily Soundcharts discovery
+
+on:
+  push:
+    branches:
+      - agent/daily-soundcharts-discovery
+    paths:
+      - '.github/workflows/apply-daily-soundcharts-discovery.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/daily-soundcharts-discovery
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Recover production implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .daily-discovery-payload/part-* > /tmp/daily-discovery.b64
+          base64 --decode /tmp/daily-discovery.b64 > /tmp/daily-discovery.tar.gz
+          echo '5a87a9fc30bd0f6475c73518b7fc1c3ee6175c9e9cad866f616dbf6878fe6c08  /tmp/daily-discovery.tar.gz' | sha256sum -c -
+          tar -xzf /tmp/daily-discovery.tar.gz
+
+      - name: Run deterministic test suite and syntax checks
+        run: |
+          python -m unittest \
+            tests/test_refresh_soundcharts_daily.py \
+            tests/test_discover_soundcharts_daily.py \
+            tests/test_expand_soundcharts_instrumental_pool.py \
+            tests/test_sync_soundcharts_opportunities.py \
+            -v
+          python -m py_compile \
+            refresh_soundcharts_daily.py \
+            discover_soundcharts_daily.py \
+            expand_soundcharts_instrumental_pool.py \
+            sync_soundcharts_opportunities.py
+          node --check spotify/dashboard.js
+          ruby -e "require 'yaml'; YAML.load_file('.github/workflows/refresh-soundcharts.yml'); puts 'workflow yaml ok'"
+          git diff --check
+
+      - name: Prove live discovery and onboarding against Soundcharts
+        env:
+          PYTHONUNBUFFERED: '1'
+          SOUNDCHARTS_CLIENT_ID: ${{ secrets.SOUNDCHARTS_CLIENT_ID }}
+          SOUNDCHARTS_CLIENT_SECRET: ${{ secrets.SOUNDCHARTS_CLIENT_SECRET }}
+          SOUNDCHARTS_TEAM_ID: dsomoguy-api
+        run: |
+          cp Spotify_Soundcharts_data.js /tmp/Spotify_Soundcharts_data.js
+          cp Spotify_Performance_data.js /tmp/Spotify_Performance_data.js
+          cp soundcharts-instrumental-cache.json /tmp/soundcharts-instrumental-cache.json
+
+          python discover_soundcharts_daily.py \
+            --soundcharts /tmp/Spotify_Soundcharts_data.js \
+            --cache /tmp/soundcharts-instrumental-cache.json \
+            --page-size 10 \
+            --max-new 50 \
+            --lane-limit 8 | tee /tmp/discovery-summary.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          summary = json.loads(Path('/tmp/discovery-summary.json').read_text(encoding='utf-8').splitlines()[-1])
+          if summary.get('status') != 'success' or int(summary.get('returned') or 0) < 1:
+              raise SystemExit(f'No live discovery result: {summary}')
+          if int(summary.get('new_tracks') or 0) < 1:
+              raise SystemExit(f'Live discovery did not add an unseen Soundcharts song: {summary}')
+          raw = Path('/tmp/Spotify_Soundcharts_data.js').read_text(encoding='utf-8')
+          prefix = 'window.SPOTIFY_SOUNDCHARTS='
+          payload = json.loads(raw[len(prefix):].strip().removesuffix(';'))
+          payload['opportunities'] = []
+          Path('/tmp/Spotify_Soundcharts_data.js').write_text(prefix + json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + ';\n', encoding='utf-8')
+          print(json.dumps({'live_new_tracks': summary['new_tracks'], 'new_artist_credits': summary['new_artist_credits'], 'editorial_universe': summary['editorial_universe']}))
+          PY
+
+          python expand_soundcharts_instrumental_pool.py \
+            --soundcharts /tmp/Spotify_Soundcharts_data.js \
+            --performance /tmp/Spotify_Performance_data.js \
+            --cache /tmp/soundcharts-instrumental-cache.json \
+            --workers 12 \
+            --max-requests 400 \
+            --history-days 31 \
+            --metadata-refresh-days 0 \
+            --artist-refresh-days 0 | tee /tmp/expansion-summary.json
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          summary = json.loads(Path('/tmp/expansion-summary.json').read_text(encoding='utf-8').splitlines()[-1])
+          if summary.get('status') != 'success' or int(summary.get('measured') or 0) < 1:
+              raise SystemExit(f'No real Spotify counter was measured: {summary}')
+          if int(summary.get('new_discovery_selected') or 0) < 1:
+              raise SystemExit(f'New discoveries were not admitted to measurement: {summary}')
+          print(json.dumps({'measured': summary['measured'], 'new_discovery_selected': summary['new_discovery_selected'], 'daily_delta_ready': summary['daily_delta_ready'], 'requests': summary['requests']}))
+          PY
+
+          python sync_soundcharts_opportunities.py \
+            --soundcharts /tmp/Spotify_Soundcharts_data.js \
+            --performance /tmp/Spotify_Performance_data.js \
+            --max-artist-listeners 5000000 \
+            --max-track-streams 250000000 \
+            --max-opportunities 2000 \
+            --minimum-score 20
+
+      - name: Commit only production files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .daily-discovery-payload
+          rm -f \
+            .github/workflows/export-daily-discovery-sources.yml \
+            .github/workflows/apply-daily-soundcharts-discovery.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Add daily Soundcharts artist and track discovery'
+          for attempt in 1 2 3; do
+            git pull --rebase origin agent/daily-soundcharts-discovery && \
+              git push origin HEAD:agent/daily-soundcharts-discovery && exit 0
+            sleep 5
+          done
+          exit 1
