@@ -1,0 +1,98 @@
+name: Inspect current Soundcharts schemas
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/inspect-current-soundcharts-schema.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Parse current and canonical opportunity snapshots
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from collections import Counter
+          import json
+
+          PREFIX='window.SPOTIFY_SOUNDCHARTS='
+          PERF_PREFIX='window.SPOTIFY_PERFORMANCE='
+
+          def load(path, prefix=PREFIX):
+              text=Path(path).read_text(encoding='utf-8')
+              return json.loads(text[len(prefix):].strip().removesuffix(';'))
+
+          def mapped_sample(rows, schema, limit=3):
+              out=[]
+              for row in rows[:limit]:
+                  if isinstance(row, dict): out.append(row)
+                  elif isinstance(row, list): out.append({name:(row[i] if i<len(row) else None) for i,name in enumerate(schema)})
+              return out
+
+          current=load('Spotify_Soundcharts_data.js')
+          canonical=load('Spotify_Soundcharts_data_20260720T0217_editorial_strict.js')
+          performance=load('Spotify_Performance_data.js', PERF_PREFIX)
+          schemas=current.get('schemas',{})
+          editorial=current.get('editorial',{})
+          track_schema=schemas.get('tracks',[])
+          artist_schema=schemas.get('artists',[])
+          editorial_track_schema=editorial.get('track_schema',[])
+          editorial_artist_schema=editorial.get('artist_schema',[])
+          tracks=current.get('tracks',[])
+          editorial_tracks=editorial.get('tracks',[])
+          editorial_artists=editorial.get('artists',[])
+
+          def field(row,schema,name):
+              try:i=schema.index(name)
+              except ValueError:return None
+              return row[i] if isinstance(row,list) and i<len(row) else (row.get(name) if isinstance(row,dict) else None)
+
+          rights=Counter(str(field(row,track_schema,'rights_status') or '') for row in tracks)
+          track_ids={str(field(row,track_schema,'spotify_id') or '') for row in tracks}
+          perf_ids=set(performance.get('tracks',{}))
+          opp_schema=canonical.get('schemas',{}).get('opportunities',[])
+          opps=canonical.get('opportunities',[])
+          opp_ids={str(field(row,opp_schema,'spotify_id') or '') for row in opps}
+
+          report={
+              'current_generated_at':current.get('generated_at'),
+              'current_top_level_keys':sorted(current),
+              'track_schema':track_schema,
+              'artist_schema':artist_schema,
+              'editorial_track_schema':editorial_track_schema,
+              'editorial_artist_schema':editorial_artist_schema,
+              'track_count':len(tracks),
+              'editorial_track_count':len(editorial_tracks),
+              'editorial_artist_count':len(editorial_artists),
+              'track_samples':mapped_sample(tracks,track_schema,5),
+              'editorial_track_samples':mapped_sample(editorial_tracks,editorial_track_schema,5),
+              'editorial_artist_samples':mapped_sample(editorial_artists,editorial_artist_schema,3),
+              'rights_counts':rights,
+              'canonical_opportunity_count':len(opps),
+              'canonical_opportunity_schema':opp_schema,
+              'canonical_ids_in_current_tracks':len(opp_ids & track_ids),
+              'canonical_ids_in_performance':len(opp_ids & perf_ids),
+              'current_track_ids_in_performance':len(track_ids & perf_ids),
+              'performance_track_count':len(perf_ids),
+          }
+          Path('current-soundcharts-schema-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({k:report[k] for k in ('track_count','editorial_track_count','editorial_artist_count','canonical_opportunity_count','canonical_ids_in_current_tracks','canonical_ids_in_performance','current_track_ids_in_performance','performance_track_count')}))
+          PY
+
+      - name: Commit schema report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add current-soundcharts-schema-report.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record current Soundcharts schema inspection"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
