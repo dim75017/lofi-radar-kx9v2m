@@ -76,13 +76,20 @@ jobs:
           tests.write_text(body.replace(marker, regression + marker, 1), encoding='utf-8')
           PY
 
-      - name: Run the full collector test suite
-        run: |
-          python -m unittest tests/test_refresh_soundcharts_daily.py -v
-          python -m py_compile refresh_soundcharts_daily.py
-          grep -q 'period_days = min(90' refresh_soundcharts_daily.py
-          grep -q -- '--history-days 90' .github/workflows/refresh-soundcharts.yml
-          git diff --check
+      - name: Run collector tests
+        run: python -m unittest tests/test_refresh_soundcharts_daily.py -v
+
+      - name: Compile collector
+        run: python -m py_compile refresh_soundcharts_daily.py
+
+      - name: Check collector window cap
+        run: grep -q 'period_days = min(90' refresh_soundcharts_daily.py
+
+      - name: Check production history argument
+        run: grep -q -- '--history-days 90' .github/workflows/refresh-soundcharts.yml
+
+      - name: Check patch whitespace
+        run: git diff --check
 
       - name: Commit the final guard only
         run: |
