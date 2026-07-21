@@ -28,8 +28,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Apply reviewed production patch
-        run: patch --batch --forward -p1 < patches/youtube-subscriber-growth.patch
+      - name: Apply reviewed production patch when needed
+        run: |
+          if grep -q 'def smoothed_monthly_subscriber_growth' refresh_channels_monthly.py; then
+            echo 'Production patch is already applied'
+          else
+            patch --batch --forward -p1 < patches/youtube-subscriber-growth.patch
+          fi
       - name: Run channel-history tests and syntax checks
         run: |
           python -m unittest tests/test_refresh_channels_monthly.py -v
@@ -92,6 +97,7 @@ jobs:
             assets/js/dashboard-02-helpers.js \
             assets/css/dashboard.css \
             tests/test_refresh_channels_monthly.py
+          if git diff --cached --quiet; then exit 0; fi
           git diff --cached --check
           git commit -m 'Fix YouTube subscriber growth fallbacks and footer status'
           for attempt in 1 2 3; do
