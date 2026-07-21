@@ -1,0 +1,188 @@
+name: Inventory Spotify Radar track coverage
+
+on:
+  push:
+    branches:
+      - agent/full-track-inventory
+    paths:
+      - .github/workflows/inventory-full-track-coverage.yml
+
+permissions:
+  contents: write
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/full-track-inventory
+          fetch-depth: 0
+
+      - name: Measure every public track source and dashboard join
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import json
+          import re
+          from collections import Counter
+          from pathlib import Path
+
+          ROOT = Path('.')
+
+          def load_assignment(path: Path):
+              text = path.read_text(encoding='utf-8')
+              match = re.search(r'^[^=\n]+=', text)
+              if not match:
+                  raise ValueError(f'No assignment prefix in {path}')
+              body = text[match.end():].strip().removesuffix(';')
+              return json.loads(body)
+
+          def field(row, schema, name):
+              try:
+                  index = schema.index(name)
+              except ValueError:
+                  return None
+              return row[index] if isinstance(row, list) and index < len(row) else None
+
+          sc_path = ROOT / 'Spotify_Soundcharts_data.js'
+          perf_path = ROOT / 'Spotify_Performance_data.js'
+          radar_path = ROOT / 'Spotify_Radar_data.js'
+          sc = load_assignment(sc_path)
+          perf = load_assignment(perf_path)
+          radar = load_assignment(radar_path)
+
+          track_schema = list(sc.get('schemas', {}).get('tracks', []))
+          sc_tracks = sc.get('tracks', [])
+          sc_ids = {str(field(row, track_schema, 'spotify_id')) for row in sc_tracks if field(row, track_schema, 'spotify_id')}
+          sc_uuids = {str(field(row, track_schema, 'soundcharts_uuid')) for row in sc_tracks if field(row, track_schema, 'soundcharts_uuid')}
+          rights = Counter(str(field(row, track_schema, 'rights_status') or 'missing') for row in sc_tracks)
+
+          artists = radar.get('artists', [])
+          radar_rows = radar.get('rows', [])
+          radar_ids = {str(row[6]) for row in radar_rows if isinstance(row, list) and len(row) > 6 and row[6]}
+          legacy_visible_ids = set()
+          hidden_legacy_ids = set()
+          quarantined = {
+              'powfu','metallica','michael jackson','justin bieber','dua lipa','black eyed peas',
+              'sean paul','jennifer lopez','ellie goulding','bring me the horizon','a$ap rocky','asap rocky',
+              'sarcastic sounds','rxseboy','sody'
+          }
+          for row in radar_rows:
+              if not isinstance(row, list) or len(row) <= 6 or not row[6]:
+                  continue
+              artist_index = int(row[0]) if row and isinstance(row[0], (int, float)) else -1
+              artist = artists[artist_index] if 0 <= artist_index < len(artists) else None
+              artist_name = str(artist[0] if isinstance(artist, list) and artist else '').strip().lower()
+              retired = bool(isinstance(artist, list) and len(artist) > 4 and int(artist[4] or 0) == 1)
+              if retired or artist_name in quarantined:
+                  hidden_legacy_ids.add(str(row[6]))
+              else:
+                  legacy_visible_ids.add(str(row[6]))
+
+          perf_tracks = perf.get('tracks', {})
+          perf_ids = set(map(str, perf_tracks.keys()))
+          perf_populated = {track_id for track_id, entry in perf_tracks.items() if isinstance(entry, dict) and len(entry.get('history', [])) >= 2}
+
+          snapshot_rows = []
+          union_ids = set(sc_ids)
+          union_uuids = set(sc_uuids)
+          for path in sorted(ROOT.glob('Spotify_Soundcharts_data*.js')):
+              try:
+                  payload = load_assignment(path)
+              except Exception as exc:
+                  snapshot_rows.append({'path': str(path), 'error': repr(exc)})
+                  continue
+              schema = list(payload.get('schemas', {}).get('tracks', []))
+              rows = payload.get('tracks', [])
+              ids = {str(field(row, schema, 'spotify_id')) for row in rows if field(row, schema, 'spotify_id')}
+              uuids = {str(field(row, schema, 'soundcharts_uuid')) for row in rows if field(row, schema, 'soundcharts_uuid')}
+              union_ids.update(ids)
+              union_uuids.update(uuids)
+              snapshot_rows.append({
+                  'path': str(path),
+                  'bytes': path.stat().st_size,
+                  'generated_at': payload.get('generated_at'),
+                  'tracks': len(rows),
+                  'unique_spotify_ids': len(ids),
+                  'unique_soundcharts_uuids': len(uuids),
+                  'coverage_tracks': payload.get('coverage', {}).get('tracks', {}),
+                  'has_opportunities': isinstance(payload.get('opportunities'), list),
+                  'opportunities': len(payload.get('opportunities', [])) if isinstance(payload.get('opportunities'), list) else 0,
+              })
+
+          overlap_current_legacy = sc_ids & legacy_visible_ids
+          current_not_legacy = sc_ids - legacy_visible_ids
+          perf_not_current = perf_ids - sc_ids
+          legacy_not_current = legacy_visible_ids - sc_ids
+          all_public_ids = sc_ids | legacy_visible_ids | perf_ids | union_ids
+
+          # Mirror the current dashboard behavior: existing legacy IDs are enriched;
+          # brand-new Soundcharts rows require a structured `artists` field. The
+          # current track schema does not have it, so those rows cannot be inserted.
+          structured_field_present = 'artists' in track_schema
+          dashboard_soundcharts_integrated_estimate = len(overlap_current_legacy)
+          if structured_field_present:
+              structured_count = sum(1 for row in sc_tracks if isinstance(field(row, track_schema, 'artists'), list) and field(row, track_schema, 'artists'))
+          else:
+              structured_count = 0
+
+          report = {
+              'current_export': {
+                  'generated_at': sc.get('generated_at'),
+                  'bytes': sc_path.stat().st_size,
+                  'track_schema': track_schema,
+                  'track_rows': len(sc_tracks),
+                  'unique_spotify_ids': len(sc_ids),
+                  'unique_soundcharts_uuids': len(sc_uuids),
+                  'rights_counts': dict(rights),
+                  'coverage_tracks': sc.get('coverage', {}).get('tracks', {}),
+                  'limits': sc.get('limits', {}),
+                  'has_structured_artists_field': structured_field_present,
+                  'rows_with_structured_artists': structured_count,
+              },
+              'legacy_radar': {
+                  'artists': len(artists),
+                  'rows': len(radar_rows),
+                  'unique_track_ids': len(radar_ids),
+                  'visible_unique_track_ids_after_current_dashboard_filters': len(legacy_visible_ids),
+                  'hidden_unique_track_ids': len(hidden_legacy_ids),
+              },
+              'performance': {
+                  'generated_at': perf.get('generated_at'),
+                  'track_entries': len(perf_ids),
+                  'entries_with_two_or_more_points': len(perf_populated),
+                  'overlap_current_export': len(perf_ids & sc_ids),
+                  'not_in_current_export': len(perf_not_current),
+              },
+              'dashboard_join': {
+                  'current_export_ids_already_in_visible_legacy_rows': len(overlap_current_legacy),
+                  'current_export_ids_not_in_visible_legacy_rows': len(current_not_legacy),
+                  'estimated_soundcharts_rows_integrated_by_current_code': dashboard_soundcharts_integrated_estimate,
+                  'reason_new_rows_are_dropped': 'current track schema lacks structured artists field' if not structured_field_present else None,
+              },
+              'available_unions': {
+                  'unique_ids_across_all_soundcharts_snapshots': len(union_ids),
+                  'unique_uuids_across_all_soundcharts_snapshots': len(union_uuids),
+                  'visible_legacy_ids_not_in_current_soundcharts_export': len(legacy_not_current),
+                  'performance_ids_not_in_current_soundcharts_export': len(perf_not_current),
+                  'unique_ids_available_anywhere_in_public_repo': len(all_public_ids),
+              },
+              'snapshots': snapshot_rows,
+              'sample_missing_from_dashboard_but_in_current_export': sorted(current_not_legacy)[:25],
+              'sample_performance_not_current': sorted(perf_not_current)[:25],
+              'soundcharts_related_paths': sorted(str(path) for path in ROOT.rglob('*') if path.is_file() and ('soundchart' in path.name.lower() or 'spotify' in path.name.lower())),
+          }
+          Path('full-track-inventory.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(report, ensure_ascii=False))
+          PY
+
+      - name: Commit inventory report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add full-track-inventory.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record full Spotify track inventory"
+          git push origin HEAD:agent/full-track-inventory
