@@ -7,6 +7,9 @@ on:
       - agent/daily-soundcharts-discovery
     paths:
       - '.github/workflows/apply-daily-soundcharts-discovery.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/apply-daily-soundcharts-discovery.yml'
 
 permissions:
   contents: write
