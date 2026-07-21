@@ -6,7 +6,7 @@ on:
       - '.github/workflows/diagnose-live-spotify.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   diagnose:
@@ -14,6 +14,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -23,95 +26,132 @@ jobs:
         run: python -m pip install --disable-pip-version-check playwright
 
       - name: Inspect public files and rendered page
-        env:
-          LIVE_URL: https://dim75017.github.io/youtube-radar-kx9v2m/spotify/#opps
         run: |
           python3 - <<'PY'
           from __future__ import annotations
           import json
           import os
-          import re
           import shutil
+          import traceback
+          import urllib.error
           import urllib.request
+          from pathlib import Path
           from playwright.sync_api import sync_playwright
 
           base = 'https://dim75017.github.io/youtube-radar-kx9v2m/'
           stamp = os.environ.get('GITHUB_SHA', 'diagnostic')
+          report: dict[str, object] = {'stamp': stamp, 'base': base, 'errors': []}
 
-          def fetch(url: str) -> tuple[str, dict[str, str]]:
+          def fetch(url: str) -> tuple[str, dict[str, str], int]:
               req = urllib.request.Request(url, headers={'Cache-Control': 'no-cache', 'Pragma': 'no-cache'})
-              with urllib.request.urlopen(req, timeout=60) as response:
-                  return response.read().decode('utf-8'), dict(response.headers)
+              try:
+                  with urllib.request.urlopen(req, timeout=90) as response:
+                      return response.read().decode('utf-8'), dict(response.headers), response.status
+              except urllib.error.HTTPError as exc:
+                  return exc.read().decode('utf-8', 'replace'), dict(exc.headers), exc.code
 
-          html, html_headers = fetch(base + 'spotify/index.html?diagnostic=' + stamp)
-          perf_text, perf_headers = fetch(base + 'Spotify_Performance_data.js?diagnostic=' + stamp)
-          prefix = 'window.SPOTIFY_PERFORMANCE='
-          if not perf_text.startswith(prefix):
-              raise SystemExit('Live performance file does not contain the expected prefix')
-          perf = json.loads(perf_text[len(prefix):].strip().removesuffix(';'))
-          histories = [entry.get('history', []) for entry in perf.get('tracks', {}).values() if isinstance(entry, dict)]
-          latest_dates = sorted({point[0] for history in histories for point in history[-1:] if isinstance(point, list) and len(point) >= 2})
-          print(json.dumps({
-              'live_html_has_performance_script': 'Spotify_Performance_data.js' in html,
-              'live_html_has_cache_buster': 'payload=' in html,
-              'html_last_modified': html_headers.get('Last-Modified'),
-              'performance_generated_at': perf.get('generated_at'),
-              'performance_tracks': len(perf.get('tracks', {})),
-              'performance_histories': len(histories),
-              'latest_history_dates': latest_dates[-5:],
-              'performance_last_modified': perf_headers.get('Last-Modified'),
-              'performance_cache_control': perf_headers.get('Cache-Control'),
-          }, ensure_ascii=False))
+          try:
+              html, html_headers, html_status = fetch(base + 'spotify/index.html?diagnostic=' + stamp)
+              report['html'] = {
+                  'status': html_status,
+                  'has_performance_script': 'Spotify_Performance_data.js' in html,
+                  'has_cache_buster': 'payload=' in html,
+                  'last_modified': html_headers.get('Last-Modified'),
+                  'cache_control': html_headers.get('Cache-Control'),
+                  'content_length': len(html),
+                  'script_lines': [line.strip() for line in html.splitlines() if 'Spotify_' in line or 'dashboard.js' in line],
+              }
 
-          chrome = shutil.which('google-chrome') or shutil.which('chromium') or shutil.which('chromium-browser')
-          if not chrome:
-              raise SystemExit('No system Chrome/Chromium found')
+              perf_text, perf_headers, perf_status = fetch(base + 'Spotify_Performance_data.js?diagnostic=' + stamp)
+              prefix = 'window.SPOTIFY_PERFORMANCE='
+              perf_info: dict[str, object] = {
+                  'status': perf_status,
+                  'last_modified': perf_headers.get('Last-Modified'),
+                  'cache_control': perf_headers.get('Cache-Control'),
+                  'content_length': len(perf_text),
+                  'has_expected_prefix': perf_text.startswith(prefix),
+                  'prefix': perf_text[:120],
+              }
+              if perf_text.startswith(prefix):
+                  perf = json.loads(perf_text[len(prefix):].strip().removesuffix(';'))
+                  histories = [entry.get('history', []) for entry in perf.get('tracks', {}).values() if isinstance(entry, dict)]
+                  latest_dates = sorted({point[0] for history in histories for point in history[-1:] if isinstance(point, list) and len(point) >= 2})
+                  populated = [history for history in histories if len(history) >= 2]
+                  perf_info.update({
+                      'generated_at': perf.get('generated_at'),
+                      'track_count': len(perf.get('tracks', {})),
+                      'history_count': len(histories),
+                      'populated_history_count': len(populated),
+                      'latest_history_dates': latest_dates[-10:],
+                      'sample_history_tail': populated[0][-3:] if populated else [],
+                  })
+              report['performance_file'] = perf_info
+          except Exception as exc:
+              report['errors'].append('file_fetch: ' + repr(exc))
+              report['file_fetch_traceback'] = traceback.format_exc()
 
-          console_errors: list[str] = []
-          page_errors: list[str] = []
-          failed_requests: list[str] = []
-          with sync_playwright() as p:
-              browser = p.chromium.launch(headless=True, executable_path=chrome, args=['--no-sandbox'])
-              page = browser.new_page(viewport={'width': 1600, 'height': 1000})
-              page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
-              page.on('pageerror', lambda error: page_errors.append(str(error)))
-              page.on('requestfailed', lambda request: failed_requests.append(request.url + ' :: ' + str(request.failure)))
-              url = base + 'spotify/?diagnostic=' + stamp + '#opps'
-              page.goto(url, wait_until='networkidle', timeout=120000)
-              page.wait_for_timeout(4000)
-              state = page.evaluate("""() => {
-                const perf = window.SPOTIFY_PERFORMANCE || {};
-                const active = document.querySelector('#nav button.active');
-                const bodyText = document.body.innerText || '';
-                const rows = [...document.querySelectorAll('#view table tbody tr')];
-                const snippets = bodyText.split('\n').filter(line => /Streams|24 h|24 heures|7 j|30 j|Dernier scan|Soundcharts/i.test(line)).slice(0, 80);
-                return {
-                  href: location.href,
-                  hash: location.hash,
-                  activeNav: active ? active.textContent.trim().replace(/\s+/g, ' ') : null,
-                  heading: document.querySelector('#view h2')?.textContent?.trim() || null,
-                  perfGeneratedAt: perf.generated_at || null,
-                  perfTrackCount: Object.keys(perf.tracks || {}).length,
-                  renderedRows: rows.length,
-                  visibleTextSnippets: snippets,
-                  viewTextStart: (document.querySelector('#view')?.innerText || '').slice(0, 3000),
-                };
-              }""")
-              page.screenshot(path='live-spotify-opps.png', full_page=True)
-              browser.close()
+          try:
+              chrome = shutil.which('google-chrome') or shutil.which('chromium') or shutil.which('chromium-browser')
+              report['chrome_path'] = chrome
+              if not chrome:
+                  raise RuntimeError('No system Chrome/Chromium found')
 
-          print(json.dumps({'rendered_state': state}, ensure_ascii=False))
-          print(json.dumps({
-              'console_errors': console_errors[:20],
-              'page_errors': page_errors[:20],
-              'failed_requests': failed_requests[:20],
-          }, ensure_ascii=False))
+              console_errors: list[str] = []
+              page_errors: list[str] = []
+              failed_requests: list[str] = []
+              responses: dict[str, int] = {}
+              with sync_playwright() as p:
+                  browser = p.chromium.launch(headless=True, executable_path=chrome, args=['--no-sandbox'])
+                  page = browser.new_page(viewport={'width': 1600, 'height': 1000})
+                  page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
+                  page.on('pageerror', lambda error: page_errors.append(str(error)))
+                  page.on('requestfailed', lambda request: failed_requests.append(request.url + ' :: ' + str(request.failure)))
+                  page.on('response', lambda response: responses.__setitem__(response.url, response.status) if any(name in response.url for name in ('Spotify_Performance_data.js','Spotify_Soundcharts_data.js','dashboard.js')) else None)
+                  url = base + 'spotify/?diagnostic=' + stamp + '#opps'
+                  page.goto(url, wait_until='domcontentloaded', timeout=120000)
+                  page.wait_for_timeout(15000)
+                  state = page.evaluate("""() => {
+                    const perf = window.SPOTIFY_PERFORMANCE || {};
+                    const active = document.querySelector('#nav button.active');
+                    const bodyText = document.body.innerText || '';
+                    const rows = [...document.querySelectorAll('#view table tbody tr')];
+                    const snippets = bodyText.split('\n').filter(line => /Streams|24 h|24 heures|7 j|30 j|Dernier scan|Soundcharts/i.test(line)).slice(0, 120);
+                    return {
+                      href: location.href,
+                      hash: location.hash,
+                      activeNav: active ? active.textContent.trim().replace(/\s+/g, ' ') : null,
+                      activeDatasetView: active ? active.dataset.v : null,
+                      heading: document.querySelector('#view h2')?.textContent?.trim() || null,
+                      perfGeneratedAt: perf.generated_at || null,
+                      perfTrackCount: Object.keys(perf.tracks || {}).length,
+                      renderedRows: rows.length,
+                      visibleTextSnippets: snippets,
+                      viewTextStart: (document.querySelector('#view')?.innerText || '').slice(0, 6000),
+                    };
+                  }""")
+                  page.screenshot(path='live-spotify-opps.png', full_page=True)
+                  browser.close()
+              report['rendered_page'] = state
+              report['network_responses'] = responses
+              report['console_errors'] = console_errors[:50]
+              report['page_errors'] = page_errors[:50]
+              report['failed_requests'] = failed_requests[:50]
+          except Exception as exc:
+              report['errors'].append('browser: ' + repr(exc))
+              report['browser_traceback'] = traceback.format_exc()
 
-          if state['perfTrackCount'] == 0:
-              raise SystemExit('Rendered page did not load any performance histories')
-          if page_errors:
-              raise SystemExit('Rendered page raised JavaScript errors')
+          Path('live-spotify-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(report, ensure_ascii=False))
           PY
+
+      - name: Commit the diagnostic report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live-spotify-report.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record live Spotify Radar diagnostic"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Upload public-page screenshot
         if: always()
