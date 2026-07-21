@@ -113,20 +113,14 @@ jobs:
           SOUNDCHARTS_TEAM_ID: dsomoguy-api
         run: python audit_soundcharts_totals.py
 
-      - name: Commit the audit report to the pull-request branch
+      - name: Upload live Soundcharts catalog audit
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/full-track-inventory'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add soundcharts-live-total-count.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Record live Soundcharts discography totals"
-          for attempt in 1 2 3; do
-            git pull --rebase origin "${{ github.head_ref }}" && git push origin HEAD:"${{ github.head_ref }}" && exit 0
-            sleep 5
-          done
-          exit 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: soundcharts-live-catalog-audit
+          path: soundcharts-live-total-count.json
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Publish only validated daily snapshots
         if: steps.plan.outputs.publish == 'true'
