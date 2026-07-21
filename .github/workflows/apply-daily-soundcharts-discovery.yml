@@ -1,6 +1,7 @@
 name: Apply daily Soundcharts discovery
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - agent/daily-soundcharts-discovery
