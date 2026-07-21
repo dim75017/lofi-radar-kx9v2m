@@ -1,6 +1,6 @@
 {
   "auth_mode": "oauth_bearer",
-  "quota_start": 3757102,
+  "quota_start": 3757069,
   "song_genres": {
     "status": 200,
     "top_level_keys": [
@@ -235,7 +235,7 @@
         }
       },
       "error": [],
-      "quota_remaining": "3757102"
+      "quota_remaining": "3757069"
     },
     "instrumental_weekly_growth": {
       "status": 200,
@@ -256,8 +256,8 @@
       "item_count": 0,
       "safe_item": null,
       "error": [],
-      "quota_remaining": "3757102"
+      "quota_remaining": "3757069"
     }
   },
-  "quota_end": 3757102
+  "quota_end": 3757069
 }
