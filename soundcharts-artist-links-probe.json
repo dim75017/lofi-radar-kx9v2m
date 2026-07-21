@@ -1,6 +1,6 @@
 {
   "auth_mode": "oauth_bearer",
-  "quota_start": 3757351,
+  "quota_start": 3757323,
   "artists": [
     {
       "uuid": "ba7dd907-f866-42a9-9f66-89bd8bf41a55",
@@ -57,15 +57,15 @@
             "percentEvolution": 12.5
           },
           {
-            "platform": "tidal",
-            "value": 30,
+            "platform": "youtube",
+            "value": 9,
             "date": "2026-07-18T00:00:00+00:00",
             "evolution": 0,
             "percentEvolution": 0
           },
           {
-            "platform": "youtube",
-            "value": 9,
+            "platform": "tidal",
+            "value": 30,
             "date": "2026-07-18T00:00:00+00:00",
             "evolution": 0,
             "percentEvolution": 0
@@ -485,11 +485,11 @@
             "percentEvolution": 0
           },
           {
-            "platform": "soundcloud",
-            "value": 3959,
+            "platform": "spotify",
+            "value": 227994,
             "date": "2026-07-21T00:00:00+00:00",
-            "evolution": 6,
-            "percentEvolution": 0.15
+            "evolution": 672,
+            "percentEvolution": 0.3
           },
           {
             "platform": "youtube",
@@ -499,18 +499,11 @@
             "percentEvolution": 0.12
           },
           {
-            "platform": "spotify",
-            "value": 227994,
+            "platform": "soundcloud",
+            "value": 3959,
             "date": "2026-07-21T00:00:00+00:00",
-            "evolution": 672,
-            "percentEvolution": 0.3
-          },
-          {
-            "platform": "yandex",
-            "value": 21161,
-            "date": "2026-07-20T00:00:00+00:00",
-            "evolution": 12,
-            "percentEvolution": 0.06
+            "evolution": 6,
+            "percentEvolution": 0.15
           },
           {
             "platform": "amazon",
@@ -518,6 +511,13 @@
             "date": "2026-07-20T00:00:00+00:00",
             "evolution": 41,
             "percentEvolution": 1.09
+          },
+          {
+            "platform": "yandex",
+            "value": 21161,
+            "date": "2026-07-20T00:00:00+00:00",
+            "evolution": 12,
+            "percentEvolution": 0.06
           },
           {
             "platform": "deezer",
@@ -681,5 +681,5 @@
       }
     }
   ],
-  "quota_end": 3757351
+  "quota_end": 3757323
 }
