@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Cap Soundcharts history requests at 90 calendar days
+      - name: Cap collector history requests at 90 calendar days
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -44,29 +44,20 @@ jobs:
           if old_smoke not in text:
               raise SystemExit('Smoke history window block not found')
           collector.write_text(text.replace(old_smoke, new_smoke, 1), encoding='utf-8')
-
-          workflow = Path('.github/workflows/refresh-soundcharts.yml')
-          flow = workflow.read_text(encoding='utf-8')
-          flow = flow.replace('cancel-in-progress: false', 'cancel-in-progress: true', 1)
-          flow = flow.replace('--history-days 95', '--history-days 90', 1)
-          workflow.write_text(flow, encoding='utf-8')
           PY
 
-      - name: Run collector tests
-        run: python -m unittest tests/test_refresh_soundcharts_daily.py -v
-
-      - name: Validate collector and workflow
+      - name: Run and validate collector tests
         run: |
+          python -m unittest tests/test_refresh_soundcharts_daily.py -v
           python -m py_compile refresh_soundcharts_daily.py
           grep -q 'period_days = min(90' refresh_soundcharts_daily.py
-          grep -q -- '--history-days 90' .github/workflows/refresh-soundcharts.yml
           git diff --check
 
-      - name: Commit the validated production files
+      - name: Commit the validated collector
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add refresh_soundcharts_daily.py .github/workflows/refresh-soundcharts.yml
+          git add refresh_soundcharts_daily.py
           git commit -m "Cap Soundcharts stream history at 90 days"
           git pull --rebase origin ${{ github.event.pull_request.head.ref }}
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
