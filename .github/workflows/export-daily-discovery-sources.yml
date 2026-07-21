@@ -1,0 +1,40 @@
+name: Export daily discovery sources
+
+on:
+  push:
+    branches:
+      - agent/daily-soundcharts-discovery
+    paths:
+      - '.github/workflows/export-daily-discovery-sources.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/daily-soundcharts-discovery
+          fetch-depth: 0
+      - name: Package current production sources and fixtures
+        run: |
+          zip -9 daily-discovery-sources.zip \
+            refresh_soundcharts_daily.py \
+            expand_soundcharts_instrumental_pool.py \
+            sync_soundcharts_opportunities.py \
+            .github/workflows/refresh-soundcharts.yml \
+            tests/test_refresh_soundcharts_daily.py \
+            tests/test_expand_soundcharts_instrumental_pool.py \
+            tests/test_sync_soundcharts_opportunities.py \
+            Spotify_Soundcharts_data.js \
+            Spotify_Performance_data.js \
+            soundcharts-instrumental-cache.json \
+            spotify/dashboard.js \
+            spotify/dashboard.css
+      - uses: actions/upload-artifact@v4
+        with:
+          name: daily-discovery-sources
+          path: daily-discovery-sources.zip
+          retention-days: 2
