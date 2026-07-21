@@ -1,0 +1,550 @@
+{
+  "current_export": {
+    "generated_at": "2026-07-21T12:39:34Z",
+    "bytes": 9897059,
+    "track_schema": [
+      "spotify_id",
+      "artist",
+      "title",
+      "release_date",
+      "streams",
+      "delta",
+      "source_date",
+      "observed_at",
+      "rights_status",
+      "status_source",
+      "label",
+      "copyright",
+      "distributor",
+      "metadata_status",
+      "identifiers_status",
+      "metadata_updated_at",
+      "soundcharts_uuid",
+      "previous_source_date"
+    ],
+    "track_rows": 9268,
+    "unique_spotify_ids": 9268,
+    "unique_soundcharts_uuids": 9107,
+    "rights_counts": {
+      "unknown": 4829,
+      "other_label": 320,
+      "self_released": 3140,
+      "independent_label": 646,
+      "mixed": 88,
+      "major": 245
+    },
+    "coverage_tracks": {
+      "catalog": 48397,
+      "eligible": 37434,
+      "mapped": 27433,
+      "observed": 27146,
+      "observed_eligible": 27128,
+      "exported": 9268,
+      "eligible_observed_pct": 72.47
+    },
+    "limits": {
+      "minimum_track_streams": 10000,
+      "max_exported_tracks": 1500,
+      "mapped_discography_tracks_included": true
+    },
+    "has_structured_artists_field": false,
+    "rows_with_structured_artists": 0
+  },
+  "legacy_radar": {
+    "artists": 533,
+    "rows": 45556,
+    "unique_track_ids": 43350,
+    "visible_unique_track_ids_after_current_dashboard_filters": 43265,
+    "hidden_unique_track_ids": 85
+  },
+  "performance": {
+    "generated_at": "2026-07-21T12:39:34Z",
+    "track_entries": 8381,
+    "entries_with_two_or_more_points": 8370,
+    "overlap_current_export": 8381,
+    "not_in_current_export": 0
+  },
+  "dashboard_join": {
+    "current_export_ids_already_in_visible_legacy_rows": 2858,
+    "current_export_ids_not_in_visible_legacy_rows": 6410,
+    "estimated_soundcharts_rows_integrated_by_current_code": 2858,
+    "reason_new_rows_are_dropped": "current track schema lacks structured artists field"
+  },
+  "available_unions": {
+    "unique_ids_across_all_soundcharts_snapshots": 13369,
+    "unique_uuids_across_all_soundcharts_snapshots": 13203,
+    "visible_legacy_ids_not_in_current_soundcharts_export": 40407,
+    "performance_ids_not_in_current_soundcharts_export": 0,
+    "unique_ids_available_anywhere_in_public_repo": 53531
+  },
+  "snapshots": [
+    {
+      "path": "Spotify_Soundcharts_data.js",
+      "bytes": 9897059,
+      "generated_at": "2026-07-21T12:39:34Z",
+      "tracks": 9268,
+      "unique_spotify_ids": 9268,
+      "unique_soundcharts_uuids": 9107,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 27433,
+        "observed": 27146,
+        "observed_eligible": 27128,
+        "exported": 9268,
+        "eligible_observed_pct": 72.47
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T0909.js",
+      "bytes": 2457043,
+      "generated_at": "2026-07-19T09:09:42.709Z",
+      "tracks": 1500,
+      "unique_spotify_ids": 1500,
+      "unique_soundcharts_uuids": 1339,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 19970,
+        "observed": 19805,
+        "observed_eligible": 19787,
+        "exported": 1500,
+        "eligible_observed_pct": 52.86
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1027.js",
+      "bytes": 4782660,
+      "generated_at": "2026-07-19T10:26:56.131Z",
+      "tracks": 8667,
+      "unique_spotify_ids": 8667,
+      "unique_soundcharts_uuids": 8506,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 24946,
+        "observed": 24692,
+        "observed_eligible": 24674,
+        "exported": 8667,
+        "eligible_observed_pct": 65.91
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T115024_strict.js",
+      "bytes": 9611341,
+      "generated_at": "2026-07-19T11:50:24.120Z",
+      "tracks": 9268,
+      "unique_spotify_ids": 9268,
+      "unique_soundcharts_uuids": 9107,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 27433,
+        "observed": 27146,
+        "observed_eligible": 27128,
+        "exported": 9268,
+        "eligible_observed_pct": 72.47
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1245.js",
+      "bytes": 9803571,
+      "generated_at": "2026-07-19T12:44:43.723Z",
+      "tracks": 9862,
+      "unique_spotify_ids": 9862,
+      "unique_soundcharts_uuids": 9701,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 29924,
+        "observed": 29603,
+        "observed_eligible": 29585,
+        "exported": 9862,
+        "eligible_observed_pct": 79.03
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1344.js",
+      "bytes": 9979817,
+      "generated_at": "2026-07-19T13:43:56.822Z",
+      "tracks": 10399,
+      "unique_spotify_ids": 10399,
+      "unique_soundcharts_uuids": 10238,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 32410,
+        "observed": 32042,
+        "observed_eligible": 32024,
+        "exported": 10399,
+        "eligible_observed_pct": 85.55
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1414.js",
+      "bytes": 10154578,
+      "generated_at": "2026-07-19T14:13:55.896Z",
+      "tracks": 10940,
+      "unique_spotify_ids": 10940,
+      "unique_soundcharts_uuids": 10779,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 34900,
+        "observed": 34505,
+        "observed_eligible": 34487,
+        "exported": 10940,
+        "eligible_observed_pct": 92.13
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1505.js",
+      "bytes": 10388661,
+      "generated_at": "2026-07-19T15:04:34.164Z",
+      "tracks": 11515,
+      "unique_spotify_ids": 11515,
+      "unique_soundcharts_uuids": 11354,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 11515,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1525.js",
+      "bytes": 10583541,
+      "generated_at": "2026-07-19T15:23:27.743Z",
+      "tracks": 12128,
+      "unique_spotify_ids": 12128,
+      "unique_soundcharts_uuids": 11967,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 12128,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1553.js",
+      "bytes": 10785618,
+      "generated_at": "2026-07-19T15:53:24.601Z",
+      "tracks": 12727,
+      "unique_spotify_ids": 12727,
+      "unique_soundcharts_uuids": 12566,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 12727,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1654.js",
+      "bytes": 11009175,
+      "generated_at": "2026-07-19T16:53:36.825Z",
+      "tracks": 13312,
+      "unique_spotify_ids": 13312,
+      "unique_soundcharts_uuids": 13151,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 13312,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T1935_clean.js",
+      "bytes": 6736114,
+      "generated_at": "2026-07-19T17:57:21.149Z",
+      "tracks": 4698,
+      "unique_spotify_ids": 4698,
+      "unique_soundcharts_uuids": 4532,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 4698,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T2030_scopefix.js",
+      "bytes": 2372163,
+      "generated_at": "2026-07-19T18:36:24.035Z",
+      "tracks": 4698,
+      "unique_spotify_ids": 4698,
+      "unique_soundcharts_uuids": 4532,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 4698,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": false,
+      "opportunities": 0
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T2115_trackopps.js",
+      "bytes": 2411431,
+      "generated_at": "2026-07-19T19:13:34.366Z",
+      "tracks": 4698,
+      "unique_spotify_ids": 4698,
+      "unique_soundcharts_uuids": 4532,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 4698,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 24
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T2129_editorial.js",
+      "bytes": 2411435,
+      "generated_at": "2026-07-19T19:29:05.998Z",
+      "tracks": 4698,
+      "unique_spotify_ids": 4698,
+      "unique_soundcharts_uuids": 4532,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 4698,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 24
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T2256_xxl_strict.js",
+      "bytes": 172468,
+      "generated_at": "2026-07-19T20:56:45.509Z",
+      "tracks": 22,
+      "unique_spotify_ids": 22,
+      "unique_soundcharts_uuids": 22,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 22,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260719T2352_xxl_strict.js",
+      "bytes": 172617,
+      "generated_at": "2026-07-19T21:53:09.431Z",
+      "tracks": 22,
+      "unique_spotify_ids": 22,
+      "unique_soundcharts_uuids": 22,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 22,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260720T0008_editorial_strict.js",
+      "bytes": 172619,
+      "generated_at": "2026-07-19T22:07:22.083Z",
+      "tracks": 22,
+      "unique_spotify_ids": 22,
+      "unique_soundcharts_uuids": 22,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 22,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260720T0051_xxl_strict.js",
+      "bytes": 173528,
+      "generated_at": "2026-07-19T23:09:39.032Z",
+      "tracks": 22,
+      "unique_spotify_ids": 22,
+      "unique_soundcharts_uuids": 22,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 22,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260720T0138_xxl_strict.js",
+      "bytes": 173504,
+      "generated_at": "2026-07-19T23:39:05.563Z",
+      "tracks": 22,
+      "unique_spotify_ids": 22,
+      "unique_soundcharts_uuids": 22,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 22,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    },
+    {
+      "path": "Spotify_Soundcharts_data_20260720T0217_editorial_strict.js",
+      "bytes": 173505,
+      "generated_at": "2026-07-20T00:17:36.454Z",
+      "tracks": 22,
+      "unique_spotify_ids": 22,
+      "unique_soundcharts_uuids": 22,
+      "coverage_tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36807,
+        "observed_eligible": 36789,
+        "exported": 22,
+        "eligible_observed_pct": 98.28
+      },
+      "has_opportunities": true,
+      "opportunities": 30
+    }
+  ],
+  "sample_missing_from_dashboard_but_in_current_export": [
+    "009ymJggQnZwqKcRFqpsU4",
+    "00IFsDVre5SNxHrpt4y1vI",
+    "00KPugdklpcrFNnjWlXjj2",
+    "00X8dmyr8O1auuzwTgTlvu",
+    "00aF5EEoXdJreaknTVBoSI",
+    "00bT4vZJrgyvOAOUJ2lGw0",
+    "00c6JYguKlfq5yOlLoITlH",
+    "00cLEgl6jb1czSvQnAktmq",
+    "00eIWlxr3jOX7nubbxHqJw",
+    "00fvW2LlPPbPAnxnzfENHw",
+    "00kGSTCPuuD9pKAVVtGRuq",
+    "00rvAn9PRUxJhWeTYetQek",
+    "00slPW2hNEqF22b1KZrC1P",
+    "00wGslBZVLHZvQAB2kUQss",
+    "00wXKV73gAKuFxdW1SEFmX",
+    "00zzwbfMUlh7afJDePsGh5",
+    "019ctTcCu9XLoMNZycuPeR",
+    "01AIu8ITKt3ZTHNm2jrOgQ",
+    "01GaxIwhazmBJGncZImt6p",
+    "01Se0GVDfC3N0hGHWheo21",
+    "01Su40B3RVqYpuAiA8Rs8O",
+    "01acmSgeOUFtSnGw2VHAF2",
+    "01cF0O2vgJy20SzDrA2GET",
+    "01gLw54DDmNDlvSQ0o41mf",
+    "01nG1uTRxm2T2UfJP7wVTV"
+  ],
+  "sample_performance_not_current": [],
+  "soundcharts_related_paths": [
+    ".git/logs/refs/remotes/origin/agent/cap-soundcharts-history-window",
+    ".git/logs/refs/remotes/origin/agent/diagnose-live-spotify-ui",
+    ".git/logs/refs/remotes/origin/agent/fix-daily-soundcharts-sync",
+    ".git/logs/refs/remotes/origin/agent/split-spotify-dashboard",
+    ".git/refs/remotes/origin/agent/cap-soundcharts-history-window",
+    ".git/refs/remotes/origin/agent/diagnose-live-spotify-ui",
+    ".git/refs/remotes/origin/agent/fix-daily-soundcharts-sync",
+    ".git/refs/remotes/origin/agent/split-spotify-dashboard",
+    ".github/workflows/refresh-soundcharts.yml",
+    "Spotify_Labels_data.js",
+    "Spotify_Performance_data.js",
+    "Spotify_Playlists_data.js",
+    "Spotify_Radar.html",
+    "Spotify_Radar_data.js",
+    "Spotify_Soundcharts_data.js",
+    "Spotify_Soundcharts_data_20260719T0909.js",
+    "Spotify_Soundcharts_data_20260719T1027.js",
+    "Spotify_Soundcharts_data_20260719T115024_strict.js",
+    "Spotify_Soundcharts_data_20260719T1245.js",
+    "Spotify_Soundcharts_data_20260719T1344.js",
+    "Spotify_Soundcharts_data_20260719T1414.js",
+    "Spotify_Soundcharts_data_20260719T1505.js",
+    "Spotify_Soundcharts_data_20260719T1525.js",
+    "Spotify_Soundcharts_data_20260719T1553.js",
+    "Spotify_Soundcharts_data_20260719T1654.js",
+    "Spotify_Soundcharts_data_20260719T1935_clean.js",
+    "Spotify_Soundcharts_data_20260719T2030_scopefix.js",
+    "Spotify_Soundcharts_data_20260719T2115_trackopps.js",
+    "Spotify_Soundcharts_data_20260719T2129_editorial.js",
+    "Spotify_Soundcharts_data_20260719T2256_xxl_strict.js",
+    "Spotify_Soundcharts_data_20260719T2352_xxl_strict.js",
+    "Spotify_Soundcharts_data_20260720T0008_editorial_strict.js",
+    "Spotify_Soundcharts_data_20260720T0051_xxl_strict.js",
+    "Spotify_Soundcharts_data_20260720T0138_xxl_strict.js",
+    "Spotify_Soundcharts_data_20260720T0217_editorial_strict.js",
+    "refresh_soundcharts_daily.py",
+    "sync_soundcharts_opportunities.py",
+    "tests/test_refresh_soundcharts_daily.py",
+    "tests/test_sync_soundcharts_opportunities.py"
+  ]
+}
