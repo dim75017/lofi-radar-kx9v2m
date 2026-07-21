@@ -1,6 +1,6 @@
 {
   "auth_mode": "oauth_bearer",
-  "quota_start": 3757519,
+  "quota_start": 3757491,
   "artists": [
     {
       "uuid": "ba7dd907-f866-42a9-9f66-89bd8bf41a55",
@@ -478,13 +478,6 @@
         },
         "social": [
           {
-            "platform": "qq-music",
-            "value": 708,
-            "date": "2026-07-21T00:00:00+00:00",
-            "evolution": 0,
-            "percentEvolution": 0
-          },
-          {
             "platform": "spotify",
             "value": 227994,
             "date": "2026-07-21T00:00:00+00:00",
@@ -504,6 +497,13 @@
             "date": "2026-07-21T00:00:00+00:00",
             "evolution": 6,
             "percentEvolution": 0.15
+          },
+          {
+            "platform": "qq-music",
+            "value": 708,
+            "date": "2026-07-21T00:00:00+00:00",
+            "evolution": 0,
+            "percentEvolution": 0
           },
           {
             "platform": "amazon",
@@ -681,5 +681,5 @@
       }
     }
   ],
-  "quota_end": 3757519
+  "quota_end": 3757491
 }
