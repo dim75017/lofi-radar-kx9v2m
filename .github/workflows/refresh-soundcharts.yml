@@ -110,6 +110,7 @@ jobs:
           PYTHONUNBUFFERED: '1'
           SOUNDCHARTS_CLIENT_ID: ${{ secrets.SOUNDCHARTS_CLIENT_ID }}
           SOUNDCHARTS_CLIENT_SECRET: ${{ secrets.SOUNDCHARTS_CLIENT_SECRET }}
+          SOUNDCHARTS_TEAM_ID: dsomoguy-api
         run: python audit_soundcharts_totals.py
 
       - name: Commit the audit report to the pull-request branch
