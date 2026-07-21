@@ -6,6 +6,11 @@ on:
       - agent/rebuild-spotify-ar-engine
     paths:
       - '.github/workflows/probe-soundcharts-song-pages.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/probe-soundcharts-song-pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -34,14 +39,15 @@ jobs:
           python3 - <<'PY'
           from __future__ import annotations
           import json
+          import os
           import urllib.parse
           from pathlib import Path
           from refresh_soundcharts_daily import SoundchartsClient
 
           client = SoundchartsClient(
-              __import__('os').environ.get('SOUNDCHARTS_CLIENT_ID', ''),
-              __import__('os').environ.get('SOUNDCHARTS_CLIENT_SECRET', ''),
-              __import__('os').environ.get('SOUNDCHARTS_TEAM_ID', ''),
+              os.environ.get('SOUNDCHARTS_CLIENT_ID', ''),
+              os.environ.get('SOUNDCHARTS_CLIENT_SECRET', ''),
+              os.environ.get('SOUNDCHARTS_TEAM_ID', ''),
           )
           client.authenticate()
 
@@ -113,6 +119,7 @@ jobs:
           PY
 
       - name: Commit safe probe report
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
