@@ -1,0 +1,74 @@
+{
+  "generated_at": "2026-07-21T13:35:32Z",
+  "source": "live_soundcharts_api",
+  "endpoint": "/api/v2/artist/{uuid}/songs?limit=1",
+  "artists_queried": 2464,
+  "status_counts": {
+    "401": 2464
+  },
+  "artists_successful": 0,
+  "sum_of_page_totals": 0,
+  "mean_songs_per_artist": null,
+  "median_songs_per_artist": null,
+  "maximum_songs_for_one_artist": null,
+  "artists_over_100": 0,
+  "artists_over_500": 0,
+  "artists_over_1000": 0,
+  "largest_discographies": [],
+  "requests_used": 2465,
+  "quota_remaining": null,
+  "favorite_artist_probe": {
+    "status": 401,
+    "total": null
+  },
+  "existing_export_coverage": {
+    "tracks": {
+      "catalog": 48397,
+      "eligible": 37434,
+      "mapped": 27433,
+      "observed": 27146,
+      "observed_eligible": 27128,
+      "exported": 9268,
+      "eligible_observed_pct": 72.47
+    },
+    "artists": {
+      "catalog": 5848,
+      "mapped": 2469,
+      "observed": 2465,
+      "qualified": 1655,
+      "exported": 2465,
+      "observed_pct": 42.15
+    },
+    "fal": {
+      "edges": 50993,
+      "candidates": 15958,
+      "resolved": 9744,
+      "sources": 1046,
+      "exported": 15958
+    },
+    "rights": {
+      "metadata_table": "soundcharts_discography_tracks",
+      "catalog_self_released": 11866,
+      "catalog_with_copyright": 48019,
+      "exported_with_copyright": 8622,
+      "exported_statuses": {
+        "unknown": 4829,
+        "other_label": 320,
+        "self_released": 3140,
+        "independent_label": 646,
+        "mixed": 88,
+        "major": 245
+      }
+    },
+    "discography": {
+      "total": 271713,
+      "spotify_mapped": 7823,
+      "metadata_complete": 21225,
+      "identifiers_complete": 7823,
+      "classified": 12463,
+      "with_copyright": 20129,
+      "updated_at": "2026-07-19T11:37:13.450Z"
+    }
+  },
+  "current_export_track_rows": 9268
+}
