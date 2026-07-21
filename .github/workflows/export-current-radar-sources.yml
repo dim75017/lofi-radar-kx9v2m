@@ -6,6 +6,9 @@ on:
       - agent/playlist-editorial-discovery
     paths:
       - '.github/workflows/export-current-radar-sources.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/export-current-radar-sources.yml'
   workflow_dispatch:
 
 permissions:
@@ -17,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/playlist-editorial-discovery
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
           fetch-depth: 0
       - name: Package current production sources and fixtures
         shell: bash
