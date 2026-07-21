@@ -76,24 +76,49 @@ jobs:
           tests.write_text(body.replace(marker, regression + marker, 1), encoding='utf-8')
           PY
 
-      - name: Run collector tests
-        run: python -m unittest tests/test_refresh_soundcharts_daily.py -v
+      - name: Run collector tests and capture the complete report
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          python -m unittest tests/test_refresh_soundcharts_daily.py -v > window-cap-test-report.txt 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          cat window-cap-test-report.txt
+          exit 0
+
+      - name: Publish a failing test report for diagnosis
+        if: steps.tests.outputs.status != '0'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add window-cap-test-report.txt
+          git commit -m "Diagnose Soundcharts window regression test"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          exit 1
 
       - name: Compile collector
+        if: steps.tests.outputs.status == '0'
         run: python -m py_compile refresh_soundcharts_daily.py
 
       - name: Check collector window cap
+        if: steps.tests.outputs.status == '0'
         run: grep -q 'period_days = min(90' refresh_soundcharts_daily.py
 
       - name: Check production history argument
+        if: steps.tests.outputs.status == '0'
         run: grep -q -- '--history-days 90' .github/workflows/refresh-soundcharts.yml
 
       - name: Check patch whitespace
+        if: steps.tests.outputs.status == '0'
         run: git diff --check
 
       - name: Commit the final guard only
+        if: steps.tests.outputs.status == '0'
         run: |
           rm -f .github/workflows/apply-soundcharts-window-cap.yml
+          rm -f window-cap-test-report.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
