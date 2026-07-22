@@ -1,0 +1,39 @@
+name: Inspect active Soundcharts snapshot
+
+on:
+  push:
+    branches: [agent/inspect-active-120243]
+    paths: ['.github/workflows/inspect-active-snapshot.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/inspect-active-120243
+          fetch-depth: 0
+      - name: Count snapshot collections
+        run: |
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          index=Path('spotify/index.html').read_text(encoding='utf-8')
+          name=re.search(r'Spotify_Soundcharts_data[^?"\x27]+\.js',index).group(0)
+          raw=Path(name).read_text(encoding='utf-8')
+          sc=json.loads(raw[raw.find('{'):].strip().removesuffix(';'))
+          editorial=sc.get('editorial') or {}; catalogue=sc.get('discovery_catalogue') or {}
+          report={'snapshot':name,'generated_at':sc.get('generated_at'),'strict_tracks':len(sc.get('tracks') or []),'editorial_tracks':len(editorial.get('tracks') or []),'editorial_artists':len(editorial.get('artists') or []),'discovery_catalogue_tracks':len(catalogue.get('tracks') or []),'discovery_catalogue_artists':len(catalogue.get('artists') or []),'discovery_catalogue_counts':catalogue.get('counts') or {},'playlist_discovery':sc.get('playlist_discovery') or {}}
+          Path('active-snapshot-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - name: Commit report
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add active-snapshot-report.json
+          git commit -m 'Record active Soundcharts snapshot counts'
+          git push origin HEAD:agent/inspect-active-120243
