@@ -2,7 +2,6 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
 
 const index = fs.readFileSync('spotify/index.html', 'utf8');
 const dashboard = fs.readFileSync('spotify/dashboard.js', 'utf8');
@@ -24,8 +23,14 @@ assert.doesNotMatch(dashboard, /const A = \[\];/);
 assert.doesNotMatch(dashboard, /const LEGACY_R = \[\];/);
 assert.doesNotMatch(dashboard, /const DISCOVERY_CATALOGUE = \{tracks:\[\],artists:\[\],counts:\{\}\};/);
 
-assert.match(dashboard, /if\(!SC\|\|!Array\.isArray\(SC\.opportunities\)\) return \[\];/,
-  'A&R remains sourced from the strict Soundcharts opportunities contract');
+const arStart = dashboard.indexOf('function arOpportunityRows');
+const arEnd = dashboard.indexOf('function arGenreLabel', arStart);
+assert.ok(arStart >= 0 && arEnd > arStart, 'the strict A&R opportunity mapper must remain defined');
+const arSource = dashboard.slice(arStart, arEnd);
+assert.match(arSource, /SC\.opportunities/,
+  'A&R remains sourced from the strict Soundcharts opportunity export');
+assert.doesNotMatch(arSource, /BROWSE|SPOTIFY_BROWSE_CATALOGUE/,
+  'the broad browsing catalogue must never become an A&R opportunity source');
 assert.match(dashboard, /function arIsContactable\(/,
   'strict A&R contact guardrails remain defined');
 assert.match(policy, /Inventaire de navigation/);
@@ -44,7 +49,7 @@ const catalogue = browse.discovery_catalogue || {};
 assert.ok(Array.isArray(catalogue.tracks) && catalogue.tracks.length >= 10_000,
   `broad discovery catalogue unexpectedly small: ${Array.isArray(catalogue.tracks) ? catalogue.tracks.length : 0}`);
 assert.ok(Array.isArray(catalogue.artists) && catalogue.artists.length >= 1_000,
-  'broad discovery artist catalogue unexpectedly small');
+  `broad discovery artist catalogue unexpectedly small: ${Array.isArray(catalogue.artists) ? catalogue.artists.length : 0}`);
 for (const schema of [catalogue.track_schema || [], catalogue.artist_schema || []]) {
   for (const forbidden of ['contact_email', 'contact_url', 'contact_platform', 'email', 'phone']) {
     assert.equal(schema.includes(forbidden), false, `browsing catalogue must not expose ${forbidden}`);
@@ -56,7 +61,7 @@ const radarText = fs.readFileSync('Spotify_Radar_data.js', 'utf8');
 assert.ok(radarText.startsWith(radarPrefix));
 const radar = JSON.parse(radarText.slice(radarPrefix.length).trim().replace(/;$/, ''));
 assert.ok(Array.isArray(radar.rows) && radar.rows.length >= 40_000,
-  'historical browsing catalogue unexpectedly small');
+  `historical browsing catalogue unexpectedly small: ${Array.isArray(radar.rows) ? radar.rows.length : 0}`);
 
 const trackSchema = catalogue.track_schema || [];
 const spotifyIndex = trackSchema.indexOf('spotify_id');
@@ -70,6 +75,13 @@ for (const row of catalogue.tracks) {
   if (spotify) keys.add(spotify);
   else if (soundcharts) keys.add(`soundcharts:${soundcharts}`);
 }
+console.log(JSON.stringify({
+  historicalRows: radar.rows.length,
+  discoveryTracks: catalogue.tracks.length,
+  discoveryArtists: catalogue.artists.length,
+  combinedKeys: keys.size,
+  strictOpportunities: browse.strict_snapshot_counts && browse.strict_snapshot_counts.opportunities,
+}));
 assert.ok(keys.size >= 45_000, `combined browsing universe unexpectedly small: ${keys.size}`);
 
 console.log(`Spotify catalogue layers: ${keys.size} browsing keys; A&R stays strict`);
