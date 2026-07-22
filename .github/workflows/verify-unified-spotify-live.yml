@@ -1,0 +1,118 @@
+name: Verify unified Spotify catalogue live
+
+on:
+  push:
+    branches: [agent/verify-unified-spotify-live]
+    paths:
+      - '.github/workflows/verify-unified-spotify-live.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/verify-unified-spotify-live
+          fetch-depth: 0
+
+      - name: Wait for the unified GitHub Pages bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://dim75017.github.io/youtube-radar-kx9v2m/spotify/'
+          for attempt in $(seq 1 90); do
+            curl -fsSL -H 'Cache-Control: no-cache' "$url?verify=ef87c471-$attempt" -o live-index.html || true
+            if grep -q 'Spotify_Browse_Catalogue_data.js' live-index.html \
+              && grep -q 'dashboard.js?v=20260722-unified-catalogue-v1' live-index.html; then
+              break
+            fi
+            if [[ "$attempt" == 90 ]]; then
+              echo 'GitHub Pages still serves the strict-only bundle.' >&2
+              sed -n '25,105p' live-index.html >&2 || true
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Render all tracks and validate the displayed catalogue
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$chrome"
+          "$chrome" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --virtual-time-budget=45000 \
+            --dump-dom \
+            'https://dim75017.github.io/youtube-radar-kx9v2m/spotify/?verify=ef87c471#tracks' \
+            > live-tracks-dom.html
+          python3 - <<'PY'
+          import datetime as dt
+          import html
+          import json
+          import re
+          from pathlib import Path
+
+          index = Path('live-index.html').read_text(encoding='utf-8', errors='replace')
+          dom = Path('live-tracks-dom.html').read_text(encoding='utf-8', errors='replace')
+
+          def text_for_id(element_id):
+              match = re.search(
+                  rf'<[^>]+id="{re.escape(element_id)}"[^>]*>(.*?)</[^>]+>',
+                  dom,
+                  re.S,
+              )
+              if not match:
+                  return ''
+              return html.unescape(re.sub(r'<[^>]+>', '', match.group(1))).strip()
+
+          result_match = re.search(r'<span[^>]+class="[^"]*result-count[^"]*"[^>]*>(.*?)</span>', dom, re.S)
+          if not result_match:
+              raise SystemExit('Rendered track result count was not found')
+          result_text = html.unescape(re.sub(r'<[^>]+>', '', result_match.group(1))).strip()
+          number_match = re.search(r'([0-9][0-9\s\u00a0\u202f.,]*)\s+pistes', result_text, re.I)
+          if not number_match:
+              raise SystemExit(f'Could not parse the rendered track count: {result_text!r}')
+          track_count = int(re.sub(r'\D', '', number_match.group(1)))
+          if track_count < 45_000:
+              raise SystemExit(f'Live dashboard still exposes only {track_count} tracks: {result_text}')
+          if 'Catalogue vivant' not in dom:
+              raise SystemExit('Living catalogue explanation is missing from the rendered page')
+          if 'Spotify_Browse_Catalogue_data.js' not in index:
+              raise SystemExit('Separate browsing catalogue is missing from the public index')
+          report = {
+              'verified_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+              'url': 'https://dim75017.github.io/youtube-radar-kx9v2m/spotify/#tracks',
+              'displayed_text': result_text,
+              'displayed_track_count': track_count,
+              'navigation_track_count': text_for_id('c-opps'),
+              'navigation_ar_count': text_for_id('c-radar'),
+              'browse_layer_loaded': True,
+              'strict_ar_separate': True,
+              'dashboard_bundle': '20260722-unified-catalogue-v1',
+              'status': 'success',
+          }
+          Path('live-unified-spotify-verification.json').write_text(
+              json.dumps(report, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(report, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Record the live verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add live-unified-spotify-verification.json
+          git commit -m 'Record unified Spotify live verification'
+          git push origin HEAD:agent/verify-unified-spotify-live
