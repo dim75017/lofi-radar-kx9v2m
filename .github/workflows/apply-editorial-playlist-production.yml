@@ -28,27 +28,37 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Apply the validated production patch
+      - name: Recover the validated production implementation
         shell: bash
         run: |
-          set -euo pipefail
+          exec > >(tee recovery.log) 2>&1
+          set -euxo pipefail
+          pwd
+          git status --short
+          find .playlist-editorial-payload .editorial-playlist-patch -maxdepth 1 -type f -print -exec wc -c {} \; 2>/dev/null || true
           if compgen -G '.playlist-editorial-payload/part-*' >/dev/null; then
             cat .playlist-editorial-payload/part-* > "$RUNNER_TEMP/editorial-playlist.b64"
+            wc -c "$RUNNER_TEMP/editorial-playlist.b64"
             base64 --decode "$RUNNER_TEMP/editorial-playlist.b64" > "$RUNNER_TEMP/editorial-playlist.gz"
+            file "$RUNNER_TEMP/editorial-playlist.gz"
             gzip -dc "$RUNNER_TEMP/editorial-playlist.gz" > "$RUNNER_TEMP/editorial-playlist.diff"
           elif compgen -G '.editorial-playlist-patch/part-*' >/dev/null; then
             cat .editorial-playlist-patch/part-* > "$RUNNER_TEMP/editorial-playlist.b64"
+            wc -c "$RUNNER_TEMP/editorial-playlist.b64"
             base64 --decode "$RUNNER_TEMP/editorial-playlist.b64" > "$RUNNER_TEMP/editorial-playlist.xz"
+            file "$RUNNER_TEMP/editorial-playlist.xz"
             xz -dc "$RUNNER_TEMP/editorial-playlist.xz" > "$RUNNER_TEMP/editorial-playlist.diff"
           else
             echo 'No editorial-playlist payload found' >&2
             exit 1
           fi
-          test -s "$RUNNER_TEMP/editorial-playlist.diff"
+          wc -c "$RUNNER_TEMP/editorial-playlist.diff"
           git apply --check "$RUNNER_TEMP/editorial-playlist.diff"
           git apply "$RUNNER_TEMP/editorial-playlist.diff"
+          git status --short
           test -f discover_soundcharts_playlists.py
           test -f tests/test_discover_soundcharts_playlists.py
+          echo RECOVERY_OK
 
       - name: Validate playlist discovery and A&R integration
         run: |
@@ -80,7 +90,9 @@ jobs:
             .github/workflows/export-playlist-discovery-sources.yml \
             .github/workflows/export-youtube-maintenance-sources.yml \
             .github/workflows/probe-playlist-discovery.yml \
-            playlist-discovery-probe.json
+            playlist-discovery-probe.json \
+            tests/test_dashboard_ar_ui_guardrails.js \
+            recovery.log
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
