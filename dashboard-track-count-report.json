@@ -1,0 +1,112 @@
+{
+  "active_snapshot": "Spotify_Soundcharts_data_20260722T112000Z.js",
+  "snapshot_generated_at": "2026-07-22T11:20:00.684Z",
+  "snapshot_bytes": 8064156,
+  "legacy_radar": {
+    "artists_total": 533,
+    "rows_total": 45556,
+    "rows_visible_after_dashboard_legacy_filter": 44861,
+    "visible_rows_with_id": 42672
+  },
+  "soundcharts": {
+    "strict_tracks": 2063,
+    "strict_artists": 1279,
+    "editorial_tracks": 2064,
+    "editorial_artists": 1194,
+    "discovery_catalogue_tracks": 0,
+    "discovery_catalogue_artists": 0,
+    "discovery_catalogue_counts": {},
+    "discovery_tracks_with_spotify_id": 0,
+    "discovery_tracks_without_spotify_id": 0,
+    "playlist_discovery": {
+      "status": "success",
+      "finished_at": "2026-07-22T10:43:47Z",
+      "playlists_targeted": 229,
+      "playlists_resolved": 226,
+      "playlists_scanned": 220,
+      "tracklist_rows": 20675,
+      "unique_playlist_tracks": 16792,
+      "unseen_playlist_tracks": 14734,
+      "new_playlist_tracks": 14734,
+      "playlist_tracks_detailed": 450,
+      "new_artist_credits": 7157,
+      "catalogue_artists_available": 8346,
+      "catalogue_artists_scanned": 250,
+      "new_catalogue_tracks": 1200,
+      "editorial_tracks_total": 17998,
+      "editorial_artists_total": 8351,
+      "requests": 1010,
+      "quota_remaining": 3645047,
+      "failures": {
+        "playlist_metadata": 0,
+        "playlist_first_pages": 0,
+        "playlist_extra_pages": 0,
+        "song_details": 0,
+        "artist_catalogues": 0
+      },
+      "cadence": {
+        "playlist_tracklists": "daily_all_target_editorial",
+        "artist_catalogues": "daily_rotating_page",
+        "no_instrumental_or_ai_assumption": true
+      }
+    },
+    "coverage": {
+      "tracks": {
+        "catalog": 48397,
+        "eligible": 37434,
+        "mapped": 37232,
+        "observed": 36920,
+        "observed_eligible": 36902,
+        "exported": 2063,
+        "eligible_observed_pct": 98.58
+      },
+      "artists": {
+        "catalog": 5848,
+        "mapped": 2469,
+        "observed": 2465,
+        "qualified": 1655,
+        "exported": 1279,
+        "observed_pct": 42.15
+      },
+      "fal": {
+        "edges": 56243,
+        "candidates": 17158,
+        "resolved": 17022,
+        "sources": 1176,
+        "exported": 25
+      },
+      "rights": {
+        "metadata_table": "soundcharts_discography_tracks",
+        "catalog_self_released": 11866,
+        "catalog_with_copyright": 48019,
+        "exported_with_copyright": 2045,
+        "exported_statuses": {
+          "independent_label": 728,
+          "self_released": 1335
+        }
+      },
+      "discography": {
+        "total": 730586,
+        "spotify_mapped": 24614,
+        "metadata_complete": 40129,
+        "identifiers_complete": 24614,
+        "classified": 20775,
+        "with_copyright": 34194,
+        "updated_at": "2026-07-22T10:43:12.226Z"
+      },
+      "opportunities": {
+        "exported": 1999,
+        "verified": 1416,
+        "needs_listen": 583,
+        "strict_contract_available": true
+      }
+    },
+    "limits": {
+      "minimum_track_streams": 10000,
+      "max_exported_tracks": 1500,
+      "mapped_discography_tracks_included": true
+    }
+  },
+  "estimated_unique_dashboard_track_keys": 42672,
+  "note": "The estimate unions visible legacy IDs with discovery catalogue keys; dashboard artist-link gates can only reduce it slightly."
+}
