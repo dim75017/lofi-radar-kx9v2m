@@ -6,6 +6,9 @@ on:
       - agent/activate-playlist-discovery
     paths:
       - '.github/workflows/apply-editorial-playlist-production.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/apply-editorial-playlist-production.yml'
   workflow_dispatch:
 
 permissions:
