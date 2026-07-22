@@ -17,7 +17,7 @@ permissions:
 jobs:
   apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,11 +29,14 @@ jobs:
           python-version: '3.12'
 
       - name: Recover the validated production implementation
+        id: recovery
+        continue-on-error: true
         shell: bash
         run: |
           exec > >(tee recovery.log) 2>&1
           set -euxo pipefail
           pwd
+          git rev-parse HEAD
           git status --short
           find .playlist-editorial-payload .editorial-playlist-patch -maxdepth 1 -type f -print -exec wc -c {} \; 2>/dev/null || true
           if compgen -G '.playlist-editorial-payload/part-*' >/dev/null; then
@@ -60,42 +63,14 @@ jobs:
           test -f tests/test_discover_soundcharts_playlists.py
           echo RECOVERY_OK
 
-      - name: Validate playlist discovery and A&R integration
-        run: |
-          python -m unittest \
-            tests/test_refresh_soundcharts_daily.py \
-            tests/test_discover_soundcharts_playlists.py \
-            tests/test_expand_soundcharts_instrumental_pool.py \
-            tests/test_sync_soundcharts_opportunities.py \
-            tests/test_prepare_soundcharts_snapshot.py \
-            -v
-          python -m py_compile \
-            refresh_soundcharts_daily.py \
-            discover_soundcharts_playlists.py \
-            expand_soundcharts_instrumental_pool.py \
-            sync_soundcharts_opportunities.py \
-            prepare_soundcharts_snapshot.py
-          node --check spotify/dashboard.js
-          ruby -e "require 'yaml'; YAML.load_file('.github/workflows/refresh-soundcharts.yml'); puts 'workflow yaml ok'"
-          git diff --check
+      - name: Upload recovery log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-playlist-recovery-log
+          path: recovery.log
+          retention-days: 2
 
-      - name: Commit the production implementation
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf .editorial-playlist-patch .playlist-editorial-payload
-          rm -f \
-            .github/workflows/apply-editorial-playlist-production.yml \
-            .github/workflows/export-current-radar-sources.yml \
-            .github/workflows/export-playlist-discovery-sources.yml \
-            .github/workflows/export-youtube-maintenance-sources.yml \
-            .github/workflows/probe-playlist-discovery.yml \
-            playlist-discovery-probe.json \
-            tests/test_dashboard_ar_ui_guardrails.js \
-            recovery.log
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --check
-          git commit -m 'Activate editorial playlist and artist catalogue discovery'
-          git push origin HEAD:agent/activate-playlist-discovery
+      - name: Stop after recovery diagnostic
+        if: always()
+        run: test '${{ steps.recovery.outcome }}' = 'success'
