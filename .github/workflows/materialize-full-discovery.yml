@@ -88,9 +88,9 @@ jobs:
           PY
           cat .full-catalogue-fix/part-* > "$RUNNER_TEMP/full-catalogue-overlay.b64"
           base64 --decode "$RUNNER_TEMP/full-catalogue-overlay.b64" > "$RUNNER_TEMP/full-catalogue-overlay.patch.xz"
-          echo 'eaa097e4768bee84d4fce1c0050f1ee4845a9f6326edb175fc0f7b41f472c4ac  '"$RUNNER_TEMP/full-catalogue-overlay.patch.xz" | sha256sum --check
+          echo 'ef1bf2fc7a880616a339335c5b75f78fb450ac1f21be309078d64d6877eed7a4  '"$RUNNER_TEMP/full-catalogue-overlay.patch.xz" | sha256sum --check
           xz -dc "$RUNNER_TEMP/full-catalogue-overlay.patch.xz" > "$RUNNER_TEMP/full-catalogue-overlay.patch"
-          echo 'da45a05c971d604ae426889cfebf4c187e9036bb57f298f38e09d1fc28b3fe35  '"$RUNNER_TEMP/full-catalogue-overlay.patch" | sha256sum --check
+          echo 'c3a8165bec53624b615b7305114c10d3b876c1b3aa5997df4fe61ad3d139c325  '"$RUNNER_TEMP/full-catalogue-overlay.patch" | sha256sum --check
           git apply --check "$RUNNER_TEMP/full-catalogue-overlay.patch"
           git apply "$RUNNER_TEMP/full-catalogue-overlay.patch"
           git diff --check
