@@ -1,0 +1,84 @@
+name: Diagnose catalogue reverts
+
+on:
+  push:
+    branches: [agent/diagnose-catalogue-reverts]
+    paths:
+      - '.github/workflows/diagnose-catalogue-reverts.yml'
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/diagnose-catalogue-reverts
+          fetch-depth: 0
+      - name: Inspect revert provenance and associated automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess
+          commits = [
+              '37bd131222764994b6d68ed73d40b8227c376a11',
+              'f0797bc5ac4b85215f1ae162d6103c26ba204953',
+              'f88ab3a524a10e54f7b568225cad2b3c25c3062c',
+          ]
+          repo = os.environ['GITHUB_REPOSITORY']
+          def gh(path):
+              return json.loads(subprocess.check_output(['gh','api',path], text=True))
+          out = {'repository': repo, 'commits': []}
+          for sha in commits:
+              commit = gh(f'/repos/{repo}/commits/{sha}')
+              checks = gh(f'/repos/{repo}/commits/{sha}/check-runs')
+              pulls = gh(f'/repos/{repo}/commits/{sha}/pulls')
+              out['commits'].append({
+                  'sha': sha,
+                  'message': commit.get('commit',{}).get('message'),
+                  'author_login': (commit.get('author') or {}).get('login'),
+                  'committer_login': (commit.get('committer') or {}).get('login'),
+                  'git_author': commit.get('commit',{}).get('author'),
+                  'git_committer': commit.get('commit',{}).get('committer'),
+                  'verification': commit.get('commit',{}).get('verification'),
+                  'parents': [item.get('sha') for item in commit.get('parents',[])],
+                  'check_runs': [
+                      {
+                          'name': item.get('name'),
+                          'app': (item.get('app') or {}).get('slug'),
+                          'status': item.get('status'),
+                          'conclusion': item.get('conclusion'),
+                          'details_url': item.get('details_url'),
+                      }
+                      for item in checks.get('check_runs',[])
+                  ],
+                  'associated_pulls': [
+                      {
+                          'number': item.get('number'),
+                          'title': item.get('title'),
+                          'user': (item.get('user') or {}).get('login'),
+                          'merged_at': item.get('merged_at'),
+                      }
+                      for item in pulls
+                  ],
+              })
+          with open('catalogue-revert-diagnostics.json','w',encoding='utf-8') as fh:
+              json.dump(out,fh,ensure_ascii=False,indent=2)
+              fh.write('\n')
+          print(json.dumps(out,ensure_ascii=False,indent=2))
+          PY
+      - name: Record diagnostics
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add catalogue-revert-diagnostics.json
+          git commit -m 'Record catalogue revert diagnostics'
+          git push origin HEAD:agent/diagnose-catalogue-reverts
