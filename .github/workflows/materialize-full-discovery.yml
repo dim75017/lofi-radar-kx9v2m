@@ -1,4 +1,3 @@
-# kick materialization after the workflow exists on the branch
 name: Materialize full discovery production files
 
 on:
@@ -94,11 +93,10 @@ jobs:
           echo 'da45a05c971d604ae426889cfebf4c187e9036bb57f298f38e09d1fc28b3fe35  '"$RUNNER_TEMP/full-catalogue-overlay.patch" | sha256sum --check
           git apply --check "$RUNNER_TEMP/full-catalogue-overlay.patch"
           git apply "$RUNNER_TEMP/full-catalogue-overlay.patch"
+          git diff --check
 
-      - name: Validate collectors, full catalogue, playlist evidence and players
-        shell: bash
+      - name: Run Python collector and catalogue tests
         run: |
-          set -euo pipefail
           python -m unittest \
             tests/test_refresh_soundcharts_daily.py \
             tests/test_discover_soundcharts_playlists.py \
@@ -113,17 +111,26 @@ jobs:
             expand_soundcharts_instrumental_pool.py \
             sync_soundcharts_opportunities.py \
             prepare_soundcharts_snapshot.py
+
+      - name: Validate dashboard syntax
+        run: |
           node --check spotify/dashboard.js
           node --check spotify/coverage.js
-          for test in \
-            tests/test_dashboard_opportunity_guardrails.js \
-            tests/test_dashboard_general_view_guardrails.js \
-            tests/test_dashboard_ar_ui_guardrails.js \
-            tests/test_spotify_coverage_reporting.js \
-            tests/test_spotify_full_catalogue.js; do
-            [[ -f "$test" ]] && node "$test"
-          done
-          git diff --check
+
+      - name: Validate A&R opportunity guardrails
+        run: node tests/test_dashboard_opportunity_guardrails.js
+
+      - name: Validate general catalogue guardrails
+        run: node tests/test_dashboard_general_view_guardrails.js
+
+      - name: Validate streamlined A&R interface
+        run: node tests/test_dashboard_ar_ui_guardrails.js
+
+      - name: Validate full-catalogue coverage reporting
+        run: node tests/test_spotify_coverage_reporting.js
+
+      - name: Validate full catalogue, editorial evidence and track player
+        run: node tests/test_spotify_full_catalogue.js
 
       - name: Commit production files
         shell: bash
