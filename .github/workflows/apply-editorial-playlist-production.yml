@@ -81,6 +81,21 @@ jobs:
               if insert_at >= 0:
                   text = text[:insert_at] + discovery_cap_assert + text[insert_at:]
           test_path.write_text(text, encoding='utf-8')
+
+          dashboard_path = Path('spotify/dashboard.js')
+          dashboard = dashboard_path.read_text(encoding='utf-8')
+          start = dashboard.index('function renderOpps(){')
+          end = dashboard.index('function renderArtists(){', start)
+          section = dashboard[start:end]
+          legacy_badges = (
+              """${r[7]?' <span class=\"badge new\">'+T('détectée')+' '+r[7].slice(5)+'</span>':''}""",
+              """${r[7]?' <span class=\"badge new\">'+T('détectée')+'</span>':''}""",
+          )
+          for badge in legacy_badges:
+              section = section.replace(badge, '')
+          if "T('détectée')" in section or 'badge new' in section:
+              raise SystemExit('Legacy detected badge remains in Toutes les pistes')
+          dashboard_path.write_text(dashboard[:start] + section + dashboard[end:], encoding='utf-8')
           PY
 
       - name: Run playlist discovery and A&R tests
@@ -104,7 +119,7 @@ jobs:
               sync_soundcharts_opportunities.py \
               prepare_soundcharts_snapshot.py
             node --check spotify/dashboard.js
-            node tests/test_spotify_dashboard_ui.js
+            node tests/test_dashboard_ar_ui_guardrails.js
             ruby -e "require 'yaml'; YAML.load_file('.github/workflows/refresh-soundcharts.yml'); puts 'workflow yaml ok'"
             git diff --check
           } 2>&1 | tee validation.log
@@ -122,10 +137,10 @@ jobs:
             spotify/dashboard.js
             soundcharts-playlist-discovery-cache.json
             .github/workflows/refresh-soundcharts.yml
+            tests/test_dashboard_ar_ui_guardrails.js
             tests/test_discover_soundcharts_playlists.py
             tests/test_expand_soundcharts_instrumental_pool.py
             tests/test_refresh_soundcharts_daily.py
-            tests/test_spotify_dashboard_ui.js
             tests/test_sync_soundcharts_opportunities.py
           retention-days: 2
 
