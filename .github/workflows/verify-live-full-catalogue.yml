@@ -38,7 +38,7 @@ jobs:
             sleep 10
           done
 
-      - name: Render the public dashboard and extract the displayed count
+      - name: Render the public dashboard and extract page and sidebar counts
         shell: bash
         run: |
           set -euo pipefail
@@ -62,28 +62,52 @@ jobs:
 
           index = Path('live-index.html').read_text(encoding='utf-8', errors='replace')
           dom = Path('live-dom.html').read_text(encoding='utf-8', errors='replace')
-          match = re.search(r'<span[^>]+class="[^"]*result-count[^"]*"[^>]*>(.*?)</span>', dom, re.S)
-          if not match:
-              raise SystemExit('Rendered result-count was not found')
-          text = html.unescape(re.sub(r'<[^>]+>', '', match.group(1))).strip()
-          number_match = re.search(r'([0-9][0-9\s\u00a0\u202f.,]*)\s+pistes', text, re.I)
+
+          def text_for(pattern: str, label: str) -> str:
+              match = re.search(pattern, dom, re.S)
+              if not match:
+                  raise SystemExit(f'Rendered {label} was not found')
+              return html.unescape(re.sub(r'<[^>]+>', '', match.group(1))).strip()
+
+          page_text = text_for(
+              r'<span[^>]+class="[^"]*result-count[^"]*"[^>]*>(.*?)</span>',
+              'result-count',
+          )
+          number_match = re.search(r'([0-9][0-9\s\u00a0\u202f.,]*)\s+pistes', page_text, re.I)
           if not number_match:
-              raise SystemExit(f'Could not parse the rendered track count: {text!r}')
-          digits = re.sub(r'\D', '', number_match.group(1))
-          count = int(digits)
-          if count < 45_000:
-              raise SystemExit(f'Live dashboard still exposes only {count} tracks: {text}')
+              raise SystemExit(f'Could not parse the rendered track count: {page_text!r}')
+          page_count = int(re.sub(r'\D', '', number_match.group(1)))
+          if page_count < 45_000:
+              raise SystemExit(f'Live dashboard still exposes only {page_count} tracks: {page_text}')
+
+          sidebar_text = text_for(r'<span[^>]+id="c-opps"[^>]*>(.*?)</span>', 'sidebar track counter')
+          compact = sidebar_text.casefold().replace('\u00a0', '').replace('\u202f', '').replace(' ', '').replace(',', '.')
+          compact_match = re.fullmatch(r'([0-9]+(?:\.[0-9]+)?)([kmb])?', compact)
+          if not compact_match:
+              raise SystemExit(f'Could not parse sidebar count: {sidebar_text!r}')
+          multiplier = {'k': 1_000, 'm': 1_000_000, 'b': 1_000_000_000}.get(compact_match.group(2), 1)
+          sidebar_estimate = round(float(compact_match.group(1)) * multiplier)
+          if sidebar_estimate < 45_000:
+              raise SystemExit(
+                  f'Sidebar still exposes only about {sidebar_estimate} tracks: {sidebar_text!r}; '
+                  f'page result is {page_text!r}'
+              )
+
           snapshot = re.search(r'Spotify_Soundcharts_data_[^?"\']+\.js', index)
           report = {
               'verified_at': dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
               'url': 'https://dim75017.github.io/youtube-radar-kx9v2m/spotify/#tracks',
-              'displayed_text': text,
-              'displayed_track_count': count,
+              'displayed_text': page_text,
+              'displayed_track_count': page_count,
+              'sidebar_text': sidebar_text,
+              'sidebar_estimated_track_count': sidebar_estimate,
               'snapshot': snapshot.group(0) if snapshot else None,
               'dashboard_bundle': '20260722-full-catalogue-v2',
               'status': 'success',
           }
-          Path('live-catalogue-verification.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          Path('live-catalogue-verification.json').write_text(
+              json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8'
+          )
           print(json.dumps(report, ensure_ascii=False, indent=2))
           PY
 
@@ -94,5 +118,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add live-catalogue-verification.json
-          git commit -m 'Record live full catalogue verification'
+          git commit -m 'Record live full catalogue and sidebar verification'
           git push origin HEAD:agent/verify-live-full-catalogue
