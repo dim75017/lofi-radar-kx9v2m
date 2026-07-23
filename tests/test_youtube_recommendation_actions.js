@@ -57,6 +57,8 @@ assert.match(css, /\.sched-cell\{appearance:none;border:1px solid transparent;ba
   'the date picker renders large circular day controls');
 assert.match(css, /\.sched-cell\.has-event\{background:var\(--sched-event-color/,
   'occupied days fill the whole date circle with their genre color');
+assert.match(css, /\.sched-cell:hover\{transform:none;border-color:var\(--sched-event-color/,
+  'calendar hover must extend the day color around the full contour without enlarging a red block');
 assert.match(css, /\.sched-cal-nav\{width:26px;height:26px/,
   'calendar month navigation uses compact previous/next controls');
 assert.match(css, /\.sched-day-popover\{position:absolute/,
