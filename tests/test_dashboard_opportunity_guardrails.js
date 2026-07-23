@@ -66,7 +66,8 @@ assert.equal(searchContext.matches(searchable, 'absent'), false);
 
 assert.match(source, /arOpportunityMatchesSearch\(opportunity,S\.radarQ\)/);
 assert.match(source, /if\(S\.radarFilter==='contactable'\) return arIsContactable\(opportunity\)/);
-assert.match(source, /const contactable=all\.filter\(arIsContactable\)/);
+// The contactable filter is enforced in arOpportunityFiltered above. Do not
+// couple this policy check to a removed UI-only aggregate variable.
 assert.match(source, /if\(!arIsContactable\(opportunity\)\) return/);
 assert.match(source, /filter\(item=>item\.spotifyId&&item\.title&&arHasCompleteStructuredArtists\(item\.artists\)\)/);
 for (const quarantined of [
