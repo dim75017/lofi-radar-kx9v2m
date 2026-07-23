@@ -2201,6 +2201,14 @@ function arOpportunityRows(){
 function arGenreLabel(genre){
   return ({lofi_hip_hop:'Lofi hip-hop',guitar:'Guitare',nature:'Nature',jazz_jazzhop:'Jazz / jazzhop',classical:'Classique',ambient:'Ambient',piano:'Piano',halloween_lofi:'Halloween lofi',christmas_lofi:'Christmas lofi',dark_ambient:'Dark ambient',phonk_instrumental:'Phonk instrumental',dnb_instrumental:'DnB instrumental'})[genre]||String(genre||'À classifier').replaceAll('_',' ');
 }
+function arGenreVisual(genre){
+  return ({
+    lofi_hip_hop:{emoji:'🎧',color:'#a78bfa'},guitar:{emoji:'🎸',color:'#fdba74'},nature:{emoji:'🌿',color:'#6ee7b7'},
+    jazz_jazzhop:{emoji:'🎷',color:'#fbbf24'},classical:{emoji:'🎻',color:'#fda4af'},ambient:{emoji:'💤',color:'#67e8f9'},
+    piano:{emoji:'🎹',color:'#f9a8d4'},halloween_lofi:{emoji:'🎃',color:'#f97316'},christmas_lofi:{emoji:'🎄',color:'#fb7185'},
+    dark_ambient:{emoji:'🌑',color:'#818cf8'},phonk_instrumental:{emoji:'🎵',color:'#f472b6'},dnb_instrumental:{emoji:'🎵',color:'#60a5fa'}
+  })[genre]||{emoji:'🎵',color:'#9ca3af'};
+}
 function arRightsLabel(rights){
   return rights==='self_released'?'Self-release confirmé':(['indie','independent_label'].includes(rights)?'Label indépendant':'Droits à vérifier');
 }
@@ -2227,8 +2235,9 @@ function arPlatformFromUrl(platform,url){
   if(host.includes('spotify.')) return 'spotify';
   return 'website';
 }
-function arPlatformIcon(platform){
-  return ({email:'✉️',website:'🌐',instagram:'📸',bandcamp:'🎟️',soundcloud:'☁️',youtube:'▶️',tiktok:'♪',facebook:'ⓕ',twitter:'𝕏',x:'𝕏',spotify:'🟢',contact:'📋'})[platform]||'🔗';
+function arPlatformLogo(platform){
+  const slug=({instagram:'instagram',bandcamp:'bandcamp',soundcloud:'soundcloud',youtube:'youtube',tiktok:'tiktok',facebook:'facebook',twitter:'x',x:'x',spotify:'spotify'})[platform];
+  return slug?`<img src="https://cdn.simpleicons.org/${slug}" alt="" loading="lazy">`:'';
 }
 function arPlatformLabel(platform){
   return ({email:'E-mail professionnel',website:'Site officiel',instagram:'Instagram',bandcamp:'Bandcamp',soundcloud:'SoundCloud',youtube:'YouTube',tiktok:'TikTok',facebook:'Facebook',twitter:'X / Twitter',x:'X / Twitter',spotify:'Spotify',contact:'Formulaire de contact'})[platform]||'Profil public';
@@ -2261,9 +2270,9 @@ function arContactHtml(opportunity,compact=false){
   const email=channels.find(channel=>channel.type==='email');
   const platforms=channels.filter(channel=>channel.type!=='email');
   const emailHtml=email
-    ?`<a class="ar-email-contact" href="mailto:${esc(email.value)}" onclick="event.stopPropagation()">✉️ ${compact?'E-mail':esc(email.value)}</a>`
-    :`<span class="ar-email-slot">✉️ ${compact?'E-mail à enrichir':'E-mail public à enrichir'}</span>`;
-  const links=platforms.map(channel=>`<a class="ar-platform-link" href="${esc(channel.value)}" target="_blank" rel="noopener" title="${esc(arPlatformLabel(channel.type))}" aria-label="${esc(arPlatformLabel(channel.type))}" onclick="event.stopPropagation()">${arPlatformIcon(channel.type)}</a>`).join('');
+    ?`<a class="ar-email-contact" href="mailto:${esc(email.value)}" onclick="event.stopPropagation()">${compact?'E-mail':esc(email.value)}</a>`
+    :`<span class="ar-email-slot">${compact?'E-mail à enrichir':'E-mail public à enrichir'}</span>`;
+  const links=platforms.map(channel=>`<a class="ar-platform-link ${arPlatformLogo(channel.type)?'has-logo':'text-link'}" href="${esc(channel.value)}" target="_blank" rel="noopener" title="${esc(arPlatformLabel(channel.type))}" aria-label="${esc(arPlatformLabel(channel.type))}" onclick="event.stopPropagation()">${arPlatformLogo(channel.type)||esc(arPlatformLabel(channel.type))}</a>`).join('');
   return `<span class="ar-contact-set">${emailHtml}${links?`<span class="ar-platform-links">${links}</span>`:''}</span>`;
 }
 function arConfidenceLabel(value){
@@ -2420,6 +2429,15 @@ function arPlaylistPreviewHtml(opportunity){
   }).join('');
   return `<div class="ar-playlist-preview" title="${esc(arEditorialSummary(opportunity,3))}"><div class="ar-playlist-cover-stack">${covers}</div><span><strong>${fmtFull(count)}</strong> éditorial${count>1?'es':''}</span></div>`;
 }
+function arEditorialCardHtml(opportunity){
+  const playlists=arEditorialPlaylists(opportunity);
+  const count=Number(opportunity.playlistCount||playlists.length||0);
+  if(!count)return '<div class="ar-editorial-card muted"><span class="ar-editorial-label">Éditoriales</span><strong>—</strong></div>';
+  const names=playlists.slice(0,2).map(item=>item.name||item.spotifyId).filter(Boolean);
+  const detail=names.length?names.join(' · '):'Placement confirmé';
+  const more=count>names.length?` +${count-names.length}`:'';
+  return `<div class="ar-editorial-card" title="${esc(arEditorialSummary(opportunity,4))}"><span class="ar-editorial-label">Éditoriales</span><strong>${fmtFull(count)}</strong><span class="ar-editorial-names">${esc(detail)}${more}</span></div>`;
+}
 const AR_PLAYLIST_COVER_CACHE=new Map();
 const AR_TRACK_COVER_CACHE=new Map();
 function arTrackCoverUrl(opportunity){
@@ -2519,12 +2537,15 @@ function arOpportunityFiltered(all){
 function arOpportunityCard(opportunity,index){
   const total=arOpportunityTotal(opportunity), d30=arOpportunityMetric(opportunity,30), d7=arOpportunityMetric(opportunity,7), d1=arOpportunityMetric(opportunity,1);
   const genre=arGenreLabel(opportunity.genre);
+  const genreVisual=arGenreVisual(opportunity.genre);
   const listeners=opportunity.artistMonthlyListeners==null?'—':fmt(opportunity.artistMonthlyListeners);
   const coverUrl=arTrackCoverUrl(opportunity);
   return `<article class="ar-opportunity-card" tabindex="0" data-ar-card="${esc(opportunity.spotifyId)}">
     <span class="ar-rank">${index+1}</span>
     <div class="ar-track-cover ${coverUrl?'has':''}"><span data-ar-track-cover-id="${coverUrl?'':esc(opportunity.spotifyId)}">♫</span>${coverUrl?`<img src="${esc(coverUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}</div>
-    <div class="ar-opp-main"><div class="ar-opp-title">${esc(opportunity.title)}</div><div class="ar-opp-artist">${esc(opportunity.credit)}</div><div class="ar-opp-tags"><span class="ar-mini-tag good">${esc(arRightsShortLabel(opportunity.rights))}</span><span class="ar-mini-tag">${esc(genre)}</span>${opportunity.status==='needs_listen'?'<span class="ar-mini-tag">À valider à l’écoute</span>':''}</div><div class="ar-card-bottom">${arPlaylistPreviewHtml(opportunity)}${arContactHtml(opportunity,true)}</div></div>
+    <div class="ar-opp-main"><div class="ar-opp-title">${esc(opportunity.title)}</div><div class="ar-opp-artist">${esc(opportunity.credit)}</div><div class="ar-opp-tags"><span class="ar-mini-tag good">${esc(arRightsShortLabel(opportunity.rights))}</span>${opportunity.status==='needs_listen'?'<span class="ar-mini-tag">À valider à l’écoute</span>':''}</div></div>
+    <div class="ar-genre-card" style="--genre-color:${genreVisual.color}"><span>${genreVisual.emoji}</span><strong>${esc(genre)}</strong></div>
+    ${arEditorialCardHtml(opportunity)}
     <div class="ar-opp-metrics"><div class="ar-opp-metric total"><div class="l">Streams total</div><div class="v">${arMetricCompact(total)}</div></div><div class="ar-opp-metric"><div class="l">30 jours</div><div class="v">${arMetricCompact(d30)}</div></div><div class="ar-opp-metric"><div class="l">7 jours</div><div class="v">${arMetricCompact(d7)}</div></div><div class="ar-opp-metric current"><div class="l">24 heures</div><div class="v ${d1!=null&&d1>0?'up':''}">${arMetricCompact(d1,true)}</div></div><div class="ar-opp-metric listeners"><div class="l">Auditeurs/mois</div><div class="v">${listeners}</div></div></div>
     <div class="ar-score-box"><div class="ar-score-value">${Math.round(opportunity.score)}</div><button class="ar-list-toggle ${arListHas(opportunity.spotifyId)?'in-list':''}" onclick="${arListHas(opportunity.spotifyId)?`arRemoveFromList('${esc(opportunity.spotifyId)}',event)`: `arAddToList('${esc(opportunity.spotifyId)}',event)`}">${arListHas(opportunity.spotifyId)?'Retirer':'＋ Liste'}</button></div>
   </article>`;

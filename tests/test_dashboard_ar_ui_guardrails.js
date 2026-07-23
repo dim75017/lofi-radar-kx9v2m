@@ -42,9 +42,10 @@ const card = source.slice(cardStart, cardEnd);
 for (const removed of ['ar-score-confidence', 'ar-open-detail', 'Pourquoi ?']) {
   if (card.includes(removed)) throw new Error(`Removed A&R score control is still rendered: ${removed}`);
 }
-for (const required of ['arTrackCoverUrl(opportunity)', 'Auditeurs/mois', 'arContactHtml(opportunity,true)']) {
+for (const required of ['arTrackCoverUrl(opportunity)', 'Auditeurs/mois', 'arEditorialCardHtml(opportunity)', 'arGenreVisual(opportunity.genre)']) {
   if (!card.includes(required)) throw new Error(`A&R card data is missing: ${required}`);
 }
+if (card.includes('arContactHtml(opportunity,true)')) throw new Error('Platform contacts must stay in the detail sheet, not the A&R card preview');
 for (const required of ['function hydrateArTrackCovers()', 'function arPublicContactChannels(', 'E-mail public à enrichir', 'public_contacts']) {
   if (!source.includes(required)) throw new Error(`A&R public-contact UI is missing: ${required}`);
 }
