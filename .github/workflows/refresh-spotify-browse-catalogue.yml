@@ -6,6 +6,8 @@ on:
     paths:
       - 'spotify/index.html'
       - 'Spotify_Soundcharts_data_*.js'
+      - 'spotify-catalogue-baseline.csv'
+      - 'spotify-catalogue-baseline.json'
       - 'build_spotify_browse_catalogue.py'
       - '.github/workflows/refresh-spotify-browse-catalogue.yml'
   schedule:
@@ -33,7 +35,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Build the cumulative browsing catalogue
+      - name: Build the strict instrumental active catalogue
         shell: bash
         run: |
           set -euo pipefail
@@ -41,13 +43,12 @@ jobs:
           current="$(python prepare_soundcharts_snapshot.py current --index spotify/index.html)"
           args=(
             --source "$current"
-            --existing Spotify_Browse_Catalogue_data.js
             --output Spotify_Browse_Catalogue_data.js
-            --minimum-tracks 10000
+            --minimum-tracks 1
+            --strict-rebased
+            --trusted-catalogue spotify-catalogue-baseline.csv
+            --trusted-artist-seeds spotify-catalogue-baseline.json
           )
-          if [[ -f Spotify_Soundcharts_data_20260722T105508Z.js ]]; then
-            args+=(--fallback Spotify_Soundcharts_data_20260722T105508Z.js)
-          fi
           python build_spotify_browse_catalogue.py "${args[@]}"
 
       - name: Validate the two-layer contract
