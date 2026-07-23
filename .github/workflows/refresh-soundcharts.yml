@@ -51,7 +51,10 @@ on:
       - 'spotify/discovery.css'
       - 'spotify/coverage.js'
   schedule:
-    - cron: '35 2 * * *'
+    # Bootstrap: progress through the strict editorial source every 30 minutes.
+    # The preflight in the collector remains authoritative for quota, OAuth and
+    # active-lock safety; this schedule never bypasses those checks.
+    - cron: '*/30 * * * *'
   workflow_dispatch:
     inputs:
       scope:
@@ -74,7 +77,10 @@ permissions:
 
 concurrency:
   group: refresh-soundcharts-ar-${{ (github.event_name == 'push' || github.event_name == 'pull_request') && 'ci' || 'collection' }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A 30-minute bootstrap cadence must not interrupt a validated publication
+  # that is still waiting for GitHub Pages. GitHub queues the next collection
+  # instead, so there is never more than one Soundcharts run at a time.
+  cancel-in-progress: false
 
 jobs:
   refresh:
