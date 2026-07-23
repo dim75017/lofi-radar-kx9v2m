@@ -122,7 +122,8 @@ jobs:
 
       - name: Validate production source syntax
         run: |
-          python -m py_compile refresh_soundcharts_daily.py discover_soundcharts_playlists.py expand_soundcharts_instrumental_pool.py sync_soundcharts_opportunities.py prepare_soundcharts_snapshot.py
+          python -m py_compile refresh_soundcharts_daily.py discover_soundcharts_playlists.py expand_soundcharts_instrumental_pool.py enrich_public_artist_contacts.py sync_soundcharts_opportunities.py prepare_soundcharts_snapshot.py
+          python -m unittest tests.test_enrich_public_artist_contacts
           node --check spotify/dashboard.js
           node tests/test_dashboard_opportunity_guardrails.js
           node tests/test_dashboard_general_view_guardrails.js
@@ -256,6 +257,15 @@ jobs:
           python expand_soundcharts_instrumental_pool.py \
             --soundcharts "${{ steps.snapshot.outputs.candidate }}" \
             "${args[@]}"
+
+      - name: Enrich public professional contacts progressively
+        if: steps.plan.outputs.scope == 'strict_rebaseline' || steps.plan.outputs.scope == 'artists'
+        run: >-
+          python enrich_public_artist_contacts.py
+          --soundcharts "${{ steps.snapshot.outputs.candidate }}"
+          --cache soundcharts-instrumental-cache.json
+          --max-artists 10
+          --max-profiles-per-artist 4
 
       - name: Recalculate actionable A&R opportunities
         if: steps.plan.outputs.scope == 'strict_rebaseline' || steps.plan.outputs.scope == 'artists'

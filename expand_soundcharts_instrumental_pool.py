@@ -82,9 +82,11 @@ TRACK_EXTRA_FIELDS = (
 
 ARTIST_EXTRA_FIELDS = (
     "spotify_followers",
+    "email",
     "contact_url",
     "contact_platform",
     "public_contacts",
+    "contact_research",
     "source_tier",
 )
 
@@ -1029,9 +1031,11 @@ def expand_instrumental_pool(
                 "fal_out": field(artist_row, artist_schema, "fal_out") or 0,
                 "soundcharts_uuid": artist_uuid,
                 "spotify_followers": cached_artist.get("spotify_followers"),
+                "email": cached_artist.get("email") or cached_artist.get("public_email") or "",
                 "contact_url": cached_artist.get("contact_url"),
                 "contact_platform": cached_artist.get("contact_platform"),
                 "public_contacts": cached_artist.get("public_contacts") or [],
+                "contact_research": cached_artist.get("contact_research") or {},
                 "source_tier": "instrumental_editorial",
             }
             for name, value in artist_values.items():
