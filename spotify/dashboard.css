@@ -336,6 +336,8 @@ td.selc,th.selc{width:44px;padding-left:14px}
 .perf-card .pvalue{font-family:'Sora';font-size:18px;font-weight:800;margin-top:6px;overflow-wrap:anywhere}
 .stream-stack{display:inline-flex;min-width:0;align-items:center;line-height:1.2}
 .stream-number{font-family:'Sora';font-weight:700;color:var(--text)}
+.stream-24h .stream-number{color:var(--acc2)}
+.buyout-estimate{font-weight:600;color:var(--text)}
 .delta-stack{display:inline-flex;min-width:0;flex-direction:column;align-items:flex-end;gap:2px;line-height:1.2}
 .delta-main{font-family:'Sora';font-weight:700}
 .delta-compare{font-family:Inter;font-size:9px;font-weight:600;color:var(--dim);white-space:nowrap}
