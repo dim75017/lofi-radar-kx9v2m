@@ -2978,6 +2978,9 @@ function renderWatch(){
 function sortArrow(k){ return S.sort.k===k ? `<span class="arr">${S.sort.dir===-1?'▼':'▲'}</span>` : ''; }
 
 function renderOpps(){
+  /* The catalogue remains complete; these are only the focused ownership
+     filters exposed in the browse interface. */
+  if(!['all','self','other'].includes(S.statut)) S.statut='all';
   const rows = filteredRows();
   const slice = rows.slice(0, S.shown);
   const ag = null;
@@ -3017,8 +3020,8 @@ function renderOpps(){
           <td class="num" title="${fmtFull(r[3])}">${streamStackHtml(r[3]>=0?r[3]:null,false,false)}</td>
           <td class="num" title="${T('Streams des 30 derniers jours')} · ${T('Aucune extrapolation')}">${streamStackHtml(w30.current,false,false)}</td>
           <td class="num" title="${T('Streams des 7 derniers jours')} · ${T('Aucune extrapolation')}">${streamStackHtml(w7.current,false,false)}</td>
-          <td class="num" title="${T('Streams des dernières 24 h')} · ${T('Aucune extrapolation')}">${streamStackHtml(w1.current,false,false)}</td>
-          <td class="num" title="${perMonth(r)<0?'':T('Payback')+' '+paybackTxt(payback(perMonth(r)))}"><span style="color:var(--acc2);font-weight:600">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</span></td>
+          <td class="num stream-24h" title="${T('Streams des dernières 24 h')} · ${T('Aucune extrapolation')}">${streamStackHtml(w1.current,false,true)}</td>
+          <td class="num" title="${perMonth(r)<0?'':T('Payback')+' '+paybackTxt(payback(perMonth(r)))}"><span class="buyout-estimate">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</span></td>
           <td style="white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r[2])}</td>
           <td><span class="lb" title="${esc(r[5])}">${esc(r[5])}</span></td>
         </tr>`;}).join('')}
@@ -3042,10 +3045,10 @@ function renderOpps(){
         <div class="st"><div class="v">${streamStackHtml(r[3]>=0?r[3]:null,false,false)}</div><div class="l">${streamMetricLabel(0)}</div></div>
         <div class="st"><div class="v">${streamStackHtml(w30.current,false,false)}</div><div class="l">${streamMetricLabel(30)}</div></div>
         <div class="st"><div class="v">${streamStackHtml(w7.current,false,false)}</div><div class="l">${streamMetricLabel(7)}</div></div>
-        <div class="st"><div class="v">${streamStackHtml(w1.current,false,false)}</div><div class="l">${streamMetricLabel(1)}</div></div>
+        <div class="st stream-24h"><div class="v">${streamStackHtml(w1.current,false,true)}</div><div class="l">${streamMetricLabel(1)}</div></div>
       </div>
       <div class="stats stats2">
-        <div class="st" style="grid-column:1/-1"><div class="v" style="color:var(--acc2)">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</div><div class="l">${T('Rachat')}</div></div>
+        <div class="st" style="grid-column:1/-1"><div class="v buyout-estimate">${perMonth(r)<0?'—':eur(advance(perMonth(r)))}</div><div class="l">${T('Rachat')}</div></div>
       </div>
     </div>`;}).join('')}
   </div>
@@ -3069,12 +3072,7 @@ function renderOpps(){
     </select>
     <select id="f-st">
       <option value="all" ${S.statut==='all'?'selected':''}>🌍 ${LANG==='fr'?'Tout le catalogue':'Full catalogue'}</option>
-      <option value="measured" ${S.statut==='measured'?'selected':''}>📈 ${LANG==='fr'?'Mesurées':'Measured'}</option>
-      <option value="unmeasured" ${S.statut==='unmeasured'?'selected':''}>⏳ ${LANG==='fr'?'À mesurer':'To measure'}</option>
-      <option value="review" ${S.statut==='review'?'selected':''}>🎧 ${LANG==='fr'?'À vérifier / écouter':'Review / listen'}</option>
-      <option value="playlist" ${S.statut==='playlist'?'selected':''}>📻 ${LANG==='fr'?'Présentes en playlist éditoriale':'Editorial playlist'}</option>
-      <option value="catalogue" ${S.statut==='catalogue'?'selected':''}>🗂️ ${LANG==='fr'?'Découvertes via catalogue artiste':'Artist catalogue discoveries'}</option>
-      <option value="self" ${S.statut==='self'?'selected':''}>🎛️ Self-released</option>
+      <option value="self" ${S.statut==='self'?'selected':''}>🎛️ Self-release</option>
       <option value="other" ${S.statut==='other'?'selected':''}>🏷️ ${T('Autre label')}</option>
     </select>
     <select id="f-min">
@@ -3185,7 +3183,7 @@ function renderArtists(){
           <div class="st"><div class="v">${streamStackHtml(g.streams,false,false)}</div><div class="l">${streamMetricLabel(0)}</div></div>
           <div class="st"><div class="v">${streamStackHtml(g.streams30,false,false)}</div><div class="l">${streamMetricLabel(30)}</div></div>
           <div class="st"><div class="v">${streamStackHtml(g.streams7,false,false)}</div><div class="l">${streamMetricLabel(7)}</div></div>
-          <div class="st"><div class="v">${streamStackHtml(g.streams24,false,false)}</div><div class="l">${streamMetricLabel(1)}</div></div>
+          <div class="st stream-24h"><div class="v">${streamStackHtml(g.streams24,false,true)}</div><div class="l">${streamMetricLabel(1)}</div></div>
         </div>
       </div>`;}).join('')}
   </div>
@@ -3220,7 +3218,7 @@ function renderArtists(){
           <td class="num">${streamStackHtml(g.streams,false,false)}</td>
           <td class="num">${streamStackHtml(g.streams30,false,false)}</td>
           <td class="num">${streamStackHtml(g.streams7,false,false)}</td>
-          <td class="num">${streamStackHtml(g.streams24,false,false)}</td>
+          <td class="num stream-24h">${streamStackHtml(g.streams24,false,true)}</td>
           <td class="num">${g.n}</td>
           <td class="num" style="color:${g.hot?'var(--acc2)':'inherit'}">${g.hot}</td>
           <td class="num">${p}%</td>
