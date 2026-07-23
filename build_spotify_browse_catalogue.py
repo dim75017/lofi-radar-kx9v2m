@@ -10,15 +10,16 @@ The Spotify Radar has two intentionally different data contracts:
   sourced exclusively from the sanitized ``window.SPOTIFY_SOUNDCHARTS`` export.
 
 This script materializes the first contract into a separate public file.  It
-also supports an explicit ``--strict-rebased`` migration mode.  That mode is
-deliberately *not* cumulative: it builds the active public catalogue from the
-fresh Soundcharts editorial/artist-catalogue evidence only, while the original
-rows remain preserved in ``Spotify_Radar_data.js`` and Git history as archive.
+also supports an explicit ``--strict-rebased`` migration mode. That mode keeps
+the trusted internal catalogue as its own visible source, while Soundcharts
+discoveries must pass the strict editorial/instrumental gates. Historical rows
+remain preserved in ``Spotify_Radar_data.js`` and Git history as archive.
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import re
@@ -79,6 +80,10 @@ class BrowseCatalogueError(RuntimeError):
     """Raised when a usable broad catalogue cannot be produced safely."""
 
 
+TRUSTED_CATALOGUE_SOURCE_TIER = "trusted_internal_catalogue"
+TRUSTED_CATALOGUE_AVAILABILITY = "catalogue_trusted"
+
+
 def _read_payload(path: Path, prefix: str) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8")
     if not text.startswith(prefix):
@@ -111,6 +116,95 @@ def _finite_number(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return parsed if math.isfinite(parsed) else None
+
+
+def _spotify_id_from_url(value: Any) -> str:
+    match = re.search(r"spotify\.com/track/([A-Za-z0-9]+)", str(value or ""))
+    return match.group(1) if match else ""
+
+
+def _trusted_catalogue_from_csv(path: Path, artist_seeds_path: Path | None) -> dict[str, Any]:
+    """Read the internal catalogue without importing contacts or credentials.
+
+    The source is trusted for broad browse views only. It is never an A&R,
+    contact or automatic-expansion eligibility signal.
+    """
+    artist_ids: dict[str, str] = {}
+    if artist_seeds_path and artist_seeds_path.exists():
+        try:
+            seeds = json.loads(artist_seeds_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise BrowseCatalogueError(f"{artist_seeds_path} contains invalid JSON") from exc
+        for row in seeds.get("artists", []) if isinstance(seeds, Mapping) else []:
+            if not isinstance(row, Mapping):
+                continue
+            name = str(row.get("name") or "").strip()
+            spotify_id = str(row.get("spotify_id") or "").strip()
+            if name and spotify_id:
+                artist_ids[name.casefold()] = spotify_id
+
+    track_schema = [
+        "spotify_id", "soundcharts_uuid", "title", "credit_name", "artists",
+        "artist_soundcharts_uuids", "release_date", "streams", "streams_delta_24h",
+        "rights_status", "rights_confidence", "label", "copyright", "primary_genre",
+        "subgenres", "genre_confidence", "instrumental_status", "instrumental_confidence",
+        "ai_risk", "availability_status", "source_tier", "metadata_status", "image_url",
+        "playlist_ids", "playlist_names", "playlist_count", "playlist_best_position",
+        "playlist_followers_total", "playlist_placements", "discovered_at", "updated_at",
+        "review_reasons",
+    ]
+    artist_schema = [
+        "name", "spotify_id", "soundcharts_uuid", "monthly_listeners", "primary_genre",
+        "subgenres", "genre_confidence", "instrumental_status", "instrumental_confidence",
+        "ai_risk", "availability_status", "source_tier", "image_url",
+    ]
+    tracks: list[dict[str, Any]] = []
+    artists: dict[str, dict[str, Any]] = {}
+    seen_tracks: set[str] = set()
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        for raw in csv.DictReader(handle):
+            artist_name = str(raw.get("Artiste") or "").strip()
+            title = str(raw.get("Track") or "").strip()
+            spotify_id = _spotify_id_from_url(raw.get("Lien Spotify"))
+            if not artist_name or not title or not spotify_id or spotify_id in seen_tracks:
+                continue
+            seen_tracks.add(spotify_id)
+            artist_spotify_id = artist_ids.get(artist_name.casefold(), "")
+            status = str(raw.get("Statut") or "").strip().casefold()
+            rights_status = "self_released" if status == "self-released" else "catalogue_trusted"
+            artist = {
+                "name": artist_name, "spotify_id": artist_spotify_id, "soundcharts_uuid": "",
+                "monthly_listeners": None, "primary_genre": "trusted_catalogue", "subgenres": [],
+                "genre_confidence": None, "instrumental_status": "trusted_catalogue",
+                "instrumental_confidence": None, "ai_risk": "unknown",
+                "availability_status": TRUSTED_CATALOGUE_AVAILABILITY,
+                "source_tier": TRUSTED_CATALOGUE_SOURCE_TIER, "image_url": "",
+            }
+            artists.setdefault(artist_name.casefold(), artist)
+            tracks.append({
+                "spotify_id": spotify_id, "soundcharts_uuid": "", "title": title,
+                "credit_name": artist_name,
+                "artists": [{"name": artist_name, "spotify_id": artist_spotify_id, "soundcharts_uuid": "", "role": "primary", "image_url": ""}],
+                "artist_soundcharts_uuids": [], "release_date": str(raw.get("Date") or "").strip(),
+                "streams": _finite_number(raw.get("Streams")), "streams_delta_24h": None,
+                "rights_status": rights_status, "rights_confidence": None,
+                "label": str(raw.get("Label / Copyright") or "").strip(),
+                "copyright": str(raw.get("Label / Copyright") or "").strip(),
+                "primary_genre": "trusted_catalogue", "subgenres": [], "genre_confidence": None,
+                "instrumental_status": "trusted_catalogue", "instrumental_confidence": None,
+                "ai_risk": "unknown", "availability_status": TRUSTED_CATALOGUE_AVAILABILITY,
+                "source_tier": TRUSTED_CATALOGUE_SOURCE_TIER, "metadata_status": "internal_catalogue",
+                "image_url": "", "playlist_ids": [], "playlist_names": [], "playlist_count": 0,
+                "playlist_best_position": None, "playlist_followers_total": None,
+                "playlist_placements": [], "discovered_at": "", "updated_at": "", "review_reasons": [],
+            })
+    if not tracks:
+        raise BrowseCatalogueError(f"Trusted catalogue {path} yielded no valid Spotify tracks")
+    return {
+        "version": VERSION, "generated_at": "", "track_schema": track_schema,
+        "artist_schema": artist_schema, "playlist_schema": [], "tracks": tracks,
+        "artists": list(artists.values()),
+    }
 
 
 def _record(row: Any, schema: Sequence[str]) -> dict[str, Any]:
@@ -293,6 +387,7 @@ def _availability_rank(value: Any) -> int:
     return {
         "verified": 0,
         "measured": 1,
+        TRUSTED_CATALOGUE_AVAILABILITY: 1,
         "needs_listen": 2,
         "playlist_discovered": 3,
         "catalogue_discovered": 4,
@@ -410,6 +505,8 @@ def merge_catalogues(catalogues: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 def _strict_rebaseline_reason(row: Mapping[str, Any]) -> str | None:
     """Return the first factual reason an active-row candidate is quarantined."""
+    if str(row.get("source_tier") or "") == TRUSTED_CATALOGUE_SOURCE_TIER:
+        return None
     if str(row.get("source_tier") or "") not in STRICT_SOURCE_TIERS:
         return "unapproved_source"
     if str(row.get("primary_genre") or "") not in STRICT_GENRES:
@@ -494,6 +591,7 @@ def build_payload(
     minimum_tracks: int,
     *,
     strict_rebased: bool = False,
+    trusted_catalogue: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     catalogues: list[Mapping[str, Any]] = []
     if isinstance(existing, Mapping) and not strict_rebased:
@@ -504,6 +602,8 @@ def build_payload(
         catalogue = _extract_catalogue(payload)
         if isinstance(catalogue, Mapping):
             catalogues.append(catalogue)
+    if isinstance(trusted_catalogue, Mapping):
+        catalogues.insert(0, dict(trusted_catalogue))
     if not catalogues:
         raise BrowseCatalogueError("No discovery catalogue source was available")
     quarantine_counts: dict[str, int] = {}
@@ -538,7 +638,7 @@ def build_payload(
         "generated_at": str(newest_payload.get("generated_at") or merged.get("generated_at") or ""),
         "source_snapshot": newest_path.name,
         "policy": {
-            "browsing": "strict_instrumental_rebased" if strict_rebased else "full",
+            "browsing": "trusted_internal_catalogue_plus_strict_soundcharts" if strict_rebased else "full",
             "ar": "strict",
             "contacts": "strict_only",
             "unverified_records_contactable": False,
@@ -563,7 +663,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--strict-rebased",
         action="store_true",
-        help="Build only fully evidenced instrumental editorial/artist-catalogue rows; do not merge the prior browse file.",
+        help="Build trusted internal catalogue plus fully evidenced Soundcharts discoveries; do not merge the prior browse file.",
+    )
+    parser.add_argument(
+        "--trusted-catalogue",
+        type=Path,
+        help="CSV export of the trusted internal catalogue for broad browse views only.",
+    )
+    parser.add_argument(
+        "--trusted-artist-seeds",
+        type=Path,
+        help="Sanitized artist-ID mapping for the trusted catalogue.",
     )
     return parser.parse_args()
 
@@ -580,11 +690,17 @@ def main() -> int:
     existing = None
     if args.existing and args.existing.exists():
         existing = _read_payload(args.existing, BROWSE_PREFIX)
+    trusted_catalogue = None
+    if args.trusted_catalogue:
+        if not args.trusted_catalogue.exists():
+            raise BrowseCatalogueError(f"Trusted catalogue does not exist: {args.trusted_catalogue}")
+        trusted_catalogue = _trusted_catalogue_from_csv(args.trusted_catalogue, args.trusted_artist_seeds)
     payload = build_payload(
         sources,
         existing,
         max(1, args.minimum_tracks),
         strict_rebased=args.strict_rebased,
+        trusted_catalogue=trusted_catalogue,
     )
     _write_payload(args.output, payload)
     print(

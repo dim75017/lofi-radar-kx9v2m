@@ -128,7 +128,7 @@ class BrowseCatalogueTests(unittest.TestCase):
         result = subject.build_payload(
             [(subject.Path("snapshot.js"), payload)], None, minimum_tracks=1, strict_rebased=True
         )
-        self.assertEqual(result["policy"]["browsing"], "strict_instrumental_rebased")
+        self.assertEqual(result["policy"]["browsing"], "trusted_internal_catalogue_plus_strict_soundcharts")
         self.assertEqual(result["policy"]["archive"], "Spotify_Radar_data.js")
         self.assertEqual(result["active_legacy_spotify_ids"], ["spotify-a"])
 

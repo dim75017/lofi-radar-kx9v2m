@@ -1,4 +1,4 @@
-+{
+{
   "version": 1,
   "source": "Rachat_catalogue_Spotify_artistes_LOFI",
   "source_spreadsheet_id": "1CLJl8MS6fmzOmHMB3dzPtePJ7YaMBTwvFFWtd9M5mGo",
@@ -6,7 +6,7 @@
   "source_artist_rows": 533,
   "structured_artist_seeds": 517,
   "unresolved_artist_rows": 16,
-  "policy": "archive_and_seed_only; never public without validated editorial evidence and strict track gates",
+  "policy": "trusted_internal_catalogue_for_browse_only; Soundcharts proof remains mandatory for discoveries, A&R and contacts",
   "artists": [
     {
       "name": "softy",
@@ -2078,4 +2078,3 @@
     }
   ]
 }
-
