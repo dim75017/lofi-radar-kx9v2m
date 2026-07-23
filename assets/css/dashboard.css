@@ -517,10 +517,11 @@ select.ctl.c-status:hover{border-color:rgba(248,113,113,.7)}
 .sched-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .sched-dow{font-size:9px;color:var(--dim);text-align:center;font-weight:700;text-transform:uppercase}
 .sched-cell{appearance:none;border:1px solid transparent;background:rgba(150,163,214,.06);width:34px;height:34px;margin:auto;display:flex;align-items:center;justify-content:center;font:700 11px/1 inherit;border-radius:50%;color:var(--muted);position:relative;cursor:pointer;transition:transform .12s,border-color .12s,background .12s}
-.sched-cell:hover{transform:scale(1.12);border-color:rgba(150,163,214,.48);color:var(--text)}
+.sched-cell:hover{transform:none;border-color:var(--sched-event-color,rgba(150,163,214,.7));color:var(--text);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--sched-event-color,#94a3b8) 72%,transparent),0 0 0 2px color-mix(in srgb,var(--sched-event-color,#94a3b8) 30%,transparent)}
 .sched-cell.out{opacity:.25}
 .sched-cell.has-event{background:var(--sched-event-color,#8b5cf6);border-color:var(--sched-event-color,#8b5cf6);color:#fff;box-shadow:0 0 0 2px color-mix(in srgb,var(--sched-event-color,#8b5cf6) 26%,transparent)}
 .sched-cell.proposed{background:var(--acc);color:#fff;font-weight:800;box-shadow:0 0 0 3px rgba(255,0,51,.28)}
+.sched-cell.proposed:hover{border-color:rgba(255,142,166,.92);box-shadow:inset 0 0 0 2px rgba(255,215,224,.72),0 0 0 2px rgba(255,0,51,.36)}
 .sched-cell.selected:not(.proposed){border-color:rgba(74,222,128,.72);box-shadow:0 0 0 2px rgba(74,222,128,.16)}
 .sched-day-popover{position:absolute;z-index:4;min-width:180px;max-width:250px;padding:8px 9px;border:1px solid rgba(255,0,51,.55);border-radius:10px;background:#211117;box-shadow:0 12px 28px rgba(0,0,0,.46);pointer-events:none}.sched-day-popover-h{font:800 10px Sora;color:#ff9aae;margin-bottom:5px}.sched-day-popover-row{display:grid;gap:2px;padding:5px 0;border-top:1px solid rgba(255,0,51,.16)}.sched-day-popover-row strong{font:750 10.5px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}.sched-day-popover-row span{font:700 9px Inter;color:#ffc1cc}
 .sched-actions{display:flex;gap:8px;flex-wrap:wrap}
