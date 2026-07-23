@@ -6,7 +6,7 @@ let LANG = 'fr';
 try{ LANG = localStorage.getItem('sr_lang') || 'fr'; }catch(e){}
 const EN_MAP = {
   "Analyse":"Analysis","Vue d'ensemble":"Overview","Pistes":"Tracks","Artistes":"Artists","Playlists":"Playlists","Labels":"Labels","Sorties récentes":"Recent releases","Découverte":"Discovery",
-  "Opportunités A&R":"A&R opportunities","Sélection A&R":"A&R selection","Radar A&R":"A&R radar","Pépites à écouter":"Gems to review","Filons confirmés":"Confirmed trends","À enrichir":"Needs enrichment","Pré-sélection":"Pre-selection","Signal de découverte":"Discovery signal","Auditeurs mensuels":"Monthly listeners","Réseau Fans Also Like":"Fans Also Like network","Étape suivante":"Next step","Écoute + genre / IA / droits":"Listen + genre / AI / rights","Aucun filon confirmé":"No confirmed trend","Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.":"History building: a trend requires reliable genres, multiple artists and successive measurements.","Données Soundcharts non encore exportées.":"Soundcharts data has not been exported yet.","Prêt à contacter":"Ready to contact","À revoir":"Review","Données insuffisantes":"Insufficient data","Genre":"Genre","Instrumental":"Instrumental","Droits":"Rights","Contact":"Contact",
+  "Opportunités":"Opportunities","Sélection":"Selection","Opportunités A&R":"A&R opportunities","Sélection A&R":"A&R selection","Radar A&R":"A&R radar","Pépites à écouter":"Gems to review","Filons confirmés":"Confirmed trends","À enrichir":"Needs enrichment","Pré-sélection":"Pre-selection","Signal de découverte":"Discovery signal","Auditeurs mensuels":"Monthly listeners","Réseau Fans Also Like":"Fans Also Like network","Étape suivante":"Next step","Écoute + genre / IA / droits":"Listen + genre / AI / rights","Aucun filon confirmé":"No confirmed trend","Historique en cours : un filon nécessite des genres fiables, plusieurs artistes et des mesures successives.":"History building: a trend requires reliable genres, multiple artists and successive measurements.","Données Soundcharts non encore exportées.":"Soundcharts data has not been exported yet.","Prêt à contacter":"Ready to contact","À revoir":"Review","Données insuffisantes":"Insufficient data","Genre":"Genre","Instrumental":"Instrumental","Droits":"Rights","Contact":"Contact",
   "Catalogue hors Lofi Records des artistes du label : tout ce qu'ils ont sorti en indépendant ou chez d'autres labels, candidats à distribution, rachat ou avance. Données rafraîchies par le crawl automatique (veille hebdomadaire).":"Everything the label's artists have released outside Lofi Records, independently or on other labels: candidates for distribution, catalog acquisition or advances. Data refreshed automatically by the crawler (weekly watch).",
   "Artistes scannés":"Artists scanned","réguliers":"regulars","occasionnels":"occasional","hors label":"unsigned",
   "Tracks hors Lofi":"Tracks outside Lofi","catalogue analysé":"catalog analyzed",
@@ -1829,7 +1829,9 @@ function arAddManyToList(spotifyIds){
   const items=arListGet(),addedAt=new Date().toISOString();
   valid.forEach(id=>{if(!items[id])items[id]={addedAt,status:'shortlisted',note:'',nextFollowUp:'',contactedAt:'',subject:'',body:''};});
   S.arSelected={};arListSet(items);arSyncListCount();
-  if(S.view==='ar-list')renderArList();else renderRadar();
+  if(S.view==='ar-list')renderArList();
+  else if(S.view==='radar')renderRadar();
+  else render();
 }
 function arAddToList(spotifyId,event){
   if(event)event.stopPropagation();
@@ -1878,19 +1880,38 @@ function arCloseContextMenu(){
   AR_CONTEXT_MENU=null;
 }
 function arOpenContextMenu(spotifyId,clientX,clientY){
+  arOpenSelectionContextMenu([spotifyId],clientX,clientY);
+}
+function arSelectionOpportunityIdsForArtist(artist){
+  const spotifyId=String(artist&&artist.id||'').trim();
+  if(!spotifyId) return [];
+  return arOpportunityRows()
+    .filter(opportunity=>arSelectionEligible(opportunity.spotifyId)&&arStructuredArtistIds(opportunity).has(spotifyId)&&!arListHas(opportunity.spotifyId))
+    .map(opportunity=>opportunity.spotifyId);
+}
+function arOpenArtistContextMenu(artistIndex,clientX,clientY){
+  arOpenSelectionContextMenu(arSelectionOpportunityIdsForArtist(AG[Number(artistIndex)]),clientX,clientY,{artist:true});
+}
+function arOpenSelectionContextMenu(spotifyIds,clientX,clientY,options={}){
   arCloseContextMenu();
-  const eligible=arSelectionEligible(spotifyId);
+  const eligibleIds=[...new Set(spotifyIds||[])].filter(arSelectionEligible);
+  const eligible=eligibleIds.length>0;
   const fr=LANG==='fr';
   const menu=document.createElement('div');
   menu.className='ar-context-menu';
   menu.setAttribute('role','menu');
-  const label=eligible?(fr?'⭐ Ajouter à la Sélection A&R':'⭐ Add to A&R selection'):(fr?'Track non éligible à la Sélection A&R':'Track is not eligible for A&R selection');
+  const plural=eligibleIds.length>1;
+  const label=eligible
+    ?(options.artist
+      ?(fr?`⭐ Ajouter ${eligibleIds.length} piste${plural?'s':''} à la sélection`:`⭐ Add ${eligibleIds.length} eligible track${plural?'s':''} to selection`)
+      :(fr?'⭐ Ajouter à la sélection':'⭐ Add to selection'))
+    :(fr?(options.artist?'Aucune piste éligible pour cet artiste':'Cette piste n\'est pas éligible à la sélection'):(options.artist?'No eligible tracks for this artist':'This track is not eligible for selection'));
   menu.innerHTML=`<button type="button" role="menuitem" ${eligible?'':'disabled'}>${label}</button>`;
   document.body.appendChild(menu);
   const width=menu.offsetWidth||230, height=menu.offsetHeight||42;
   menu.style.left=Math.max(8,Math.min(clientX,window.innerWidth-width-8))+'px';
   menu.style.top=Math.max(8,Math.min(clientY,window.innerHeight-height-8))+'px';
-  if(eligible)menu.querySelector('button').addEventListener('click',event=>{event.stopPropagation();arCloseContextMenu();arAddToList(spotifyId,event);});
+  if(eligible)menu.querySelector('button').addEventListener('click',event=>{event.stopPropagation();arCloseContextMenu();arAddManyToList(eligibleIds);});
   AR_CONTEXT_MENU=menu;
   window.setTimeout(()=>document.addEventListener('click',arCloseContextMenu,{once:true}),0);
 }
@@ -2102,7 +2123,7 @@ function bindRadarAiFilter(){
 }
 function renderRadarLegacy(){
   if(!SC){
-    V.innerHTML=`<div class="page-head"><div><h2>${T('Opportunités A&R')}</h2><p>${T('Données Soundcharts non encore exportées.')}</p></div></div><div class="toolbar">${radarAiFilterHtml()}</div>`;
+    V.innerHTML=`<div class="page-head"><div><h2>${T('Opportunités')}</h2><p>${T('Données Soundcharts non encore exportées.')}</p></div></div><div class="toolbar">${radarAiFilterHtml()}</div>`;
     bindRadarAiFilter();
     return;
   }
@@ -2122,7 +2143,7 @@ function renderRadarLegacy(){
   const clusters=arClusters();
   const rows=candidates.slice(0,S.radarFilter==='priority'?S.radarLimit:500);
   V.innerHTML=`
-    <div class="page-head"><div><h2>${T('Opportunités A&R')}</h2><p>Radar strictement instrumental/background : genre éditorial vérifié, preuve instrumentale, risque IA faible, droits indé/self-released repérés et audience de 10k à 750k. Les profils inconnus, majors, trop installés ou grand public sont exclus.</p></div></div>
+    <div class="page-head"><div><h2>${T('Opportunités')}</h2><p>Radar strictement instrumental/background : genre éditorial vérifié, preuve instrumentale, risque IA faible, droits indé/self-released repérés et audience de 10k à 750k. Les profils inconnus, majors, trop installés ou grand public sont exclus.</p></div></div>
     <div class="ovgrid" style="margin-bottom:16px">
       <div class="panel ovp"><div class="ovh"><h3>💎 ${T('Pépites à écouter')}</h3></div><div class="ov-stats"><div class="ov-st"><div class="v">${fmtFull(qualified.length)}</div><div class="l">≥ 50k ${T('Auditeurs mensuels').toLowerCase()}</div></div><div class="ov-st"><div class="v">${fmtFull(all.length)}</div><div class="l">profils instrumentaux vérifiés</div></div></div></div>
       <div class="panel ovp"><div class="ovh"><h3>✅ ${T('Prêt à contacter')}</h3></div><div class="ov-stats"><div class="ov-st"><div class="v">${fmtFull(ready.length)}</div><div class="l">genre + instrumental + IA + droits assez renseignés</div></div></div></div>
@@ -2753,7 +2774,7 @@ function arOpportunityCard(opportunity,index){
   const selected=Boolean(S.arSelected&&S.arSelected[opportunity.spotifyId]);
   const selectable=arContactEligible(opportunity);
   return `<article class="ar-opportunity-card ${selected?'is-selected':''}" tabindex="0" data-ar-card="${esc(opportunity.spotifyId)}">
-    <label class="ar-card-select" title="${selectable?'Sélectionner cette track':'Sélection A&R réservée aux tracks vérifiées'}"><input type="checkbox" data-ar-select="${esc(opportunity.spotifyId)}" ${selected?'checked':''} ${selectable?'':'disabled'}><span></span></label>
+    <label class="ar-card-select" title="${selectable?'Sélectionner cette track':'Sélection réservée aux tracks vérifiées'}"><input type="checkbox" data-ar-select="${esc(opportunity.spotifyId)}" ${selected?'checked':''} ${selectable?'':'disabled'}><span></span></label>
     <div class="ar-score-box" title="Score A&R"><div class="ar-score-value">${Math.round(opportunity.score)}</div></div>
     <div class="ar-track-cover ${coverUrl?'has':''}"><span data-ar-track-cover-id="${coverUrl?'':esc(opportunity.spotifyId)}">♫</span>${coverUrl?`<img src="${esc(coverUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}</div>
     <div class="ar-opp-main"><div class="ar-opp-titleline"><div class="ar-opp-title">${esc(opportunity.title)}</div></div><div class="ar-opp-artist">${esc(opportunity.credit)}</div><div class="ar-opp-tags"><span class="ar-mini-tag good">${esc(arRightsShortLabel(opportunity.rights))}</span></div></div>
@@ -2769,7 +2790,7 @@ function arScoreLine(label,value,max){
 }
 function arWorkspaceTabs(active){
   const available=arOpportunityRows().filter(item=>!arListHas(item.spotifyId)).length;
-  return `<div class="ar-workspace-tabs"><button class="${active==='radar'?'on':''}" onclick="goTab('radar')">Opportunités <span>${fmtFull(available)}</span></button><button class="${active==='list'?'on':''}" onclick="goTab('ar-list')">⭐ Sélection A&R <span>${arListCount()}</span></button></div>`;
+  return `<div class="ar-workspace-tabs"><button class="${active==='radar'?'on':''}" onclick="goTab('radar')">Opportunités <span>${fmtFull(available)}</span></button><button class="${active==='list'?'on':''}" onclick="goTab('ar-list')">⭐ Sélection <span>${arListCount()}</span></button></div>`;
 }
 function openArOpportunity(spotifyId){
   const opportunity=arOpportunityRows().find(item=>item.spotifyId===spotifyId); if(!opportunity) return;
@@ -2795,7 +2816,7 @@ function openArOpportunity(spotifyId){
 }
 function arColumnBarHtml(){
   const choices=[['score','Note'],['artist','Artiste'],['recent','Sortie'],['genre','Genre'],['streams','Streams total'],['streams30','30 jours'],['streams7','7 jours'],['momentum','24 heures'],['listeners','Auditeurs/mois'],['editorial','Éditoriales']];
-  return `<div class="ar-columnbar" role="toolbar" aria-label="Trier les opportunités A&R"><button type="button" data-ar-sort="${choices[0][0]}" class="${S.radarSort===choices[0][0]?'on':''}">${choices[0][1]}</button><span aria-hidden="true"></span>${choices.slice(1).map(([value,label])=>`<button type="button" data-ar-sort="${value}" class="${S.radarSort===value?'on':''}">${label}</button>`).join('')}</div>`;
+  return `<div class="ar-columnbar" role="toolbar" aria-label="Trier les opportunités"><button type="button" data-ar-sort="${choices[0][0]}" class="${S.radarSort===choices[0][0]?'on':''}">${choices[0][1]}</button><span aria-hidden="true"></span>${choices.slice(1).map(([value,label])=>`<button type="button" data-ar-sort="${value}" class="${S.radarSort===value?'on':''}">${label}</button>`).join('')}</div>`;
 }
 function arGenreSelectHtml(genres){
   const visual=S.radarGenre==='all'?{emoji:'🎼',color:'#a7f3d0'}:arGenreVisual(S.radarGenre);
@@ -2804,14 +2825,14 @@ function arGenreSelectHtml(genres){
 function renderRadar(){
   const all=arOpportunityRows();
   if(!SC || !Array.isArray(SC.opportunities)){
-    V.innerHTML=`<div class="page-head"><div><h2>Opportunités A&R</h2><p class="ar-radar-intro">Le moteur A&R dynamique n’est pas encore disponible.</p></div></div><div class="ar-empty-state">Export Soundcharts en préparation.</div>`;
+    V.innerHTML=`<div class="page-head"><div><h2>Opportunités</h2><p class="ar-radar-intro">Le moteur A&R dynamique n’est pas encore disponible.</p></div></div><div class="ar-empty-state">Export Soundcharts en préparation.</div>`;
     return;
   }
   const filtered=arOpportunityFiltered(all), rows=filtered.slice(0,S.radarShown);
   const genres=[...new Set(all.map(item=>item.genre).filter(Boolean))].sort((a,b)=>arGenreLabel(a).localeCompare(arGenreLabel(b)));
   const selectedIds=arSelectedIds();
-  V.innerHTML=`<div class="page-head ar-radar-head"><div><h2>Opportunités A&R</h2><div class="ar-filterbar">${arGenreSelectHtml(genres)}</div></div></div>${arColumnBarHtml()}
-    <div class="ar-opportunity-list">${rows.map(arOpportunityCard).join('')}</div>${rows.length===0?`<div class="ar-empty-state">Aucune track ne correspond à ce filtre. Les critères restent stricts et aucune donnée manquante n’est inventée.</div>`:''}${sentinel(filtered.length-rows.length)}${selectedIds.length?`<div class="ar-selection-float" role="status" aria-live="polite"><span><b>${selectedIds.length}</b> track${selectedIds.length>1?'s':''} sélectionnée${selectedIds.length>1?'s':''}</span><button id="ar-add-selected" type="button">⭐ Ajouter à la Sélection A&R</button></div>`:''}`;
+  V.innerHTML=`<div class="page-head ar-radar-head"><div><h2>Opportunités</h2><div class="ar-filterbar">${arGenreSelectHtml(genres)}</div></div></div>${arColumnBarHtml()}
+    <div class="ar-opportunity-list">${rows.map(arOpportunityCard).join('')}</div>${rows.length===0?`<div class="ar-empty-state">Aucune track ne correspond à ce filtre. Les critères restent stricts et aucune donnée manquante n’est inventée.</div>`:''}${sentinel(filtered.length-rows.length)}${selectedIds.length?`<div class="ar-selection-float" role="status" aria-live="polite"><span><b>${selectedIds.length}</b> track${selectedIds.length>1?'s':''} sélectionnée${selectedIds.length>1?'s':''}</span><button id="ar-add-selected" type="button">⭐ Ajouter à la sélection</button></div>`:''}`;
   document.querySelectorAll('[data-ar-select]').forEach(input=>input.addEventListener('change',event=>arToggleSelection(input.dataset.arSelect,event.target.checked)));
   const addSelected=document.getElementById('ar-add-selected');if(addSelected)addSelected.addEventListener('click',()=>arAddManyToList(arSelectedIds()));
   document.querySelectorAll('[data-ar-card]').forEach(card=>{const open=event=>{if(event.target.closest('button,a,input,select,label')) return;openArOpportunity(card.dataset.arCard);};card.addEventListener('click',open);card.addEventListener('contextmenu',event=>{if(event.target.closest('button,a,input,select,label'))return;event.preventDefault();arOpenContextMenu(card.dataset.arCard,event.clientX,event.clientY);});card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openArOpportunity(card.dataset.arCard);}});});
@@ -2900,7 +2921,7 @@ function arSelectionEconomicsHtml(group){
 function renderArList(){
   const saved=arListGet(),rows=Object.keys(saved).map(id=>({opportunity:arOpportunityRows().find(item=>item.spotifyId===id),entry:saved[id]})).filter(item=>item.opportunity&&arContactEligible(item.opportunity));
   const groups=arSelectionArtistGroups(rows);
-  V.innerHTML=`<div class="page-head"><div><h2>⭐ Sélection A&R</h2></div></div>${groups.length?`<div class="ar-artist-selection-list">${groups.map(arSelectionArtistCardHtml).join('')}</div>`:`<div class="ar-empty-state">Aucune track sélectionnée. Dans les opportunités, coche les tracks puis ajoute-les à ta sélection A&R.</div>`}`;
+  V.innerHTML=`<div class="page-head"><div><h2>⭐ Sélection</h2></div></div>${groups.length?`<div class="ar-artist-selection-list">${groups.map(arSelectionArtistCardHtml).join('')}</div>`:`<div class="ar-empty-state">Aucune track sélectionnée. Dans les opportunités, coche les tracks puis ajoute-les à ta sélection.</div>`}`;
   hydrateArTrackCovers();
 }
 
@@ -2976,7 +2997,7 @@ function renderOpps(){
       </tr></thead>
       <tbody>
       ${slice.map(r=>{ const w1=trackWindow(r,1), w7=trackWindow(r,7), w30=trackWindow(r,30), classification=trackClassification(r); return `
-        <tr data-basehot="${r[3]>=HOT?1:0}" class="${r[3]>=HOT||(ag&&S.sel.has(r[6]))?'hot':''}">
+        <tr data-ar-browse-track="${esc(spotifyTrackId(r[6]))}" data-basehot="${r[3]>=HOT?1:0}" class="${r[3]>=HOT||(ag&&S.sel.has(r[6]))?'hot':''}">
           ${ag?`<td class="selc"><input type="checkbox" class="ck sel-track" data-tid="${r[6]}" ${S.sel.has(r[6])?'checked':''}></td>`:''}
           <td class="covtd">${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}</td>
           <td><span class="tk" style="cursor:pointer" onclick="openTrack('${r[6]}')">${esc(r[1])}</span></td>
@@ -2998,7 +3019,7 @@ function renderOpps(){
   const gridView = `
   <div class="acards">
     ${slice.map(r=>{ const w1=trackWindow(r,1), w7=trackWindow(r,7), w30=trackWindow(r,30), classification=trackClassification(r); return `
-    <div class="acard plcard grid-clean" onclick="openTrack('${r[6]}')">
+    <div class="acard plcard grid-clean" data-ar-browse-track="${esc(spotifyTrackId(r[6]))}" onclick="openTrack('${r[6]}')">
       ${r[8]?`<div class="cov has" style="background-image:url('${esc(r[8])}')"></div>`:`<div class="cov" data-tid="${r[6]}"></div>`}
       <div class="nm">${esc(r[1])}</div>
       <div style="font-size:11px;color:var(--dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -3085,6 +3106,11 @@ function renderOpps(){
     if (S.sort.k===k) S.sort.dir*=-1; else S.sort={k, dir:[0,1,5,30].includes(k)?1:-1};
     keepScroll(renderOpps);
   }));
+  document.querySelectorAll('[data-ar-browse-track]').forEach(node=>node.addEventListener('contextmenu',event=>{
+    if(event.target.closest('a,button,input,select,label')) return;
+    event.preventDefault();
+    arOpenContextMenu(node.dataset.arBrowseTrack,event.clientX,event.clientY);
+  }));
   function updateSel(){
     // mise à jour SANS re-render (pas de saut de page) : offre + surlignage + compteurs
     const selM = rows.filter(r=>S.sel.has(r[6])).reduce((s,r)=>s+Math.max(perMonth(r),0),0);
@@ -3139,7 +3165,7 @@ function renderArtists(){
   const gridView = `
   <div class="acards">
     ${slice.map(g=>{ const classification=artistClassification(g); return `
-      <div class="acard plcard grid-clean" onclick="goArtist(${g.i})">
+      <div class="acard plcard grid-clean" data-ar-browse-artist="${g.i}" onclick="goArtist(${g.i})">
         ${artistCoverHtml(g)}
         <div class="nm">${esc(g.name)}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:3px 0 9px"><span class="genre-main">${esc(classification.genre)}</span><span class="genre-sub">${esc(classification.instrumental)}</span></div>
@@ -3175,7 +3201,7 @@ function renderArtists(){
         const p = g.n ? Math.round(g.self/g.n*100) : 0;
         const classification = artistClassification(g);
         return `
-        <tr onclick="goArtist(${g.i})" style="cursor:pointer">
+        <tr data-ar-browse-artist="${g.i}" onclick="goArtist(${g.i})" style="cursor:pointer">
           <td class="covtd">${artistCoverHtml(g)}</td>
           <td>${esc(g.name)}</td>
           <td>${classificationCellHtml(classification)}</td>
@@ -3231,6 +3257,11 @@ function renderArtists(){
     if (S.asort===key) S.adir*=-1;
     else { S.asort=key; S.adir=['name','genre'].includes(key)?1:-1; }
     keepScroll(renderArtists);
+  }));
+  document.querySelectorAll('[data-ar-browse-artist]').forEach(node=>node.addEventListener('contextmenu',event=>{
+    if(event.target.closest('a,button,input,select,label')) return;
+    event.preventDefault();
+    arOpenArtistContextMenu(node.dataset.arBrowseArtist,event.clientX,event.clientY);
   }));
   attachInfinite(()=>{ const y=window.scrollY; S.shownA+=60; renderArtists(); window.scrollTo(0,y); });
   if (typeof attachCovers==='function') attachCovers();

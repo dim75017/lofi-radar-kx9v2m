@@ -54,12 +54,14 @@ const cardStart = spotify.indexOf('function arOpportunityCard(');
 const cardEnd = spotify.indexOf('\nfunction arScoreLine', cardStart);
 assert.doesNotMatch(spotify.slice(cardStart, cardEnd), /arContactHtml\(opportunity,true\)/, 'Card previews must not render contact platforms');
 assert.doesNotMatch(spotifyNav, /data-v="watch"/, 'Spotify watchlist navigation must be removed');
-assert.match(spotifyNav, /data-v="ar-list" data-fr="Sélection A&R"><span class="emo">⭐<\/span>Sélection A&R/, 'A&R list must be renamed as the star selection');
+assert.match(spotifyNav, /data-v="ar-list" data-fr="Sélection"><span class="emo">⭐<\/span>Sélection/, 'The star selection uses the simplified label');
+assert.match(spotifyNav, /data-v="radar" data-fr="Opportunités"><span class="emo">💎<\/span>Opportunités/, 'The opportunities view uses the simplified label');
 assert.match(spotifyNav, /data-v="opps" class="active" data-fr="Pistes"><span class="emo">🎶<\/span>Pistes/, 'Spotify navigation uses the compact tracks label');
 assert.match(spotifyNav, /data-v="artists" data-fr="Artistes"><span class="emo">🎸<\/span>Artistes/, 'Spotify navigation uses the compact artists label');
 assert.match(spotifyNav, /data-v="playlists" data-fr="Playlists"><span class="emo">📻<\/span>Playlists/, 'Spotify navigation uses the compact playlists label');
 assert.match(spotifyNav, /data-v="labels" data-fr="Labels"><span class="emo">🏷️<\/span>Labels/, 'Spotify navigation uses the compact labels label');
 assert.doesNotMatch(spotifyNav, /Ma liste A&R/, 'The previous A&R list naming must be removed');
+assert.doesNotMatch(spotifyNav, /Sélection A&R/, 'The sidebar must not retain the old A&R selection label');
 assert.doesNotMatch(youtubeNav, /id:'watch'/, 'YouTube watchlist navigation must be removed');
 
 assert.match(spotify, /function arOpenSelectionArtistProfile\(/, 'Selection must open the internal artist profile');
