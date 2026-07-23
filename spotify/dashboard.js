@@ -1362,7 +1362,7 @@ const S = {
   sort:{k:3, dir:-1}, shown:100,
   aq:'', asort:'streams', adir:-1, shownA:60, aseg:'all', agenres:new Set(),
   newDays:90, shownN:100,
-  plq:'', plcur:'all', plsort:'followers', pldir:-1, plonly:false, shownPL:80, plview:'qualified', plmode:'table',
+  plq:'', plcur:'all', plgenre:'all', plsort:'followers', pldir:-1, plonly:false, shownPL:80, plview:'qualified', plmode:'table',
   amode:'table', omode:'table',
   lbq:'', lbsort:'streams', lbdir:-1, shownLB:80, lbmode:'table', labelKey:null, lbModalArtist:null,
   radarFilter:'all', radarLimit:100, radarShown:100, radarTrackId:'', radarGenre:'all', radarSort:'score', radarSortDir:-1, radarQ:'', arSelected:{},
@@ -3460,11 +3460,24 @@ function sentinel(remaining){
 }
 
 /* colonnes PLrows (v2) : id,name,owner,curatorCat,followers,notes,tracks,first_seen,last_seen,lang,genre,use_case,fit,kw,estDate,estConf,enriched,big10k */
+function playlistGenreSignals(r){
+  // Le genre source peut être large (ex. Peaceful Guitar est classée Ambient) :
+  // les filtres s'appuient donc aussi sur le titre, l'usage et les mots-clés validés.
+  const text = [r[1], r[10], r[11], r[13]].filter(Boolean).join(' ').toLowerCase();
+  return {
+    guitar: /(?:guitar|acoustic|fingerstyle|finger style|nylon)/.test(text),
+    classical: /(?:classical|classique|orchestra|orchestral|symphon|chamber music|baroque)/.test(text),
+  };
+}
+function playlistMatchesGenre(r, genre){
+  return genre==='all' || playlistGenreSignals(r)[genre]===true;
+}
 function plFiltered(){
   const q = S.plq.trim().toLowerCase();
   let rows = PLrows.filter(r=>{
     if (S.plview==='qualified' && !r[17]) return false;
     if (S.plcur!=='all' && r[3]!==S.plcur) return false;
+    if (!playlistMatchesGenre(r, S.plgenre)) return false;
     if (S.plonly && !r[16]) return false;
     if (q && !((r[1]||'').toLowerCase().includes(q) || (r[2]||'').toLowerCase().includes(q) || (r[10]||'').toLowerCase().includes(q))) return false;
     return true;
@@ -3683,6 +3696,11 @@ function renderPlaylists(){
       <option value="editorial" ${S.plcur==='editorial'?'selected':''}>🏛️ ${T('Éditoriales')}</option>
       <option value="independent" ${S.plcur==='independent'?'selected':''}>🌱 ${T('Indépendantes')}</option>
     </select>
+    <select id="pl-genre" aria-label="${T('Filtrer par genre')}">
+      <option value="all" ${S.plgenre==='all'?'selected':''}>🎼 ${T('Tous les genres')}</option>
+      <option value="guitar" ${S.plgenre==='guitar'?'selected':''}>🎸 ${T('Guitare')}</option>
+      <option value="classical" ${S.plgenre==='classical'?'selected':''}>🎻 ${T('Classique')}</option>
+    </select>
     <span class="spacer"></span>
     <span class="result-count">${fmtFull(rows.length)} playlists</span>
     <div class="viewtoggle">
@@ -3695,6 +3713,7 @@ function renderPlaylists(){
   document.querySelectorAll('.viewtoggle button[data-plmode]').forEach(b=>b.addEventListener('click', ()=>{ S.plmode=b.dataset.plmode; keepScroll(renderPlaylists); }));
   document.getElementById('pl-q').addEventListener('input', e=>{ S.plq=e.target.value; S.shownPL=80; keepScroll(renderPlaylists); keepFocus('pl-q'); });
   document.getElementById('pl-cur').addEventListener('change', e=>{ S.plcur=e.target.value; S.shownPL=80; keepScroll(renderPlaylists); });
+  document.getElementById('pl-genre').addEventListener('change', e=>{ S.plgenre=e.target.value; S.shownPL=80; keepScroll(renderPlaylists); });
   document.querySelectorAll('th[data-plsort]').forEach(h=>h.addEventListener('click', ()=>{
     const key=h.dataset.plsort;
     if (S.plsort===key) S.pldir*=-1;
