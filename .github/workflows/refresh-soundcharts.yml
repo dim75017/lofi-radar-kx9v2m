@@ -228,9 +228,9 @@ jobs:
           --max-requests "${{ steps.plan.outputs.playlist_requests }}"
           --page-size 100
           --max-new-playlist-tracks 450
-          --max-catalog-artists 250
+          --max-catalog-artists 500
           --catalog-page-size 25
-          --max-new-catalog-tracks 1200
+          --max-new-catalog-tracks 2500
 
       - name: Expand and measure the target instrumental pool
         if: steps.plan.outputs.scope == 'strict_rebaseline'
