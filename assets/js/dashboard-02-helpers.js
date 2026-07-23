@@ -335,6 +335,43 @@ function lastScanText(){
   if(lT!=null)parts.push(line(lT,'📡','Streams','Streams','Refreshes live streams and viewer counts.','Actualise les streams en direct et le nombre de spectateurs.'));
   return parts.join('');
 }
+function updateStatusLines(){
+  const fr=typeof LANG!=='undefined'&&LANG==='fr';
+  const videoT=Math.max(maxHistTime(DATA&&DATA.hist)||0,Number(window.LOFI_DATA&&window.LOFI_DATA.videoMetricsT)||0)||null;
+  const liveT=maxHistTime(DATA&&DATA.liveHourly)||maxHistTime(DATA&&DATA.liveHist)||null;
+  const channelT=Number(window.CHX&&window.CHX.t)||maxHistTime(CHAN&&CHAN.hist)||null;
+  const row=(when,labelEn,labelFr,detailEn,detailFr)=>({when,label:fr?labelFr:labelEn,detail:fr?detailFr:detailEn});
+  return [
+    row(videoT,'Radar videos','Vidéos du radar','Catalog, discoveries and viewing metrics.','Catalogue, découvertes et statistiques de vues.'),
+    row(videoT,'Our videos','Nos vidéos','Performance tracking for your published videos.','Suivi des performances de vos sorties publiées.'),
+    row(liveT,'Livestreams','Streams','Live streams and concurrent viewers.','Streams en direct et spectateurs simultanés.'),
+    row(channelT,'Channels','Chaînes','Channel audience and catalog monitoring.','Audience et catalogue des chaînes suivies.')
+  ];
+}
+function refreshUpdateStatus(){
+  const btn=document.getElementById('btn-update-status'),panel=document.getElementById('update-status-panel');
+  if(!btn||!panel)return;
+  const fr=typeof LANG!=='undefined'&&LANG==='fr';
+  const labelEl=btn.querySelector('.lbl');if(labelEl)labelEl.textContent=fr?'Mises à jour':'Update status';
+  btn.title=fr?'Voir le détail des mises à jour':'View update details';
+  panel.innerHTML='<div class="update-status-head"><span>'+esc(fr?'État des mises à jour':'Update status')+'</span><small>'+esc(fr?'Automatique':'Automatic')+'</small></div>'+updateStatusLines().map(item=>{
+    const color=scanDotColor(item.when),time=item.when?fmtDateTimeShort(item.when):(fr?'En attente de données':'Awaiting data');
+    return '<div class="update-status-line"><i class="update-status-dot" style="background:'+color+';color:'+color+'"></i><div><b>'+esc(item.label)+'</b><span>'+esc(time)+' · '+esc(item.detail)+'</span></div></div>';
+  }).join('');
+}
+function toggleUpdateStatus(event){
+  if(event)event.stopPropagation();
+  const btn=document.getElementById('btn-update-status'),panel=document.getElementById('update-status-panel');
+  if(!btn||!panel)return;
+  const open=panel.hidden;refreshUpdateStatus();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));
+}
+document.addEventListener('click',event=>{
+  const control=document.querySelector('.update-status-control');
+  if(control&&!control.contains(event.target)){
+    const btn=document.getElementById('btn-update-status'),panel=document.getElementById('update-status-panel');
+    if(panel){panel.hidden=true;if(btn)btn.setAttribute('aria-expanded','false');}
+  }
+});
 
 /* ================= STATE ================= */
 let DATA=null, SYNCED=null, route='dashboard';
@@ -345,6 +382,7 @@ function setRadarData(d){
   VIEW_CACHE.clear();VIEW_WARMUP_TOKEN++;
   if(typeof _anaCache!=='undefined'){_anaCache=null;_anaT=0;}
   if(typeof scheduleViewWarmup==='function')scheduleViewWarmup();
+  refreshUpdateStatus();
 }
 const VS={
   all:{q:'',genre:'',sort:'vpm',mode:'grid',limit:60},
@@ -362,11 +400,7 @@ let CHAN=null, CHAN_ERR=null, CHAN_T=null;
 
 /* ================= BOOT / SYNC ================= */
 function setSync(state,txt){
-  const d=document.getElementById('sync-dot'),row=d&&d.closest('.sync-row');
-  const detailed=typeof txt==='string'&&txt.includes('class="sync-line"');
-  if(row)row.classList.toggle('detailed',detailed);
-  if(d)d.className='sync-dot '+state;
-  document.getElementById('sync-txt').innerHTML=(typeof LANG!=='undefined'&&LANG==='fr'&&typeof frz==='function')?frz(txt):txt;
+  refreshUpdateStatus();
 }
 async function fetchData(){
   const res=await fetch(XLSX_URL,{redirect:'follow'});

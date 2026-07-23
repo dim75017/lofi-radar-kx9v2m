@@ -1859,7 +1859,7 @@ function mountLangBtn(){
 function toggleLang(){
   LANG=LANG==='en'?'fr':'en';
   try{localStorage.setItem('radar_lang',LANG);}catch(e){}
-  mountLangBtn();renderNav();render();
+  mountLangBtn();renderNav();render();if(typeof refreshUpdateStatus==='function')refreshUpdateStatus();
 }
 const FR_LIT=[
 ['Competitive intelligence across ','Veille concurrentielle sur '],
