@@ -16,6 +16,8 @@ assert.match(dashboard, /classical: \/\(\?:classical\|classique/, 'Classical ali
 assert.match(dashboard, /id="pl-genre"/, 'The Playlists toolbar must expose the genre filter.');
 assert.match(dashboard, /value="guitar"/, 'The Guitar filter must be available.');
 assert.match(dashboard, /value="classical"/, 'The Classical filter must be available.');
+assert.match(dashboard, /"Guitare":"Guitar"/, 'The Guitar filter must be translated in English.');
+assert.match(dashboard, /"Classique":"Classical"/, 'The Classical filter must be translated in English.');
 assert.match(dashboard, /playlistMatchesGenre\(r, S\.plgenre\)/, 'The selected playlist genre must affect results.');
 assert.match(playlists, /Peaceful Guitar/, 'Fixture must include the Ambient-classified Peaceful Guitar playlist.');
 
