@@ -55,10 +55,12 @@ on:
       - 'spotify/discovery.css'
       - 'spotify/coverage.js'
   schedule:
-    # Bootstrap: progress through the strict editorial source every 30 minutes.
+    # Bootstrap: run as soon as the single protected collector becomes free.
+    # The concurrency group below serializes 5-minute schedule ticks, so this
+    # never overlaps collection or a Pages validation.
     # The preflight in the collector remains authoritative for quota, OAuth and
     # active-lock safety; this schedule never bypasses those checks.
-    - cron: '*/30 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       scope:
