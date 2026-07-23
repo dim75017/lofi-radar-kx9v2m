@@ -41,6 +41,14 @@ assert.match(spotify, /Préparer un message/, 'Selection cards expose a message-
 assert.match(spotify, /function arSelectionArtistGroups\(/, 'A&R selection must group retained tracks by structured artist');
 assert.match(spotify, /function arSelectionArtistCardHtml\(/, 'A&R selection must render an artist-level section');
 assert.match(spotify, /ar-artist-message/, 'A&R selection must promote the artist message action');
+assert.match(spotify, /function arSelectionEconomics\(/, 'Artist-level A&R selection must reuse the economics calculation');
+assert.match(spotify, /advance\(monthlyStreams\)/, 'Selection economics must use the same advance calculation as tracks');
+assert.match(spotify, /labelMonthly\(monthlyStreams\)/, 'Selection economics must show captured monthly revenue');
+assert.match(spotify, /payback\(monthlyStreams\)/, 'Selection economics must show payback using the shared model');
+assert.match(spotify, /Même calcul que Pistes et Artistes/, 'Selection economics must state its shared calculation provenance');
+const draftStart=spotify.indexOf('function arOutreachDrafts(');
+const draftEnd=spotify.indexOf('function arOutreachDraft(',draftStart);
+assert.doesNotMatch(spotify.slice(draftStart,draftEnd), /Coût estimé|Revenu \/ mois|Payback/, 'Financial estimates must never be inserted into outreach drafts');
 assert.doesNotMatch(spotify, /E-mail public à enrichir|E-mail à enrichir/, 'No email-enrichment placeholder is shown to the user');
 const cardStart = spotify.indexOf('function arOpportunityCard(');
 const cardEnd = spotify.indexOf('\nfunction arScoreLine', cardStart);

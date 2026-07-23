@@ -2860,10 +2860,28 @@ function arSelectionArtistCardHtml(group){
   const initials=artist.name.split(/\s+/).map(part=>part[0]).join('').slice(0,2).toUpperCase()||'A';
   return `<article class="ar-artist-selection"><header class="ar-artist-selection-head"><div class="ar-selection-artist-avatar">${esc(initials)}</div><div class="ar-selection-artist-main"><h3>${artistName}</h3><div class="ar-selection-artist-meta">${esc(genres||'—')}${listeners?` · ${fmt(listeners)} auditeurs/mois`:''}</div><div class="ar-selection-artist-contact">${arContactHtml(contactOpportunity,true)}</div></div><div class="ar-selection-artist-count">${esc(countLabel)}</div><button class="ar-artist-message" onclick="openArOutreach('${esc(contactOpportunity.spotifyId)}')">✉ Préparer un message</button></header><div class="ar-selection-track-list">${rows.map(arSelectionTrackHtml).join('')}</div></article>`;
 }
+function arSelectionEconomics(group){
+  const ids=new Set(group.rows.map(row=>String(row.opportunity&&row.opportunity.spotifyId||'').trim()).filter(Boolean));
+  const tracks=R.filter(track=>ids.has(spotifyTrackId(track[6])));
+  const monthly=tracks.map(perMonth).filter(value=>Number.isFinite(value)&&value>=0);
+  const monthlyStreams=monthly.reduce((sum,value)=>sum+value,0);
+  const measurable=monthly.length;
+  return {measurable,monthlyStreams,advance:measurable?advance(monthlyStreams):null,labelMonthly:measurable?labelMonthly(monthlyStreams):null,payback:measurable?payback(monthlyStreams):null};
+}
+function arSelectionEconomicsHtml(group){
+  const economics=arSelectionEconomics(group);
+  const coverage=economics.measurable?`${economics.measurable}/${group.rows.length} track${group.rows.length>1?'s':''} mesurée${economics.measurable>1?'s':''}`:'Pas de mesure exploitable';
+  const value=number=>economics.measurable?number:'—';
+  return `<section class="ar-selection-economics" title="Même calcul que Pistes et Artistes. Ces estimations restent internes et ne sont jamais ajoutées au message."><div class="ar-selection-economics-label">💶 Estimation interne · ${esc(S.palier)}</div><div class="ar-selection-economics-grid"><div><span>Coût estimé</span><strong>${value(eur(economics.advance))}</strong></div><div><span>Revenu / mois</span><strong>${value(eur(economics.labelMonthly))}</strong></div><div><span>Payback</span><strong class="${economics.measurable?paybackClass(economics.payback):''}">${value(paybackTxt(economics.payback))}</strong></div></div><small>${esc(coverage)}</small></section>`;
+}
 function renderArList(){
   const saved=arListGet(),rows=Object.keys(saved).map(id=>({opportunity:arOpportunityRows().find(item=>item.spotifyId===id),entry:saved[id]})).filter(item=>item.opportunity&&arContactEligible(item.opportunity));
   const groups=arSelectionArtistGroups(rows);
   V.innerHTML=`<div class="page-head"><div><h2>⭐ Sélection A&R</h2></div></div>${groups.length?`<div class="ar-artist-selection-list">${groups.map(arSelectionArtistCardHtml).join('')}</div>`:`<div class="ar-empty-state">Aucune track sélectionnée. Dans les opportunités, coche les tracks puis ajoute-les à ta sélection A&R.</div>`}`;
+  V.querySelectorAll('.ar-artist-selection').forEach((card,index)=>{
+    const count=card.querySelector('.ar-selection-artist-count');
+    if(count&&groups[index]) count.insertAdjacentHTML('beforebegin',arSelectionEconomicsHtml(groups[index]));
+  });
   hydrateArTrackCovers();
 }
 
