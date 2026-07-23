@@ -38,6 +38,9 @@ assert.match(spotify, /cdn\.simpleicons\.org/, 'Detail contacts must use platfor
 assert.match(spotify, /function arPromptArtistCompanions\(spotifyId\)/, 'Adding a track must offer other eligible tracks from the same structured artist');
 assert.match(spotify, /function arOutreachDrafts\(opportunity\)/, 'Message preparation exposes multiple draft proposals');
 assert.match(spotify, /Préparer un message/, 'Selection cards expose a message-preparation action');
+assert.match(spotify, /function arSelectionArtistGroups\(/, 'A&R selection must group retained tracks by structured artist');
+assert.match(spotify, /function arSelectionArtistCardHtml\(/, 'A&R selection must render an artist-level section');
+assert.match(spotify, /ar-artist-message/, 'A&R selection must promote the artist message action');
 assert.doesNotMatch(spotify, /E-mail public à enrichir|E-mail à enrichir/, 'No email-enrichment placeholder is shown to the user');
 const cardStart = spotify.indexOf('function arOpportunityCard(');
 const cardEnd = spotify.indexOf('\nfunction arScoreLine', cardStart);

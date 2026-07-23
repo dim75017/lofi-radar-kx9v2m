@@ -2807,10 +2807,41 @@ function openArOutreach(spotifyId){
   const mark=document.getElementById('ar-mark-contacted');if(mark)mark.addEventListener('click',()=>{arUpdateList(spotifyId,{status:'contacted',contactedAt:new Date().toISOString(),nextFollowUp:arFollowUpDate()});closeArModal();renderArList();});
   document.getElementById('ar-modal').style.display='flex';
 }
+function arSelectionPrimaryArtist(opportunity){
+  const artist=(Array.isArray(opportunity&&opportunity.artists)?opportunity.artists:[]).find(item=>String(item&&item.spotify_id||'').trim()&&String(item&&item.name||'').trim())||{};
+  const spotifyId=String(artist.spotify_id||'').trim(),name=String(artist.name||opportunity&&opportunity.credit||'Artiste').trim();
+  return {key:spotifyId?`spotify:${spotifyId}`:`credit:${name.toLowerCase()}`,spotifyId,name};
+}
+function arSelectionArtistGroups(rows){
+  const groups=new Map();
+  rows.forEach(row=>{
+    const artist=arSelectionPrimaryArtist(row.opportunity);
+    if(!groups.has(artist.key)) groups.set(artist.key,{artist,rows:[]});
+    groups.get(artist.key).rows.push(row);
+  });
+  return [...groups.values()].map(group=>{
+    group.rows.sort((a,b)=>(b.opportunity.score||0)-(a.opportunity.score||0)||a.opportunity.title.localeCompare(b.opportunity.title));
+    group.priority=group.rows.find(row=>arPublicContactChannels(row.opportunity).length)||group.rows[0];
+    return group;
+  }).sort((a,b)=>(b.priority.opportunity.score||0)-(a.priority.opportunity.score||0));
+}
+function arSelectionTrackHtml({opportunity,entry}){
+  const coverUrl=arTrackCoverUrl(opportunity),release=opportunity.releaseDate?fmtDate(opportunity.releaseDate.slice(0,10)):'—';
+  return `<div class="ar-selection-track"><div class="ar-track-cover ${coverUrl?'has':''}"><span>♫</span>${coverUrl?`<img src="${esc(coverUrl)}" alt="" loading="lazy">`:''}</div><div class="ar-selection-track-main"><button class="ar-selection-track-title" onclick="openArOpportunity('${esc(opportunity.spotifyId)}')">${esc(opportunity.title)}</button><span>${esc(arGenreLabel(opportunity.genre))} · ${esc(release)}</span></div><label class="ar-selection-track-field">Statut<select onchange="arUpdateList('${esc(opportunity.spotifyId)}',{status:this.value});renderArList()">${Object.entries(AR_STATUSES).map(([key,label])=>`<option value="${key}" ${entry.status===key?'selected':''}>${label}</option>`).join('')}</select></label><label class="ar-selection-track-field">Relance<input type="date" value="${esc(entry.nextFollowUp||'')}" onchange="arUpdateList('${esc(opportunity.spotifyId)}',{nextFollowUp:this.value})"></label><button class="ar-remove" onclick="arRemoveFromList('${esc(opportunity.spotifyId)}',event)">Retirer</button></div>`;
+}
+function arSelectionArtistCardHtml(group){
+  const {artist,rows,priority}=group,contactOpportunity=priority.opportunity;
+  const listeners=Math.max(...rows.map(row=>Number(row.opportunity.artistMonthlyListeners)||0));
+  const genres=[...new Set(rows.map(row=>arGenreLabel(row.opportunity.genre)).filter(Boolean))].join(' · ');
+  const artistName=artist.spotifyId?`<a class="ar-detail-artist-link" href="https://open.spotify.com/artist/${esc(artist.spotifyId)}" target="_blank" rel="noopener">${esc(artist.name)}</a>`:esc(artist.name);
+  const countLabel=`${rows.length} track${rows.length>1?'s':''} retenue${rows.length>1?'s':''}`;
+  const initials=artist.name.split(/\s+/).map(part=>part[0]).join('').slice(0,2).toUpperCase()||'A';
+  return `<article class="ar-artist-selection"><header class="ar-artist-selection-head"><div class="ar-selection-artist-avatar">${esc(initials)}</div><div class="ar-selection-artist-main"><h3>${artistName}</h3><div class="ar-selection-artist-meta">${esc(genres||'—')}${listeners?` · ${fmt(listeners)} auditeurs/mois`:''}</div><div class="ar-selection-artist-contact">${arContactHtml(contactOpportunity,true)}</div></div><div class="ar-selection-artist-count">${esc(countLabel)}</div><button class="ar-artist-message" onclick="openArOutreach('${esc(contactOpportunity.spotifyId)}')">✉ Préparer un message</button></header><div class="ar-selection-track-list">${rows.map(arSelectionTrackHtml).join('')}</div></article>`;
+}
 function renderArList(){
-  const saved=arListGet();const rows=Object.keys(saved).map(id=>({opportunity:arOpportunityRows().find(item=>item.spotifyId===id),entry:saved[id]})).filter(item=>item.opportunity&&arContactEligible(item.opportunity));
-  V.innerHTML=`<div class="page-head"><div><h2>⭐ Sélection A&R</h2></div></div>
-    ${rows.length?`<div class="ar-follow-list">${rows.map(({opportunity,entry})=>{const email=arPublicEmail(opportunity),coverUrl=arTrackCoverUrl(opportunity);return `<article class="ar-follow-card"><div class="ar-track-cover ${coverUrl?'has':''}"><span>♫</span>${coverUrl?`<img src="${esc(coverUrl)}" alt="" loading="lazy">`:''}</div><div class="ar-follow-main"><button class="ar-follow-title" onclick="openArOpportunity('${esc(opportunity.spotifyId)}')">${esc(opportunity.title)}</button>${arSelectionArtistInfoHtml(opportunity)}</div><label class="ar-follow-field">Statut<select onchange="arUpdateList('${esc(opportunity.spotifyId)}',{status:this.value});renderArList()">${Object.entries(AR_STATUSES).map(([key,label])=>`<option value="${key}" ${entry.status===key?'selected':''}>${label}</option>`).join('')}</select></label><label class="ar-follow-field">Relance<input type="date" value="${esc(entry.nextFollowUp||'')}" onchange="arUpdateList('${esc(opportunity.spotifyId)}',{nextFollowUp:this.value})"></label><div class="ar-follow-actions"><button class="chip" onclick="openArOutreach('${esc(opportunity.spotifyId)}')">Préparer un message</button>${email?`<button class="chip" onclick="arMarkContacted('${esc(opportunity.spotifyId)}')">Contacté</button>`:''}<button class="ar-remove" onclick="arRemoveFromList('${esc(opportunity.spotifyId)}',event)">Retirer de la sélection</button></div></article>`;}).join('')}</div>`:`<div class="ar-empty-state">Aucune track sélectionnée. Dans les opportunités, coche les tracks puis ajoute-les à ta sélection A&R.</div>`}`;
+  const saved=arListGet(),rows=Object.keys(saved).map(id=>({opportunity:arOpportunityRows().find(item=>item.spotifyId===id),entry:saved[id]})).filter(item=>item.opportunity&&arContactEligible(item.opportunity));
+  const groups=arSelectionArtistGroups(rows);
+  V.innerHTML=`<div class="page-head"><div><h2>⭐ Sélection A&R</h2></div></div>${groups.length?`<div class="ar-artist-selection-list">${groups.map(arSelectionArtistCardHtml).join('')}</div>`:`<div class="ar-empty-state">Aucune track sélectionnée. Dans les opportunités, coche les tracks puis ajoute-les à ta sélection A&R.</div>`}`;
   hydrateArTrackCovers();
 }
 
