@@ -1851,9 +1851,8 @@ function arCompanionSignalsHtml(opportunity){
   const playlists=arEditorialPlaylists(opportunity);
   const covers=playlists.map((playlist,index)=>{
     const playlistId=String(playlist.spotifyId||'').trim();
-    const imageUrl=String(playlist.imageUrl||playlist.image_url||'').trim();
     const label=arEditorialPlaylistTooltip(playlist,opportunity);
-    const visual=`${imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}<span class="ar-playlist-fallback" data-ar-playlist-id="${esc(playlistId)}" data-ar-playlist-slot="companion-${esc(opportunity.spotifyId)}-${index}">♫</span>`;
+    const visual=arEditorialPlaylistCoverHtml(playlist,index,`companion-${esc(opportunity.spotifyId)}`);
     return playlistId?`<a class="ar-companion-playlist-cover" href="${spotifyPlaylistUrl(playlistId)}" target="_blank" rel="noopener" title="${esc(label)}" onclick="event.stopPropagation()">${visual}</a>`:'';
   }).join('');
   return `<div class="ar-companion-signals"><div class="ar-companion-metrics">${metric('24 h',arOpportunityMetric(opportunity,1))}${metric('7 j',arOpportunityMetric(opportunity,7))}${metric('30 j',arOpportunityMetric(opportunity,30))}</div><div class="ar-companion-editorials">${covers||'<small>— aucune éditoriale</small>'}</div></div>`;
@@ -2011,6 +2010,9 @@ function trackEditorialEvidenceHtml(track){
     name:String(item.name||item.playlist_name||''),
     position:discoveryNumber(item.position),
     followers:discoveryNumber(item.followers||item.playlist_followers),
+    trackCount:discoveryNumber(item.track_count||item.tracks||item.total_tracks),
+    genre:String(item.genre||item.primary_genre||''),
+    imageUrl:String(item.image_url||item.imageUrl||item.cover_url||item.coverUrl||item.thumbnail_url||item.thumbnailUrl||''),
     firstSeen:String(item.first_seen_at||item.entry_date||''),
     lastSeen:String(item.last_seen_at||'')
   }));
@@ -2068,6 +2070,7 @@ function openTrack(tid){
     <div class="tnote">${T("Les fenêtres Analytics utilisent uniquement l'historique quotidien et comparent des périodes de même durée. Le simulateur de rachat reste une estimation séparée.")}</div>`;
   bindMetricModeToggle(()=>openTrack(tid),box);
   document.getElementById('track-modal').style.display='flex';
+  hydrateArPlaylistCovers();
 }
 function closeTrack(){ document.getElementById('track-modal').style.display='none'; }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeTrack(); });
@@ -2278,6 +2281,9 @@ function arOpportunityRows(){
       name:String(item.name||item.playlist_name||''),
       position:arNullableNumber(item.position),
       followers:arNullableNumber(item.followers||item.playlist_followers),
+      trackCount:arNullableNumber(item.track_count||item.tracks||item.total_tracks),
+      genre:String(item.genre||item.primary_genre||''),
+      imageUrl:String(item.image_url||item.imageUrl||item.cover_url||item.coverUrl||item.thumbnail_url||item.thumbnailUrl||''),
       firstSeen:String(item.first_seen_at||item.entry_date||''),
       lastSeen:String(item.last_seen_at||'')
     }));
@@ -2506,6 +2512,19 @@ function arEditorialMiniData(playlist){
     genre:first(playlist&&playlist.genre,row&&row[10]),
   };
 }
+function arPlaylistCoverUrl(playlist){
+  const values=[
+    playlist&&playlist.imageUrl,playlist&&playlist.image_url,
+    playlist&&playlist.coverUrl,playlist&&playlist.cover_url,
+    playlist&&playlist.thumbnailUrl,playlist&&playlist.thumbnail_url
+  ];
+  return values.map(arSafePublicUrl).find(Boolean)||'';
+}
+function arEditorialPlaylistCoverHtml(playlist,index,slot='detail'){
+  const playlistId=String(playlist&&playlist.spotifyId||'').trim();
+  const imageUrl=arPlaylistCoverUrl(playlist);
+  return `${imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}<span class="ar-playlist-fallback" data-ar-playlist-id="${esc(playlistId)}" data-ar-playlist-slot="${esc(slot)}-${index}">♫</span>`;
+}
 function arOpenEditorialPopover(anchor){
   document.querySelectorAll('.ar-editorial-popover').forEach(node=>node.remove());
   const popover=document.createElement('div');
@@ -2539,35 +2558,27 @@ function arEditorialPlaylistEvidenceHtml(opportunity){
       ?`<div class="analytics-section"><h4>Origine de la découverte</h4><div class="analytics-note">Artiste découvert via ${esc(sourceNames.slice(0,4).join(', '))}. Cette track n’est pas confirmée comme présente dans ces playlists.</div></div>`
       :'';
   }
-  const rows=playlists.map(item=>{
-    const name=item.name||item.spotifyId||'Playlist éditoriale';
-    const position=item.position==null?'position inconnue':'#'+Math.round(item.position);
-    const since=arPlaylistSince(item.firstSeen||opportunity.firstPlaylistSeen);
-    const followers=item.followers==null||item.followers<=0?'':` · ${fmt(item.followers)} followers`;
-    const content=`<span class="ar-playlist-name">${esc(name)}</span><span class="ar-playlist-meta">${esc(position)}${followers}${since?' · depuis '+esc(since):''}</span>`;
-    return item.spotifyId
-      ?`<a class="ar-playlist-evidence" href="${spotifyPlaylistUrl(item.spotifyId)}" target="_blank" rel="noopener">${content}</a>`
-      :`<div class="ar-playlist-evidence">${content}</div>`;
-  }).join('');
-  return `<div class="analytics-section"><h4>Présence en playlists éditoriales <span class="analytics-note">${fmtFull(playlists.length)} confirmée${playlists.length>1?'s':''}</span></h4><div class="ar-playlist-evidence-list">${rows}</div></div>`;
+  return arEditorialPlaylistPanelHtml(opportunity,'Présence en playlists éditoriales');
 }
-function arDetailEditorialPlaylistsHtml(opportunity){
+function arEditorialPlaylistPanelHtml(opportunity,heading='Playlists éditoriales'){
   const playlists=arEditorialPlaylists(opportunity);
   if(!playlists.length) return '';
   const cards=playlists.map((playlist,index)=>{
     const playlistId=String(playlist.spotifyId||'').trim();
     const mini=arEditorialMiniData(playlist);
     const name=playlist.name||playlistId||'Playlist editoriale';
-    const imageUrl=String(playlist.imageUrl||playlist.image_url||'').trim();
     const followers=mini.followers==null||mini.followers<=0?'—':fmtFull(mini.followers)+' followers';
     const tracks=mini.tracks==null||mini.tracks<=0?'—':fmtFull(mini.tracks)+' tracks';
     const genre=mini.genre?arGenreLabel(mini.genre):'—';
     const position=playlist.position==null?'':` · #${Math.round(playlist.position)}`;
-    const cover=`<span class="ar-detail-editorial-cover">${imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}<span class="ar-playlist-fallback" data-ar-playlist-id="${esc(playlistId)}" data-ar-playlist-slot="detail-${index}">♫</span></span>`;
+    const cover=`<span class="ar-detail-editorial-cover">${arEditorialPlaylistCoverHtml(playlist,index,'detail')}</span>`;
     const content=`${cover}<span class="ar-detail-editorial-copy"><strong>${esc(name)}</strong><small>${esc(followers)} · ${esc(tracks)} · ${esc(genre)}${esc(position)}</small></span>`;
     return playlistId?`<a class="ar-detail-editorial" href="${spotifyPlaylistUrl(playlistId)}" target="_blank" rel="noopener">${content}</a>`:`<div class="ar-detail-editorial">${content}</div>`;
   }).join('');
-  return `<div class="analytics-section ar-detail-editorials"><h4>Playlists éditoriales <span class="analytics-note">${fmtFull(playlists.length)}</span></h4><div class="ar-detail-editorial-list">${cards}</div></div>`;
+  return `<div class="analytics-section ar-detail-editorials"><h4>${esc(heading)} <span class="analytics-note">${fmtFull(playlists.length)}</span></h4><div class="ar-detail-editorial-list">${cards}</div></div>`;
+}
+function arDetailEditorialPlaylistsHtml(opportunity){
+  return arEditorialPlaylistPanelHtml(opportunity);
 }
 function arReasonRank(code){
   return (code==='streams_24h'||/^streams_24h_/.test(code))?0
@@ -2644,10 +2655,8 @@ function arPlaylistPreviewHtml(opportunity){
   const count=opportunity.playlistCount||playlists.length||0;
   if(!count) return '';
   const covers=playlists.slice(0,3).map((playlist,index)=>{
-    const playlistId=String(playlist.spotifyId||'').trim();
-    const imageUrl=String(playlist.imageUrl||playlist.image_url||'').trim();
     const label=playlist.name||'Playlist éditoriale';
-    return `<span class="ar-playlist-cover" title="${esc(label)}">${imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}<span class="ar-playlist-fallback" data-ar-playlist-id="${esc(playlistId)}" data-ar-playlist-slot="${index}">🎧</span></span>`;
+    return `<span class="ar-playlist-cover" title="${esc(label)}">${arEditorialPlaylistCoverHtml(playlist,index,'preview')}</span>`;
   }).join('');
   return `<div class="ar-playlist-preview" title="${esc(arEditorialSummary(opportunity,3))}"><div class="ar-playlist-cover-stack">${covers}</div><span><strong>${fmtFull(count)}</strong> éditorial${count>1?'es':''}</span></div>`;
 }
@@ -2657,11 +2666,10 @@ function arEditorialCardHtml(opportunity){
   if(!count)return '<div class="ar-editorial-card muted" aria-label="Aucune playlist éditoriale">—</div>';
   const covers=playlists.map((playlist,index)=>{
     const playlistId=String(playlist.spotifyId||'').trim();
-    const imageUrl=String(playlist.imageUrl||playlist.image_url||'').trim();
     const label=arEditorialPlaylistTooltip(playlist,opportunity);
     const mini=arEditorialMiniData(playlist);
     const data=`data-ar-followers="${esc(mini.followers==null||mini.followers<=0?'—':fmtFull(mini.followers))}" data-ar-tracks="${esc(mini.tracks==null||mini.tracks<=0?'—':fmtFull(mini.tracks))}" data-ar-genre="${esc(mini.genre||'—')}"`;
-    const visual=`${imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}<span class="ar-playlist-fallback" data-ar-playlist-id="${esc(playlistId)}" data-ar-playlist-slot="${index}">♪</span>`;
+    const visual=arEditorialPlaylistCoverHtml(playlist,index,'list');
     return playlistId
       ?`<button type="button" class="ar-playlist-cover ar-editorial-cover-link" ${data} onclick="event.stopPropagation();arOpenEditorialPopover(this)" aria-label="Voir le résumé de ${esc(label)}">${visual}</button>`
       :`<span class="ar-playlist-cover" title="${esc(label)}">${visual}</span>`;
