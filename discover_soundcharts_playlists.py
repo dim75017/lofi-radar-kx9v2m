@@ -49,9 +49,17 @@ PLAYLIST_GENRE_MAP = {
     "ambient": "ambient",
     "nature": "nature",
     "jazz / bossa": "jazz_jazzhop",
+    "jazz / jazzhop": "jazz_jazzhop",
     "classical": "classical",
     "guitar": "guitar",
+    "guitar / acoustic": "guitar",
     "synthwave / retro": "synthwave",
+}
+
+# Corrections restreintes à des playlists Spotify identifiées. Elles ne sont jamais
+# étendues à des titres voisins ou à des playlists indépendantes homonymes.
+PLAYLIST_GENRE_OVERRIDES = {
+    "37i9dQZF1DWZeKCadgRdKQ": "ambient",  # Spotify Editorial — Deep Focus
 }
 
 INDEPENDENT_GENRE_RULES = (
@@ -302,6 +310,25 @@ def _normalise_text(value: Any) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def classify_editorial_playlist_genre(spotify_id: Any, name: Any, display_genre: Any) -> str | None:
+    """Use a verified title signal before a broad source genre for editorial playlists."""
+    explicit = PLAYLIST_GENRE_OVERRIDES.get(str(spotify_id or "").strip())
+    if explicit:
+        return explicit
+    title = _normalise_text(name)
+    if re.search(r"\b(?:halloween\s+(?:lo[ -]?fi)|(?:lo[ -]?fi)\s+halloween)\b", title):
+        return "halloween_lofi"
+    if re.search(r"\b(?:christmas\s+(?:lo[ -]?fi)|(?:lo[ -]?fi)\s+christmas)\b", title):
+        return "christmas_lofi"
+    if re.search(r"\bdark\s+ambient\b", title):
+        return "dark_ambient"
+    # A title that explicitly says lofi is more precise than a generic source bucket
+    # such as Ambient, Piano or Nature.
+    if re.search(r"\b(?:lo[ -]?fi|low[ -]?fi|chillhop)\b", title):
+        return "lofi_hip_hop"
+    return PLAYLIST_GENRE_MAP.get(_normalise_text(display_genre))
+
+
 def classify_independent_playlist(name: Any, keywords: Any, use_case: Any = "") -> str | None:
     title = _normalise_text(name)
     keyword_text = _normalise_text(str(keywords or "").replace("|", " "))
@@ -331,10 +358,11 @@ def select_playlists(payload: dict[str, Any], playlist_scope: str = "editorial")
         curator = str(row[positions["curatorCat"]] if positions["curatorCat"] < len(row) else "").casefold()
         display_genre = str(row[positions["genre"]] if positions["genre"] < len(row) else "").strip()
         name = str(row[positions["name"]] if positions["name"] < len(row) else "").strip()
+        spotify_id = str(row[positions["id"]] if positions["id"] < len(row) else "").strip()
         keywords = row[positions["kw"]] if "kw" in positions and positions["kw"] < len(row) else ""
         use_case = row[positions["use_case"]] if "use_case" in positions and positions["use_case"] < len(row) else ""
         if curator == "editorial":
-            internal_genre = PLAYLIST_GENRE_MAP.get(display_genre.casefold())
+            internal_genre = classify_editorial_playlist_genre(spotify_id, name, display_genre)
             source_tier = "editorial_playlist"
         elif curator == "independent":
             internal_genre = classify_independent_playlist(name, keywords, use_case)
@@ -344,7 +372,6 @@ def select_playlists(payload: dict[str, Any], playlist_scope: str = "editorial")
             source_tier = ""
         if curator not in ({playlist_scope} if playlist_scope != "all" else {"editorial", "independent"}) or not internal_genre:
             continue
-        spotify_id = str(row[positions["id"]] if positions["id"] < len(row) else "").strip()
         if not spotify_id:
             continue
         followers = _finite_number(row[positions["followers"]] if positions["followers"] < len(row) else None)

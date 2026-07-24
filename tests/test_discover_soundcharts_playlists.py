@@ -149,6 +149,19 @@ class PlaylistDiscoveryTests(unittest.TestCase):
         self.assertEqual([item["spotify_id"] for item in selected], ["playlist-1"])
         self.assertEqual(selected[0]["primary_genre"], "piano")
 
+    def test_editorial_title_signal_overrides_broad_source_bucket(self):
+        payload = {
+            "cols": ["id", "name", "owner", "curatorCat", "followers", "tracks", "genre"],
+            "rows": [
+                ["lofi-beats", "lofi beats", "Spotify", "editorial", 1_000_000, 100, "Ambient"],
+                ["37i9dQZF1DWZeKCadgRdKQ", "Deep Focus", "Spotify", "editorial", 1_000_000, 100, "Lofi / chillhop"],
+            ],
+        }
+        selected = subject.select_editorial_playlists(payload)
+        by_id = {item["spotify_id"]: item["primary_genre"] for item in selected}
+        self.assertEqual(by_id["lofi-beats"], "lofi_hip_hop")
+        self.assertEqual(by_id["37i9dQZF1DWZeKCadgRdKQ"], "ambient")
+
     def test_independent_playlist_selection_requires_strong_background_signal(self):
         payload = {
             "cols": ["id", "name", "owner", "curatorCat", "followers", "tracks", "genre", "use_case", "kw"],

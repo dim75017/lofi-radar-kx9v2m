@@ -1545,14 +1545,24 @@ function enhanceSelects(root){
 function genreFilterHtml(id,selected){
   const values=[...GENRE_TAXONOMY.genres,UNCLASSIFIED_GENRE];
   const count=selected.size;
-  const label=count===0?'🎵 Genre : tous':(count===1?'🎵 '+[...selected][0]:'🎵 Genres · '+count);
+  const label=count===0?'🎵 Genre : tous':(count===1?'🎵 '+genreFilterLabel([...selected][0]):'🎵 Genres · '+count);
   return `<div class="msel" id="${id}">
     <button type="button" class="msel-btn" aria-haspopup="true" aria-expanded="false"><span class="msel-label">${esc(label)}</span><span class="msel-chevron">▾</span></button>
     <div class="msel-list">
       <label class="msel-opt"><input type="checkbox" value="" ${count===0?'checked':''}><span>Tous les genres</span></label>
-      ${values.map(v=>`<label class="msel-opt"><input type="checkbox" value="${esc(v)}" ${selected.has(v)?'checked':''}><span>${esc(v)}</span></label>`).join('')}
+      ${values.map(v=>`<label class="msel-opt"><input type="checkbox" value="${esc(v)}" ${selected.has(v)?'checked':''}><span>${esc(genreFilterLabel(v))}</span></label>`).join('')}
     </div>
   </div>`;
+}
+function genreFilterLabel(genre){
+  const key=String(genre||'').trim().toLowerCase();
+  const emoji=({
+    'lofi hip-hop':'🎧','guitare / acoustic / fingerstyle':'🎸','halloween lofi':'🎃',
+    'nature / soundscapes':'🌿','christmas lofi':'🎄','jazz / jazzhop':'🎷',
+    'classique':'🎻','ambient':'💤','piano':'🎹','dark ambient':'🌑',
+    'phonk instrumental':'🎵','dnb instrumental':'🥁','à classifier':'🏷️'
+  })[key]||'🎵';
+  return `${emoji} ${genre}`;
 }
 function bindGenreFilter(id,selected,onChange){
   const root=document.getElementById(id); if(!root) return;
@@ -3603,18 +3613,52 @@ function sentinel(remaining){
 }
 
 /* colonnes PLrows (v2) : id,name,owner,curatorCat,followers,notes,tracks,first_seen,last_seen,lang,genre,use_case,fit,kw,estDate,estConf,enriched,big10k */
-function playlistGenreSignals(r){
-  // Le genre source peut être large (ex. Peaceful Guitar est classée Ambient) :
-  // les filtres s'appuient donc aussi sur le titre, l'usage et les mots-clés validés.
-  const text = [r[1], r[10], r[11], r[13]].filter(Boolean).join(' ').toLowerCase();
-  return {
-    guitar: /(?:guitar|acoustic|fingerstyle|finger style|nylon)/.test(text),
-    classical: /(?:classical|classique|orchestra|orchestral|symphon|chamber music|baroque)/.test(text),
-  };
+const PLAYLIST_GENRES=Object.freeze({
+  lofi_hip_hop:{label:'Lofi hip-hop',emoji:'🎧'}, guitar:{label:'Guitare / acoustic',emoji:'🎸'},
+  halloween_lofi:{label:'Halloween Lofi',emoji:'🎃'}, nature:{label:'Nature / soundscapes',emoji:'🌿'},
+  christmas_lofi:{label:'Christmas Lofi',emoji:'🎄'}, jazz_jazzhop:{label:'Jazz / jazzhop',emoji:'🎷'},
+  classical:{label:'Classique',emoji:'🎻'}, ambient:{label:'Ambient',emoji:'💤'}, piano:{label:'Piano',emoji:'🎹'},
+  dark_ambient:{label:'Dark ambient',emoji:'🌑'}, phonk_instrumental:{label:'Phonk instrumental',emoji:'🎵'},
+  dnb_instrumental:{label:'DnB instrumental',emoji:'🥁'}, synthwave:{label:'Synthwave / retro',emoji:'🌌'}
+});
+const PLAYLIST_SOURCE_GENRES=Object.freeze({
+  'lofi / chillhop':'lofi_hip_hop', 'guitar':'guitar', 'guitar / acoustic':'guitar',
+  'classical':'classical', 'piano':'piano', 'ambient':'ambient', 'nature':'nature',
+  'jazz / bossa':'jazz_jazzhop', 'jazz / jazzhop':'jazz_jazzhop', 'synthwave / retro':'synthwave'
+});
+/* Une correction éditoriale ne s'applique qu'à cet identifiant Spotify vérifié. */
+const PLAYLIST_GENRE_OVERRIDES=Object.freeze({
+  '37i9dQZF1DWZeKCadgRdKQ':'ambient' // Spotify Editorial — Deep Focus
+});
+function playlistText(value){
+  return String(value||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 }
-function playlistMatchesGenre(r, genre){
-  return genre==='all' || playlistGenreSignals(r)[genre]===true;
+function playlistPrimaryGenre(r){
+  const explicit=PLAYLIST_GENRE_OVERRIDES[String(r&&r[0]||'')];
+  if(explicit) return explicit;
+  const title=playlistText(r&&r[1]);
+  /* Les signaux de titre explicites passent avant les catégories source plus larges. */
+  if(/\b(?:halloween\s+(?:lo[ -]?fi)|(?:lo[ -]?fi)\s+halloween)\b/.test(title)) return 'halloween_lofi';
+  if(/\b(?:christmas\s+(?:lo[ -]?fi)|(?:lo[ -]?fi)\s+christmas)\b/.test(title)) return 'christmas_lofi';
+  if(/\bdark\s+ambient\b/.test(title)) return 'dark_ambient';
+  if(/\b(?:lo[ -]?fi|low[ -]?fi|chillhop)\b/.test(title)) return 'lofi_hip_hop';
+  if(/\b(?:phonk)\b/.test(title)) return 'phonk_instrumental';
+  if(/\b(?:dnb|drum\s*(?:&|and)\s*bass)\b/.test(title)) return 'dnb_instrumental';
+  if(/\b(?:jazzhop|jazz|bossa)\b/.test(title)) return 'jazz_jazzhop';
+  if(/\b(?:guitar|acoustic|fingerstyle|finger style|nylon)\b/.test(title)) return 'guitar';
+  if(/\b(?:classical|classique|orchestra|orchestral|symphon|chamber music|baroque)\b/.test(title)) return 'classical';
+  if(/\b(?:piano)\b/.test(title)) return 'piano';
+  if(/\b(?:nature|soundscape|rain sounds?|forest ambience|ocean sounds?)\b/.test(title)) return 'nature';
+  if(/\b(?:ambient)\b/.test(title)) return 'ambient';
+  return PLAYLIST_SOURCE_GENRES[playlistText(r&&r[10])]||null;
 }
+function playlistGenreLabel(r){ const item=PLAYLIST_GENRES[playlistPrimaryGenre(r)]; return item?item.label:'—'; }
+function playlistGenreHtml(r){ const item=PLAYLIST_GENRES[playlistPrimaryGenre(r)]; return item?`${item.emoji} ${esc(item.label)}`:'—'; }
+function playlistAvailableGenres(){
+  return [...new Set(PLrows.map(playlistPrimaryGenre).filter(Boolean))]
+    .sort((a,b)=>PLAYLIST_GENRES[a].label.localeCompare(PLAYLIST_GENRES[b].label));
+}
+function playlistMatchesGenre(r, genre){ return genre==='all' || playlistPrimaryGenre(r)===genre; }
 function plFiltered(){
   const q = S.plq.trim().toLowerCase();
   let rows = PLrows.filter(r=>{
@@ -3631,7 +3675,7 @@ function plFiltered(){
     followers: (a,b)=>(a[4]||0)-(b[4]||0),
     tracks: (a,b)=>(a[6]||0)-(b[6]||0),
     fit: (a,b)=>(a[12]||0)-(b[12]||0),
-    genre: (a,b)=>(a[10]||'').localeCompare(b[10]||''),
+    genre: (a,b)=>playlistGenreLabel(a).localeCompare(playlistGenreLabel(b)),
     usage: (a,b)=>(a[11]||'').localeCompare(b[11]||''),
     created: (a,b)=>(a[14]||'').localeCompare(b[14]||''),
     recent: (a,b)=>(a[8]||'').localeCompare(b[8]||''),
@@ -3729,7 +3773,7 @@ function openPlaylist(pid){
     <div class="tgrid">
       <div class="tg"><div class="l">Tracks</div><div class="v">${r[16]?(r[6]||'?'):'—'}</div></div>
       <div class="tg"><div class="l">Fit score</div><div class="v">${r[16]?(r[12]||0):'—'}</div></div>
-      <div class="tg"><div class="l">Genre</div><div class="v" style="font-size:13px">${esc(r[10]||'?')}</div></div>
+      <div class="tg"><div class="l">Genre</div><div class="v" style="font-size:13px">${playlistGenreHtml(r)}</div></div>
       <div class="tg"><div class="l">Usage</div><div class="v" style="font-size:13px">${esc(r[11]||'?')}</div></div>
       <div class="tg"><div class="l">${T('Première observation')}</div><div class="v" style="font-size:13px">${fmtDate(r[7])}</div></div>
       <div class="tg"><div class="l">${T('Dernière observation')}</div><div class="v" style="font-size:13px">${fmtDate(r[8])}</div></div>
@@ -3791,7 +3835,7 @@ function renderPlaylists(){
           <td class="num">${playlistWindowCell(r,1)}</td>
           <td class="num">${r[16]?(r[6]||'?'):'—'}</td>
           <td class="num">${r[16]?(r[12]||0):'—'}</td>
-          <td>${esc(r[10]||'?')}</td>
+          <td>${playlistGenreHtml(r)}</td>
         </tr>`).join('')}
       </tbody>
     </table></div>
@@ -3834,8 +3878,7 @@ function renderPlaylists(){
     </select>
     <select id="pl-genre" aria-label="${T('Filtrer par genre')}">
       <option value="all" ${S.plgenre==='all'?'selected':''}>🎼 ${T('Tous les genres')}</option>
-      <option value="guitar" ${S.plgenre==='guitar'?'selected':''}>🎸 ${T('Guitare')}</option>
-      <option value="classical" ${S.plgenre==='classical'?'selected':''}>🎻 ${T('Classique')}</option>
+      ${playlistAvailableGenres().map(genre=>{const item=PLAYLIST_GENRES[genre];return `<option value="${genre}" ${S.plgenre===genre?'selected':''}>${item.emoji} ${esc(item.label)}</option>`;}).join('')}
     </select>
   </div>
   ${tableView}`;
