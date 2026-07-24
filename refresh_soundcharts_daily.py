@@ -437,6 +437,17 @@ def first_numeric_named(value: Any, names: set[str]) -> int | None:
     return None
 
 
+def first_text_named(value: Any, names: set[str]) -> str:
+    """Return the first non-empty text field found in a Soundcharts response."""
+
+    for _, item in walk_dicts(value):
+        for name in names:
+            candidate = item.get(name)
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+    return ""
+
+
 def spotify_metric(value: Any, names: set[str]) -> int | None:
     """Find a numeric metric specifically attached to Spotify."""
 
@@ -693,8 +704,15 @@ def refresh_playlists(
     playlists = read_js_payload(path, PLAYLISTS_PREFIX)
     columns = list(playlists.get("cols", []))
     rows = playlists.get("rows", [])
+    if "image_url" not in columns:
+        columns.append("image_url")
+        for row in rows:
+            if isinstance(row, list):
+                row.append("")
+        playlists["cols"] = columns
     id_index = index_of(columns, "id")
     followers_index = index_of(columns, "followers")
+    image_index = index_of(columns, "image_url")
     if id_index is None or followers_index is None:
         raise SoundchartsError("Spotify playlist export does not contain id/followers columns")
 
@@ -726,6 +744,11 @@ def refresh_playlists(
         while len(row) <= followers_index:
             row.append(None)
         row[followers_index] = followers
+        image_url = first_text_named(response, {"imageUrl", "image_url", "coverUrl", "cover_url", "thumbnailUrl", "thumbnail_url"})
+        if image_url and image_index is not None:
+            while len(row) <= image_index:
+                row.append("")
+            row[image_index] = image_url
         entry = store.setdefault(task["id"], {})
         entry["history"] = merge_history(entry.get("history"), [[day, followers]])
         entry["observed_at"] = now

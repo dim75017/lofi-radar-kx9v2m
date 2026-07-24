@@ -70,7 +70,7 @@ on:
         required: true
         default: 'strict_rebaseline'
         type: choice
-        options: [strict_rebaseline, classification, artists, smoke]
+        options: [strict_rebaseline, classification, artists, playlist_covers, smoke]
       max_requests:
         description: 'Data-call cap (strict: 1-6000; classification: 1-8230)'
         required: true
@@ -175,11 +175,12 @@ jobs:
             case "$scope" in
               strict_rebaseline) expansion_limit="2500" ;;
               classification) expansion_limit="" ;;
-              artists|smoke) expansion_limit="" ;;
+              artists|playlist_covers|smoke) expansion_limit="" ;;
               *) echo "Unsupported scope: $scope" >&2; exit 1 ;;
             esac
             request_cap="$expansion_data_cap"
             if [[ "$scope" == "classification" ]]; then request_cap="$classification_data_cap"; fi
+            if [[ "$scope" == "playlist_covers" ]]; then request_cap="$playlist_data_cap"; fi
             if [[ ! "$REQUESTED_MAX_REQUESTS" =~ ^[1-9][0-9]{0,3}$ ]] || (( 10#$REQUESTED_MAX_REQUESTS > request_cap )); then
               echo "max_requests must be an integer between 1 and $request_cap for $scope" >&2
               exit 1
@@ -243,6 +244,20 @@ jobs:
           --max-requests "${{ steps.plan.outputs.artist_requests }}"
           --history-days 90
           --soundcharts "${{ steps.snapshot.outputs.candidate }}"
+
+      - name: Refresh published playlist covers from Soundcharts
+        if: steps.plan.outputs.scope == 'playlist_covers'
+        env:
+          PYTHONUNBUFFERED: '1'
+          SOUNDCHARTS_CLIENT_ID: ${{ secrets.SOUNDCHARTS_CLIENT_ID }}
+          SOUNDCHARTS_CLIENT_SECRET: ${{ secrets.SOUNDCHARTS_CLIENT_SECRET }}
+          SOUNDCHARTS_TEAM_ID: dsomoguy-api
+        run: >-
+          python refresh_soundcharts_daily.py
+          --mode playlists
+          --workers 10
+          --max-requests "${{ steps.plan.outputs.expansion_requests }}"
+          --history-days 90
 
       - name: Discover tracks and artist catalogues from editorial playlists
         # Public snapshots intentionally retain only strict, publishable rows.
@@ -452,6 +467,21 @@ jobs:
           staged_sha="$(git rev-parse HEAD)"
           echo "sha=$staged_sha" >> "$GITHUB_OUTPUT"
           echo "Staged unreferenced snapshot at $staged_sha"
+
+      - name: Publish refreshed playlist covers
+        if: steps.plan.outputs.publish == 'true' && steps.plan.outputs.scope == 'playlist_covers'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Spotify_Playlists_data.js Spotify_Performance_data.js soundcharts-history
+          git diff --cached --quiet && exit 0
+          git commit -m "data: refresh Soundcharts playlist covers"
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
 
       - name: Verify dated snapshot exists on main
         if: steps.plan.outputs.publish == 'true'

@@ -170,6 +170,20 @@ class RefreshSoundchartsTests(unittest.TestCase):
         self.assertEqual(subject.field(row, schema, 'source_date'), '2026-07-21')
         self.assertEqual(performance['tracks']['track-1']['history'], [['2026-07-20', 100], ['2026-07-21', 135]])
 
+    def test_refresh_playlists_preserves_the_soundcharts_cover_url(self):
+        playlists = {
+            'cols': ['id', 'followers'],
+            'rows': [['playlist-1', 100]],
+        }
+        response = {'object': {'latestSubscriberCount': 125, 'imageUrl': 'https://assets.test/playlist.jpg'}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'playlists.js'
+            subject.write_js_payload(path, playlists, subject.PLAYLISTS_PREFIX)
+            outcome = subject.refresh_playlists(path, {'playlists': {}}, FakeClient(response), 1, 10)
+            refreshed = subject.read_js_payload(path, subject.PLAYLISTS_PREFIX)
+        self.assertEqual(outcome.usable, 1)
+        self.assertEqual(subject.field(refreshed['rows'][0], refreshed['cols'], 'image_url'), 'https://assets.test/playlist.jpg')
+
     def test_http_success_without_metric_is_not_usable(self):
         payload = {
             'schemas': {'tracks': ['soundcharts_uuid', 'spotify_id']},
@@ -225,11 +239,13 @@ class RefreshSoundchartsTests(unittest.TestCase):
         self.assertIn('--max-requests "${{ steps.plan.outputs.playlist_requests }}"', workflow)
         self.assertIn('--max-requests "${{ steps.plan.outputs.independent_playlist_requests }}"', workflow)
         self.assertIn('--playlist-scope independent', workflow)
+        self.assertIn("steps.plan.outputs.scope == 'playlist_covers'", workflow)
+        self.assertIn('--mode playlists', workflow)
         self.assertIn('--classification-only', workflow)
         self.assertIn('python discover_soundcharts_playlists.py', workflow)
         self.assertGreaterEqual(workflow.count('--workers 10'), 3)
         self.assertIn("default: 'strict_rebaseline'", workflow)
-        self.assertIn("options: [strict_rebaseline, classification, artists, smoke]", workflow)
+        self.assertIn("options: [strict_rebaseline, classification, artists, playlist_covers, smoke]", workflow)
         self.assertNotIn('legacy_full', workflow)
         self.assertIn(
             "if: github.event_name == 'workflow_dispatch' && steps.plan.outputs.scope == 'smoke'",

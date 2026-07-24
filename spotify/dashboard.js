@@ -837,6 +837,7 @@ const nSelf = R.reduce((s,r)=>s+(r[4]===0?1:0),0);
 /* ---------- module Playlists (scanner Codex/ChatGPT, base indépendante du catalogue Artistes/Tracks) ---------- */
 const PL = window.SPOTIFY_PLAYLISTS || null;
 const PLmeta = (PL && PL.meta) || null;
+const PLcols = (PL && PL.cols) || [];
 const PLrows = (PL && PL.rows) || [];
 const PLhist = Object.assign({}, (PL && PL.hist) || {});
 for (const [pid,entry] of Object.entries(PERF_PLAYLISTS)){
@@ -2596,11 +2597,18 @@ function arEditorialMiniData(playlist){
     genre:first(playlist&&playlist.genre,row&&row[10]),
   };
 }
+function arPlaylistSnapshotValue(playlistId,name){
+  const column=Array.isArray(PLcols)?PLcols.indexOf(name):-1;
+  if(column<0) return '';
+  const row=Array.isArray(PLrows)?PLrows.find(item=>String(item&&item[0]||'')===String(playlistId||'')):null;
+  return row&&row[column]||'';
+}
 function arPlaylistCoverUrl(playlist){
   const values=[
     playlist&&playlist.imageUrl,playlist&&playlist.image_url,
     playlist&&playlist.coverUrl,playlist&&playlist.cover_url,
-    playlist&&playlist.thumbnailUrl,playlist&&playlist.thumbnail_url
+    playlist&&playlist.thumbnailUrl,playlist&&playlist.thumbnail_url,
+    arPlaylistSnapshotValue(playlist&&playlist.spotifyId,'image_url')
   ];
   return values.map(arSafePublicUrl).find(Boolean)||'';
 }
@@ -2608,7 +2616,8 @@ function arEditorialPlaylistCoverHtml(playlist,index,slot='detail'){
   const imageUrl=arPlaylistCoverUrl(playlist);
   // Les couvertures viennent uniquement du snapshot publié. Un appel oEmbed
   // par icône dans le navigateur finit par déclencher des limites Spotify.
-  return `${imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:''}<span class="ar-playlist-fallback" aria-hidden="true">▦</span>`;
+  // En attente de l'image source, on ne remplace pas une pochette par une icône.
+  return imageUrl?`<img src="${esc(imageUrl)}" alt="" loading="lazy" onerror="this.remove()">`:'';
 }
 function arOpenEditorialPopover(anchor){
   document.querySelectorAll('.ar-editorial-popover').forEach(node=>node.remove());
