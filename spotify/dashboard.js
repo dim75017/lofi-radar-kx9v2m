@@ -824,6 +824,48 @@ const GENRE_TAXONOMY = Object.freeze({
   ])
 });
 const UNCLASSIFIED_GENRE = 'À classifier';
+/* Les données Soundcharts et le catalogue interne utilisent des codes différents
+   ("ambient", "dark_ambient", "classical"…), tandis que l'interface affiche des
+   libellés lisibles. Le filtre doit toujours comparer les clés canoniques. */
+const GENRE_FILTER_OPTIONS = Object.freeze([
+  ['lofi_hip_hop','Lofi hip-hop','🎧'],
+  ['guitar','Guitare / acoustic / fingerstyle','🎸'],
+  ['halloween_lofi','Halloween Lofi','🎃'],
+  ['nature','Nature / soundscapes','🌿'],
+  ['christmas_lofi','Christmas Lofi','🎄'],
+  ['jazz_jazzhop','Jazz / jazzhop','🎷'],
+  ['classical','Classique','🎻'],
+  ['ambient','Ambient','💤'],
+  ['piano','Piano','🎹'],
+  ['dark_ambient','Dark ambient','🌑'],
+  ['phonk_instrumental','Phonk instrumental','🎵'],
+  ['dnb_instrumental','DnB instrumental','🥁'],
+  ['unclassified',UNCLASSIFIED_GENRE,'🏷️']
+].map(([key,label,emoji])=>Object.freeze({key,label,emoji})));
+const GENRE_FILTER_BY_KEY = new Map(GENRE_FILTER_OPTIONS.map(option=>[option.key,option]));
+const GENRE_FILTER_ALIASES = Object.freeze({
+  'lofi hip hop':'lofi_hip_hop', 'lofi_hip_hop':'lofi_hip_hop',
+  'guitare acoustic fingerstyle':'guitar', 'guitar':'guitar', 'acoustic':'guitar', 'fingerstyle':'guitar',
+  'halloween lofi':'halloween_lofi', 'halloween_lofi':'halloween_lofi',
+  'nature soundscapes':'nature', 'nature':'nature', 'soundscapes':'nature',
+  'christmas lofi':'christmas_lofi', 'christmas_lofi':'christmas_lofi',
+  'jazz jazzhop':'jazz_jazzhop', 'jazz':'jazz_jazzhop', 'jazzhop':'jazz_jazzhop',
+  'classique':'classical', 'classical':'classical', 'ambient':'ambient', 'piano':'piano',
+  'dark ambient':'dark_ambient', 'dark_ambient':'dark_ambient',
+  'phonk instrumental':'phonk_instrumental', 'phonk_instrumental':'phonk_instrumental',
+  'dnb instrumental':'dnb_instrumental', 'dnb_instrumental':'dnb_instrumental',
+  'a classifier':'unclassified', 'unclassified':'unclassified'
+});
+function canonicalGenreKey(value){
+  if(value===UNCLASSIFIED_GENRE) return 'unclassified';
+  const normalized=String(value||'').trim().toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/[\\/_-]+/g,' ').replace(/\s+/g,' ');
+  return GENRE_FILTER_ALIASES[normalized]||normalized.replace(/\s+/g,'_');
+}
+function canonicalizeGenreSelection(selected){
+  const keys=[...selected].map(canonicalGenreKey).filter(key=>GENRE_FILTER_BY_KEY.has(key));
+  selected.clear(); keys.forEach(key=>selected.add(key));
+}
 function perfHistory(entry){
   if (Array.isArray(entry)) return entry;
   return entry && Array.isArray(entry.history) ? entry.history : [];
@@ -1504,7 +1546,7 @@ function rowsBeforePeriod(){
     if (['measured','unmeasured','review','playlist','catalogue'].includes(S.statut)
       && !discoveryStatusMatches(r,S.statut)) return false;
     if (S.min>0 && r[3]<S.min) return false;
-    if (S.genres.size && !S.genres.has(classification.genre)) return false;
+    if (S.genres.size && !S.genres.has(canonicalGenreKey(classification.genre))) return false;
     if (q && !(r[1].toLowerCase().includes(q) || A[r[0]][0].toLowerCase().includes(q) || r[5].toLowerCase().includes(q))) return false;
     return true;
   });
@@ -1577,26 +1619,21 @@ function enhanceSelects(root){
   });
 }
 function genreFilterHtml(id,selected){
-  const values=[...GENRE_TAXONOMY.genres,UNCLASSIFIED_GENRE];
+  canonicalizeGenreSelection(selected);
+  const values=GENRE_FILTER_OPTIONS;
   const count=selected.size;
   const label=count===0?'🎵 Genre : tous':(count===1?'🎵 '+genreFilterLabel([...selected][0]):'🎵 Genres · '+count);
   return `<div class="msel" id="${id}">
     <button type="button" class="msel-btn" aria-haspopup="true" aria-expanded="false"><span class="msel-label">${esc(label)}</span><span class="msel-chevron">▾</span></button>
     <div class="msel-list">
       <label class="msel-opt"><input type="checkbox" value="" ${count===0?'checked':''}><span>Tous les genres</span></label>
-      ${values.map(v=>`<label class="msel-opt"><input type="checkbox" value="${esc(v)}" ${selected.has(v)?'checked':''}><span>${esc(genreFilterLabel(v))}</span></label>`).join('')}
+      ${values.map(option=>`<label class="msel-opt"><input type="checkbox" value="${esc(option.key)}" ${selected.has(option.key)?'checked':''}><span>${esc(genreFilterLabel(option.key))}</span></label>`).join('')}
     </div>
   </div>`;
 }
 function genreFilterLabel(genre){
-  const key=String(genre||'').trim().toLowerCase();
-  const emoji=({
-    'lofi hip-hop':'🎧','guitare / acoustic / fingerstyle':'🎸','halloween lofi':'🎃',
-    'nature / soundscapes':'🌿','christmas lofi':'🎄','jazz / jazzhop':'🎷',
-    'classique':'🎻','ambient':'💤','piano':'🎹','dark ambient':'🌑',
-    'phonk instrumental':'🎵','dnb instrumental':'🥁','à classifier':'🏷️'
-  })[key]||'🎵';
-  return `${emoji} ${genre}`;
+  const option=GENRE_FILTER_BY_KEY.get(canonicalGenreKey(genre));
+  return option ? `${option.emoji} ${option.label}` : `🎵 ${genre}`;
 }
 function bindGenreFilter(id,selected,onChange){
   const root=document.getElementById(id); if(!root) return;
@@ -3386,7 +3423,7 @@ function renderArtists(){
     const classification=artistClassification(g);
     return (!q || g.name.toLowerCase().includes(q)) &&
       (S.aseg==='all' || seg(g)===S.aseg) &&
-      (!S.agenres.size || S.agenres.has(classification.genre));
+      (!S.agenres.size || S.agenres.has(canonicalGenreKey(classification.genre)));
   });
   const aSorters = {
     name:(a,b)=>a.name.localeCompare(b.name),
