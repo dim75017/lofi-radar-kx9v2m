@@ -2856,8 +2856,8 @@ function openArOpportunity(spotifyId){
   hydrateArPlaylistCovers();
 }
 function sortTriangleIndicator(active,direction){
-  const dir=active?(direction===-1?'desc':'asc'):'';
-  return `<span class="sort-triangles ${active?'on ':''}${dir}" aria-hidden="true"><b>▲</b><b>▼</b></span>`;
+  const arrow=active?(direction===-1?'▲':'▼'):'';
+  return `<span class="sort-triangles ${active?'on':''}" aria-hidden="true">${arrow}</span>`;
 }
 function hydrateArArtistAvatars(){
   if(typeof fetch!=='function') return;
@@ -3083,8 +3083,7 @@ function renderOpps(){
   };
   const trackSortChoices=[[1,'Track'],[0,T('Artiste')],[3,streamMetricLabel(0)],[10,streamMetricLabel(30)],[21,streamMetricLabel(7)],[20,streamMetricLabel(1)],[13,T('Rachat')],[2,T('Sortie')],[5,'Copyright']];
   const tableView = `
-  <div class="panel" style="padding:6px 14px 14px">
-    ${catalogueSortBarHtml('tracks',trackSortChoices,S.sort.k,S.sort.dir)}
+  <div class="catalogue-list-panel">
     <div class="catalogue-table-wrap"><table class="catalogue-table">
       <thead><tr>
         ${ag?`<th class="selc"><input type="checkbox" class="ck" id="sel-all" title="${T('Tout sélectionner')}" ${rows.length&&rows.every(r=>S.sel.has(r[6]))?'checked':''}></th>`:''}
@@ -3279,8 +3278,7 @@ function renderArtists(){
   </div>
   ${sentinel(list.length-S.shownA)}`;
   const tableView = `
-  <div class="panel" style="padding:6px 14px 14px">
-    ${catalogueSortBarHtml('artists',artistSortChoices,S.asort,S.adir)}
+  <div class="catalogue-list-panel">
     <div class="catalogue-table-wrap"><table class="catalogue-table">
       <thead><tr>
         <th></th>
@@ -3667,8 +3665,7 @@ function renderPlaylists(){
   const slice = rows.slice(0, S.shownPL);
   const playlistSortChoices=[['name','Playlist'],['curator',T('Curateur')],['followers',T('Followers total')],['growth30',T('Followers 30 jours')],['growth7',T('Followers 7 jours')],['growth24',T('Followers 24 heures')],['tracks','Tracks'],['fit','Fit score'],['genre',T('Genre')]];
   const tableView = `
-  <div class="panel" style="padding:6px 14px 14px">
-    ${catalogueSortBarHtml('playlists',playlistSortChoices,S.plsort,S.pldir)}
+  <div class="catalogue-list-panel">
     <div class="catalogue-table-wrap"><table class="catalogue-table">
       <thead><tr>
         <th></th>
@@ -3959,8 +3956,7 @@ function renderLabels(){
   const slice = rows.slice(0, S.shownLB);
   const labelSortChoices=[['name',T('Label')],['tracks','Tracks'],['streams',streamMetricLabel(0)],['streams30',streamMetricLabel(30)],['streams7',streamMetricLabel(7)],['streams24',streamMetricLabel(1)],['since',T('Connu depuis')],['artists',T('Artistes')]];
   const tableView = `
-  <div class="panel" style="padding:6px 14px 14px">
-    ${catalogueSortBarHtml('labels',labelSortChoices,S.lbsort,S.lbdir)}
+  <div class="catalogue-list-panel">
     <div class="catalogue-table-wrap"><table class="catalogue-table">
       <thead><tr>
         <th></th>
