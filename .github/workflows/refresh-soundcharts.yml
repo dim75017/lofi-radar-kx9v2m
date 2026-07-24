@@ -150,6 +150,7 @@ jobs:
           node tests/test_dashboard_opportunity_guardrails.js
           node tests/test_dashboard_general_view_guardrails.js
           node tests/test_dashboard_ar_ui_guardrails.js
+          node tests/test_dashboard_genre_filter.js
           node tests/test_spotify_full_catalogue.js
           git diff --check
 

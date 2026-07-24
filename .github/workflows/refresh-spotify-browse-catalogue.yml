@@ -57,6 +57,7 @@ jobs:
           python -m unittest tests/test_build_spotify_browse_catalogue.py -v
           node --check spotify/dashboard.js
           node --check spotify/coverage.js
+          node tests/test_dashboard_genre_filter.js
           node tests/test_spotify_catalogue_layers.js
           git diff --check
 
