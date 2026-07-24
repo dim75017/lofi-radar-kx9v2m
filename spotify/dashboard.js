@@ -3145,7 +3145,6 @@ function renderOpps(){
     <div>
       <h2>${T('Toutes les pistes')}</h2>
     </div>
-    ${metricModeToggleHtml()}
   </div>
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="f-q" placeholder="${T('Rechercher track, artiste, label…')}" value="${esc(S.q)}"></div>
@@ -3177,7 +3176,7 @@ function renderOpps(){
       <option value="ext" ${S.rel==='ext'?'selected':''}>🚫 ${T('Jamais')}</option>
     </select>
     <span class="spacer"></span>
-    <span class="result-count">${fmtFull(rows.length)} ${T('tracks')}</span>
+    ${metricModeToggleHtml()}
   </div>
   ${tableView}`;
 
@@ -3321,7 +3320,6 @@ function renderArtists(){
     <div>
       <h2>${T('Tous les artistes')}</h2>
     </div>
-    ${metricModeToggleHtml()}
   </div>
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="a-q" placeholder="${T('Rechercher un artiste…')}" value="${esc(S.aq)}"></div>
@@ -3334,7 +3332,7 @@ function renderArtists(){
       <option value="ext" ${S.aseg==='ext'?'selected':''}>🚫 ${T('Jamais')}</option>
     </select>
     <span class="spacer"></span>
-    <span class="result-count">${list.length} ${T('artistes')}</span>
+    ${metricModeToggleHtml()}
   </div>
   ${tableView}`;
 
@@ -3374,12 +3372,11 @@ function renderNew(){
       <h2>${T('Sorties récentes')}</h2>
       <p>${T("Nouvelles sorties hors Lofi des artistes suivis. Le badge « détectée » signale les tracks apparues lors d'un rafraîchissement de veille (après le")} ${D.seed}).</p>
     </div>
-    ${metricModeToggleHtml()}
   </div>
   <div class="toolbar">
     ${[30,90,180,365].map(d=>`<button class="chip ${S.newDays===d?'on':''}" data-d="${d}">${d} ${T('j')}</button>`).join('')}
     <span class="spacer"></span>
-    <span class="result-count">${fmtFull(rows.length)} ${T('sorties')} · ${detected} ${T('détectées par la veille')}</span>
+    ${metricModeToggleHtml()}
   </div>
   <div class="panel" style="padding:6px 14px 14px">
     <table>
@@ -3737,8 +3734,6 @@ function renderPlaylists(){
       <option value="guitar" ${S.plgenre==='guitar'?'selected':''}>🎸 ${T('Guitare')}</option>
       <option value="classical" ${S.plgenre==='classical'?'selected':''}>🎻 ${T('Classique')}</option>
     </select>
-    <span class="spacer"></span>
-    <span class="result-count">${fmtFull(rows.length)} playlists</span>
   </div>
   ${tableView}`;
 
@@ -4010,12 +4005,11 @@ function renderLabels(){
     <div>
       <h2>${T('Tous les labels')} <span class="badge new" style="vertical-align:middle">${T('Non exhaustif')}</span></h2>
     </div>
-    ${metricModeToggleHtml()}
   </div>
   <div class="toolbar">
     <div class="search-wrap"><span class="sico">🔍</span><input type="text" id="lb-q" placeholder="${T('Rechercher un label…')}" value="${esc(S.lbq)}"></div>
     <span class="spacer"></span>
-    <span class="result-count">${fmtFull(rows.length)} labels</span>
+    ${metricModeToggleHtml()}
   </div>
   ${tableView}`;
 
