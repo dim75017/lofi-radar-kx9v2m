@@ -194,6 +194,15 @@ class PlaylistDiscoveryTests(unittest.TestCase):
         )
         self.assertEqual([item["spotify_id"] for item in ordered], ["new", "old", "recent"])
 
+    def test_dark_ambient_playlists_are_prioritized_within_each_rotation(self):
+        rows = [
+            {"spotify_id": "generic", "name": "Ambient", "followers": 2_000_000, "primary_genre": "ambient"},
+            {"spotify_id": "dark", "name": "Dark Ambient", "followers": 1_000, "primary_genre": "dark_ambient"},
+            {"spotify_id": "piano", "name": "Piano", "followers": 3_000_000, "primary_genre": "piano"},
+        ]
+        ordered = subject.playlist_scan_order(rows, {}, limit=3)
+        self.assertEqual([item["spotify_id"] for item in ordered], ["dark", "piano", "generic"])
+
     def test_editorial_source_remains_authoritative_over_independent(self):
         self.assertEqual(
             subject.preferred_source_tier("editorial_playlist", "independent_playlist"),
