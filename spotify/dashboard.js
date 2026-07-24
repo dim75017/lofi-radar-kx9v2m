@@ -4188,6 +4188,12 @@ function renderLabels(){
   attachInfinite(()=>{ const y=window.scrollY; S.shownLB+=80; renderLabels(); window.scrollTo(0,y); });
 }
 
+function syncSpotifyStickyControls(){
+  const controls = Array.from(V.children).find(node=>node.classList && (node.classList.contains('toolbar') || node.classList.contains('ar-radar-head')));
+  const height = controls ? Math.ceil(controls.getBoundingClientRect().height) : 52;
+  document.documentElement.style.setProperty('--spotify-sticky-controls-height',`${Math.max(52,height)}px`);
+}
+
 function render(){
   if (S.view==='overview') renderOverview();
   else if (S.view==='radar') renderRadar();
@@ -4201,7 +4207,10 @@ function render(){
     if (S.labelKey) renderLabelModal();
     else if (S.artist>=0) renderArtistModal();
   }
+  requestAnimationFrame(syncSpotifyStickyControls);
 }
+
+window.addEventListener('resize',()=>requestAnimationFrame(syncSpotifyStickyControls),{passive:true});
 
 /* ---------- init ---------- */
 document.getElementById('c-opps').textContent = fmt(R.length);
